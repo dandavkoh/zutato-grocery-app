@@ -1,9 +1,17 @@
 import { useState } from 'react'
+import { Routes, Route, useNavigate } from 'react-router-dom'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
+import HouseholdsPage from './HouseholdsPage'
+import ShoppingListPage from './ShoppingListPage'
+import ProductDetailPage from './ProductDetailPage'
+import CategorySelectPage from './CategorySelectPage'
+import UnitSelectPage from './UnitSelectPage'
+import SearchPage from './SearchPage'
 
-function App() {
+function Home() {
   const [count, setCount] = useState(0)
+  const navigate = useNavigate()
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-8">
@@ -36,6 +44,14 @@ function App() {
           </p>
         </div>
         
+        {/* Button zur Haushalte-Seite */}
+        <button
+          className="w-full bg-yellow-400 text-white font-semibold py-3 rounded-xl mb-6 text-lg hover:bg-yellow-500 transition-colors"
+          onClick={() => navigate('/households')}
+        >
+          Zu "Meine Haushalte"
+        </button>
+        
         {/* Footer */}
         <p className="text-gray-600 text-sm">
           Click on the Vite and React logos to learn more
@@ -50,6 +66,20 @@ function App() {
         </div>
       </div>
     </div>
+  )
+}
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/households" element={<HouseholdsPage />} />
+      <Route path="/shopping-list" element={<ShoppingListPage />} />
+      <Route path="/shopping-list/search" element={<SearchPage />} />
+      <Route path="/product/:name" element={<ProductDetailPage />} />
+      <Route path="/product/:name/category" element={<CategorySelectPage />} />
+      <Route path="/product/:name/unit" element={<UnitSelectPage />} />
+    </Routes>
   )
 }
 

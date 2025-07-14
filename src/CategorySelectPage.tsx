@@ -37,20 +37,18 @@ const CategorySelectPage: React.FC = () => {
   }, [dispatch, navigate]);
 
   return (
-    <div className="flex-1">
-      <div className="flex-1 w-full max-w-md mx-auto pb-8 pt-2">
-        {categories.map((cat) => (
-          <div key={cat.name} className="flex items-center px-5 py-3 border-b border-neutral-800 bg-neutral-900">
-            <span className="mr-4 text-gray-300">{cat.icon}</span>
-            <span className="text-lg text-gray-300 flex-1">{cat.name}</span>
-            {cat.name === selected && (
-              <span className="text-yellow-400">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" /><path strokeLinecap="round" strokeLinejoin="round" d="M8 12l2 2 4-4" /></svg>
-              </span>
-            )}
-          </div>
-        ))}
-      </div>
+    <div className="w-full pb-8 pt-2">
+      {categories.map((cat) => (
+        <div key={cat.name} className="flex items-center px-5 py-3 border-b border-neutral-800 bg-neutral-900">
+          <span className="mr-4 text-gray-300">{cat.icon}</span>
+          <span className="text-lg text-gray-300 flex-1">{cat.name}</span>
+          {cat.name === selected && (
+            <span className="text-yellow-400">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" /><path strokeLinecap="round" strokeLinejoin="round" d="M8 12l2 2 4-4" /></svg>
+            </span>
+          )}
+        </div>
+      ))}
     </div>
   );
 };

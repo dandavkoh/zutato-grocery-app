@@ -15,9 +15,9 @@ function Layout() {
   // Optional: Header auf bestimmten Seiten ausblenden
   // const hideHeader = location.pathname === '/';
   return (
-    <div className="flex flex-col min-h-screen bg-black">
+    <div className="min-h-screen bg-black">
       <Header />
-      <div className="flex-1 w-full max-w-md mx-auto"><Outlet /></div>
+      <div className="w-full"><Outlet /></div>
     </div>
   );
 }

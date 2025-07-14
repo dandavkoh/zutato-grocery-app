@@ -52,7 +52,7 @@ const SearchPage: React.FC = () => {
     <div className="min-h-screen bg-black flex flex-col">
       {/* Header entfernt, global! */}
       {showResults ? (
-        <div className="flex-1 w-full max-w-md mx-auto pb-8 pt-2">
+        <div className="w-full pb-8 pt-2">
           <div className="px-4 pt-2 pb-1 flex items-center gap-2 text-gray-300 text-base font-semibold">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3" /><path strokeLinecap="round" strokeLinejoin="round" d="M8 8h8v8H8z" /></svg>
             Einkaufsvorschläge

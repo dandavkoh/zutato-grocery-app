@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Routes, Route, useNavigate } from 'react-router-dom'
+import { Routes, Route, useNavigate, useLocation, Outlet } from 'react-router-dom'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import HouseholdsPage from './HouseholdsPage'
@@ -8,6 +8,19 @@ import ProductDetailPage from './ProductDetailPage'
 import CategorySelectPage from './CategorySelectPage'
 import UnitSelectPage from './UnitSelectPage'
 import SearchPage from './SearchPage'
+import Header from './components/Header'
+
+function Layout() {
+  const location = useLocation();
+  // Optional: Header auf bestimmten Seiten ausblenden
+  // const hideHeader = location.pathname === '/';
+  return (
+    <div className="flex flex-col min-h-screen bg-black">
+      <Header />
+      <div className="flex-1 w-full max-w-md mx-auto"><Outlet /></div>
+    </div>
+  );
+}
 
 function Home() {
   const [count, setCount] = useState(0)
@@ -73,12 +86,14 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
-      <Route path="/households" element={<HouseholdsPage />} />
-      <Route path="/shopping-list" element={<ShoppingListPage />} />
-      <Route path="/shopping-list/search" element={<SearchPage />} />
-      <Route path="/product/:name" element={<ProductDetailPage />} />
-      <Route path="/product/:name/category" element={<CategorySelectPage />} />
-      <Route path="/product/:name/unit" element={<UnitSelectPage />} />
+      <Route element={<Layout />}>
+        <Route path="/households" element={<HouseholdsPage />} />
+        <Route path="/shopping-list" element={<ShoppingListPage />} />
+        <Route path="/shopping-list/search" element={<SearchPage />} />
+        <Route path="/product/:name" element={<ProductDetailPage />} />
+        <Route path="/product/:name/category" element={<CategorySelectPage />} />
+        <Route path="/product/:name/unit" element={<UnitSelectPage />} />
+      </Route>
     </Routes>
   )
 }

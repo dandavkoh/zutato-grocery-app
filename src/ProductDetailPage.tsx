@@ -1,28 +1,30 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { setHeader, resetHeader } from './store';
 
 const ProductDetailPage: React.FC = () => {
   const { name } = useParams<{ name: string }>();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-  return (
-    <div className="min-h-screen bg-black flex flex-col">
-      {/* Header */}
-      <div className="relative bg-gradient-to-b from-yellow-400 to-yellow-500 rounded-b-3xl px-6 pt-8 pb-8 flex flex-col items-center">
-        <span className="absolute left-4 top-6 text-white text-sm font-semibold">11:59</span>
-        <button className="absolute left-4 top-14 bg-yellow-400/60 rounded-full p-2" onClick={() => navigate(-1)}>
-          <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
-        </button>
-        <div className="text-4xl font-bold text-white mt-6 mb-2 drop-shadow-lg">{name || 'Produkt'}</div>
-        <div className="flex justify-center items-center mb-2">
-          {/* Produkt-Icon: Ananas */}
-          <svg className="w-24 h-24 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 48 48"><path strokeLinecap="round" strokeLinejoin="round" d="M24 4C20 14 14 16 14 24a10 10 0 0020 0c0-8-6-10-10-20z" /><path strokeLinecap="round" strokeLinejoin="round" d="M18 18c1 1 2 1 3 0m3 0c1 1 2 1 3 0" /></svg>
-        </div>
-        <button className="absolute right-6 bottom-6 bg-yellow-300/80 rounded-full p-3 shadow-lg">
+  useEffect(() => {
+    dispatch(setHeader({
+      title: name || 'Produkt',
+      showBack: true,
+      onBack: () => navigate(-1),
+      rightButton: (
+        <button className="bg-yellow-300/80 rounded-full p-3 shadow-lg">
           <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v8m4-4H8" /></svg>
         </button>
-      </div>
+      ),
+      background: 'bg-gradient-to-b from-yellow-400 to-yellow-500',
+    }));
+    return () => { dispatch(resetHeader()); };
+  }, [dispatch, name, navigate]);
 
+  return (
+    <div className="flex-1">
       {/* Details */}
       <div className="flex-1 px-0 pb-8 pt-2 w-full max-w-md mx-auto">
         {/* Läden */}

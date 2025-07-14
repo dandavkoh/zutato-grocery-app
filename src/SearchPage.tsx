@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { setHeader, resetHeader } from './store';
+import type { RootState } from './store';
 
 const recommendations = [
   { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="6" /></svg>, name: 'Zucker', sub: 'Brauner' },
@@ -29,40 +32,36 @@ const searchResults = [
 ];
 
 const SearchPage: React.FC = () => {
-  const [search, setSearch] = useState('');
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const search = useSelector((state: RootState) => state.search.value);
+
+  useEffect(() => {
+    dispatch(setHeader({
+      title: '',
+      showBack: false,
+      rightButton: (
+        <button
+          className="text-yellow-400 font-semibold text-lg"
+          onClick={() => {
+            dispatch({ type: 'search/clearSearch' });
+            navigate(-1);
+          }}
+        >
+          FERTIG
+        </button>
+      ),
+      background: 'bg-yellow-400',
+      showSearchBar: true, // NEU: Suchleiste im Header anzeigen
+    }));
+    return () => { dispatch(resetHeader()); };
+  }, [dispatch, navigate]);
 
   const showResults = search.length > 0;
 
   return (
     <div className="min-h-screen bg-black flex flex-col">
-      {/* Header */}
-      <div className="relative bg-yellow-400 rounded-b-3xl px-6 pt-10 pb-6 flex flex-col">
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-white font-semibold">12:15</span>
-          <div className="flex-1 flex items-center justify-center"></div>
-          <button className="text-yellow-400 font-semibold text-lg" onClick={() => navigate(-1)}>FERTIG</button>
-        </div>
-        {/* Suche */}
-        <div className="mt-6 flex justify-center">
-          <div className="flex items-center bg-black rounded-2xl w-full px-4 py-2">
-            <svg className="w-6 h-6 text-gray-400 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-2-2" /></svg>
-            <input
-              className="bg-transparent outline-none text-white placeholder-gray-400 flex-1"
-              placeholder="z.B. 100 g dunkle Schokolade"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              autoFocus
-            />
-            {search.length > 0 && (
-              <button className="ml-2 text-gray-400" onClick={() => setSearch('')}>
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
+      {/* Header entfernt, global! */}
       {showResults ? (
         <div className="flex-1 w-full max-w-md mx-auto pb-8 pt-2">
           <div className="px-4 pt-2 pb-1 flex items-center gap-2 text-gray-300 text-base font-semibold">

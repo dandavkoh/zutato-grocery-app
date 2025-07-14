@@ -1,16 +1,23 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { setHeader, resetHeader } from './store';
 
 const HouseholdsPage: React.FC = () => {
   const navigate = useNavigate();
-  return (
-    <div className="min-h-screen bg-black flex flex-col">
-      {/* Header */}
-      <div className="relative bg-yellow-400 rounded-b-3xl px-6 pt-12 pb-6 flex flex-col items-center">
-        <button className="absolute left-4 top-12 text-white text-3xl font-bold">&times;</button>
-        <h1 className="text-3xl font-bold text-white font-cursive mt-2">Meine Haushalte</h1>
-      </div>
+  const dispatch = useDispatch();
 
+  useEffect(() => {
+    dispatch(setHeader({
+      title: 'Meine Haushalte',
+      showBack: false,
+      background: 'bg-yellow-400',
+    }));
+    return () => { dispatch(resetHeader()); };
+  }, [dispatch]);
+
+  return (
+    <div className="flex-1">
       {/* Content */}
       <div className="flex-1 px-4 pt-6 pb-10">
         <p className="text-gray-200 mb-3">Haushalte anzeigen für</p>
@@ -26,7 +33,6 @@ const HouseholdsPage: React.FC = () => {
             </svg>
           </button>
         </div>
-
         <button className="w-full bg-yellow-400 text-white font-semibold py-3 rounded-xl mb-4 flex items-center justify-center text-lg gap-2">
           <span className="text-2xl">+</span> Neue Einkaufsliste
         </button>
@@ -36,7 +42,6 @@ const HouseholdsPage: React.FC = () => {
           </svg>
           Einkaufsliste beitreten
         </button>
-
         <button
           className="bg-yellow-400 rounded-2xl p-6 relative overflow-hidden w-full text-left hover:shadow-lg transition-shadow"
           onClick={() => navigate('/shopping-list')}

@@ -1,5 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { setHeader, resetHeader } from './store';
 
 const recommendations = [
   { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="6" /></svg>, name: 'Zucker', sub: 'Brauner' },
@@ -22,41 +24,21 @@ const ShoppingListPage: React.FC = () => {
   const [sortSheetOpen, setSortSheetOpen] = useState(false);
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    dispatch(setHeader({
+      title: 'Wocheneinkauf',
+      showBack: false,
+      background: 'bg-yellow-400',
+      showSearchBar: true, // NEU: Suchleiste im Header anzeigen
+    }));
+    return () => { dispatch(resetHeader()); };
+  }, [dispatch]);
 
   return (
     <div className="min-h-screen bg-black flex flex-col">
-      {/* Header */}
-      <div className="relative bg-yellow-400 rounded-b-3xl px-6 pt-10 pb-6 flex flex-col">
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-white font-semibold">11:58</span>
-          <div className="flex-1 flex items-center justify-center">
-            <svg className="w-7 h-7 text-white mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0h6" /></svg>
-            <span className="text-3xl font-cursive text-white font-bold">Wocheneinkauf</span>
-          </div>
-          <div className="flex items-center gap-3">
-            {/* Sortier-Button */}
-            <button onClick={() => setSortSheetOpen(true)}>
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
-            </button>
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v16c0 1.104.896 2 2 2h12c1.104 0 2-.896 2-2V4" /></svg>
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><path strokeLinecap="round" strokeLinejoin="round" d="M19.4 15a1.65 1.65 0 01.33 1.82A8 8 0 114 12.6" /></svg>
-          </div>
-        </div>
-        {/* Suche */}
-        <div className="mt-6 flex justify-center">
-          <div className="flex items-center bg-black rounded-2xl w-full px-4 py-2">
-            <svg className="w-6 h-6 text-gray-400 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-2-2" /></svg>
-            <input
-              className="bg-transparent outline-none text-white placeholder-gray-400 flex-1 cursor-pointer"
-              placeholder="Was brauchst du?"
-              onFocus={() => navigate('/shopping-list/search')}
-              readOnly
-              ref={inputRef}
-            />
-          </div>
-        </div>
-      </div>
-
+      {/* Header entfernt, global! */}
       {/* Info-Box */}
       <div className="bg-neutral-900 flex items-center gap-3 px-4 py-3 mt-2 mb-2">
         <svg className="w-10 h-10 text-yellow-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 17h18M4 17V7a2 2 0 012-2h12a2 2 0 012 2v10" /><circle cx="12" cy="14" r="4" /></svg>

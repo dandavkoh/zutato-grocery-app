@@ -40,17 +40,6 @@ const SearchPage: React.FC = () => {
     dispatch(setHeader({
       title: '',
       showBack: false,
-      rightButton: (
-        <button
-          className="text-yellow-400 font-semibold text-lg"
-          onClick={() => {
-            dispatch({ type: 'search/clearSearch' });
-            navigate(-1);
-          }}
-        >
-          FERTIG
-        </button>
-      ),
       background: 'bg-yellow-400',
       showSearchBar: true, // NEU: Suchleiste im Header anzeigen
     }));

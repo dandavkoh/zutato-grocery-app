@@ -36,7 +36,7 @@ const Header: React.FC = () => {
       )}
       {showSearchBar && (
         <div className="w-full flex justify-center mt-4">
-          <div className="flex items-center bg-black rounded-2xl w-full px-4 py-2">
+          <div className="flex items-center bg-black rounded-2xl w-full px-4 py-2 relative">
             <svg className="w-6 h-6 text-gray-400 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-2-2" /></svg>
             <input
               className="bg-transparent outline-none text-white placeholder-gray-400 flex-1 cursor-pointer"
@@ -47,6 +47,17 @@ const Header: React.FC = () => {
                 : { readOnly: true, onFocus: () => navigate('/shopping-list/search'), onClick: () => navigate('/shopping-list/search') }
               )}
             />
+            {isSearchPage && (
+              <span
+                className="ml-3 text-white font-semibold cursor-pointer select-none"
+                onClick={() => {
+                  dispatch({ type: 'search/clearSearch' });
+                  navigate(-1);
+                }}
+              >
+                FERTIG
+              </span>
+            )}
           </div>
         </div>
       )}

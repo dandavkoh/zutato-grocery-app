@@ -25,6 +25,7 @@ export interface HeaderState {
   background?: string;
   className?: string;
   showSearchBar?: boolean; // NEU
+  onFilterClick?: (() => void) | null; // NEU: Filter click handler
 }
 const initialHeaderState: HeaderState = {
   title: '',
@@ -35,6 +36,7 @@ const initialHeaderState: HeaderState = {
   background: 'bg-yellow-400',
   className: '',
   showSearchBar: false, // NEU
+  onFilterClick: null, // NEU
 };
 const headerSlice = createSlice({
   name: 'header',

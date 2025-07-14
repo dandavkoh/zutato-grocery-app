@@ -32,6 +32,7 @@ const ShoppingListPage: React.FC = () => {
       showBack: false,
       background: 'bg-yellow-400',
       showSearchBar: true, // NEU: Suchleiste im Header anzeigen
+      onFilterClick: () => setSortSheetOpen(true), // NEU: Filter icon click handler
     }));
     return () => { dispatch(resetHeader()); };
   }, [dispatch]);

@@ -31,10 +31,12 @@ const ShoppingListPage: React.FC = () => {
   }, [dispatch]);
 
   const handleItemClick = (itemId: string) => {
-    // Navigate to product detail page
+    // Navigate to product detail page with item data
     const item = items.find(i => i.id === itemId);
     if (item) {
-      navigate(`/product/${encodeURIComponent(item.name)}`);
+      navigate(`/product/${encodeURIComponent(item.name)}`, { 
+        state: { item } 
+      });
     }
   };
 

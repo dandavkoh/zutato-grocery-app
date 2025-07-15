@@ -2,29 +2,21 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { setHeader, resetHeader } from './store';
-
-const recommendations = [
-  { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="6" /></svg>, name: 'Zucker', sub: 'Brauner' },
-  { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" /></svg>, name: 'Toast' },
-  { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" /></svg>, name: 'Brei' },
-  { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" /></svg>, name: 'Gouda' },
-  { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" /></svg>, name: 'Zitronensaft' },
-  { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" /></svg>, name: 'Paprika' },
-  { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" /></svg>, name: 'Tomaten', sub: 'Gehackte' },
-  { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" /></svg>, name: 'Rucola' },
-];
-const seasonal = [
-  { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="8" ry="6" /></svg>, name: 'Champignons' },
-  { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="8" ry="6" /></svg>, name: 'Chicorée' },
-  { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="8" ry="6" /></svg>, name: 'Rote Bete' },
-  { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="8" ry="6" /></svg>, name: 'Weißkohl' },
-];
+import { useShoppingItems } from './hooks/useShoppingItems';
+import { groupItemsByCategory, separateCompletedItems } from './api/mockApi';
 
 const ShoppingListPage: React.FC = () => {
   const [sortSheetOpen, setSortSheetOpen] = useState(false);
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const dispatch = useDispatch();
+  
+  // Use the shopping items hook
+  const { items, loading, error, toggleItemCompletion } = useShoppingItems('household-1');
+  
+  // Group items by category and separate completed items
+  const { completed, incomplete } = separateCompletedItems(items);
+  const groupedIncompleteItems = groupItemsByCategory(incomplete);
 
   useEffect(() => {
     dispatch(setHeader({
@@ -36,6 +28,41 @@ const ShoppingListPage: React.FC = () => {
     }));
     return () => { dispatch(resetHeader()); };
   }, [dispatch]);
+
+  const handleItemClick = (itemId: string) => {
+    // Navigate to product detail page
+    const item = items.find(i => i.id === itemId);
+    if (item) {
+      navigate(`/product/${encodeURIComponent(item.name)}`);
+    }
+  };
+
+  const handleToggleCompletion = async (itemId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent navigation
+    await toggleItemCompletion(itemId);
+  };
+
+  // Loading state
+  if (loading && items.length === 0) {
+    return (
+      <div className="min-h-screen bg-black flex flex-col">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-white text-lg">Lade Einkaufsliste...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-black flex flex-col">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-red-400 text-lg">Fehler beim Laden: {error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black flex flex-col">
@@ -49,67 +76,84 @@ const ShoppingListPage: React.FC = () => {
       {/* Kategorien & Produkte */}
       <div className="flex-1 overflow-y-auto pb-32">
         <div className="divide-y divide-neutral-800">
-          {/* Obst */}
-          <div>
-            <div className="px-4 pt-4 pb-1 text-gray-300 text-sm">Obst</div>
-            <button
-              className="flex items-center px-4 py-3 bg-neutral-900 border-b border-neutral-800 w-full text-left"
-              onClick={() => navigate('/product/Ananas')}
-            >
-              <svg className="w-7 h-7 text-gray-300 mr-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 2C10 7 7 8 7 12a5 5 0 0010 0c0-4-3-5-5-10z" /></svg>
-              <span className="text-lg text-gray-200">Ananas</span>
-              <span className="flex-1" />
-              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
-            </button>
-          </div>
-          {/* Brot & Backwaren */}
-          <div>
-            <div className="px-4 pt-4 pb-1 text-gray-300 text-sm">Brot & Backwaren</div>
-            <div className="flex items-center px-4 py-3 bg-neutral-900 border-b border-neutral-800">
-              <svg className="w-7 h-7 text-gray-300 mr-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="4" /></svg>
-              <span className="text-lg text-gray-200">Donuts</span>
-              <span className="flex-1" />
-              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+          {/* Render items grouped by category */}
+          {Object.entries(groupedIncompleteItems).map(([category, categoryItems]) => (
+            <div key={category}>
+              <div className="px-4 pt-4 pb-1 text-gray-300 text-sm">{category}</div>
+              {categoryItems.map((item) => (
+                <div key={item.id} className="flex items-center bg-neutral-900 border-b border-neutral-800">
+                  <button
+                    className="flex items-center pl-4 py-3 flex-1 text-left"
+                    onClick={() => handleItemClick(item.id)}
+                  >
+                    {/* Category-specific icon */}
+                    <svg className="w-7 h-7 text-gray-300 mr-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      {category === 'Obst' && <path strokeLinecap="round" strokeLinejoin="round" d="M12 2C10 7 7 8 7 12a5 5 0 0010 0c0-4-3-5-5-10z" />}
+                      {category === 'Brot & Backwaren' && <><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="4" /></>}
+                      {category === 'Süßigkeiten & Snacks' && <rect x="6" y="6" width="12" height="12" rx="6" />}
+                      {category === 'Milchprodukte & Eier' && <ellipse cx="12" cy="12" rx="8" ry="6" />}
+                      {/* Default icon for other categories */}
+                      {!['Obst', 'Brot & Backwaren', 'Süßigkeiten & Snacks', 'Milchprodukte & Eier'].includes(category) && 
+                        <rect x="4" y="4" width="16" height="16" rx="2" />
+                      }
+                    </svg>
+                    <span className="text-lg text-gray-200">
+                      {item.name}
+                      {item.description && (
+                        <span className="text-gray-400 text-base ml-1">{item.description}</span>
+                      )}
+                    </span>
+                    <span className="flex-1" />
+                    {item.amount && item.unit && (
+                      <span className="text-gray-400 text-base">
+                        {item.amount} {item.unit.short}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    className="px-4 py-3 hover:bg-neutral-800"
+                    onClick={(e) => handleToggleCompletion(item.id, e)}
+                  >
+                    <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
             </div>
-          </div>
-          {/* Süßigkeiten & Snacks */}
-          <div>
-            <div className="px-4 pt-4 pb-1 text-gray-300 text-sm">Süßigkeiten & Snacks</div>
-            <div className="flex items-center px-4 py-3 bg-neutral-900 border-b border-neutral-800">
-              <svg className="w-7 h-7 text-gray-300 mr-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="6" /></svg>
-              <span className="text-lg text-gray-200">Haribo <span className="text-gray-400 text-base ml-1">Schlangen</span></span>
-              <span className="flex-1" />
-              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
-            </div>
-          </div>
+          ))}
         </div>
 
         {/* Gekaufte Produkte */}
-        <div className="mt-6">
-          <div className="flex items-center px-4 pb-2">
-            <span className="text-gray-300 text-xs font-semibold flex-1">GEKAUFTE PRODUKTE <span className="align-middle">^</span></span>
-            <svg className="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" /><path strokeLinecap="round" strokeLinejoin="round" d="M8 16v-4m4 4V8m4 8v-2" /></svg>
+        {completed.length > 0 && (
+          <div className="mt-6">
+            <div className="flex items-center px-4 pb-2">
+              <span className="text-gray-300 text-xs font-semibold flex-1">GEKAUFTE PRODUKTE <span className="align-middle">^</span></span>
+              <svg className="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" /><path strokeLinecap="round" strokeLinejoin="round" d="M8 16v-4m4 4V8m4 8v-2" /></svg>
+            </div>
+            <div className="divide-y divide-neutral-800">
+              {completed.map((item) => (
+                <div key={item.id} className="flex items-center px-4 py-3">
+                  <svg className="w-7 h-7 text-gray-300 mr-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <rect x="4" y="4" width="16" height="16" rx="2" />
+                  </svg>
+                                     <span className={`text-lg ${item.isCompleted ? 'text-gray-400 line-through' : 'text-gray-200'}`}>
+                     {item.name}
+                     {item.description && (
+                       <span className="text-gray-400 text-base ml-1">{item.description}</span>
+                     )}
+                   </span>
+                  <span className="flex-1" />
+                  {item.amount && item.unit && (
+                    <span className="text-gray-400 text-base">
+                      {item.amount} {item.unit.short}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="divide-y divide-neutral-800">
-            <div className="flex items-center px-4 py-3">
-              <svg className="w-7 h-7 text-gray-300 mr-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="2" /><path strokeLinecap="round" strokeLinejoin="round" d="M7 7v10M17 7v10" /></svg>
-              <span className="text-lg text-gray-400 line-through">Butter</span>
-            </div>
-            <div className="flex items-center px-4 py-3">
-              <svg className="w-7 h-7 text-gray-300 mr-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="6" /></svg>
-              <span className="text-lg text-gray-400 line-through">Milch</span>
-            </div>
-            <div className="flex items-center px-4 py-3">
-              <svg className="w-7 h-7 text-gray-300 mr-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" /></svg>
-              <span className="text-lg text-gray-200">Eier</span>
-            </div>
-            <div className="flex items-center px-4 py-3">
-              <svg className="w-7 h-7 text-gray-300 mr-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="3" /></svg>
-              <span className="text-lg text-gray-200 flex-1">Sahne</span>
-              <span className="text-gray-400 text-base">4 Pkg</span>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Bottom Navigation */}

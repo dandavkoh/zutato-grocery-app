@@ -7,6 +7,7 @@ import { groupItemsByCategory, separateCompletedItems } from './api/mockApi';
 
 const ShoppingListPage: React.FC = () => {
   const [sortSheetOpen, setSortSheetOpen] = useState(false);
+  const [showCompleted, setShowCompleted] = useState(true);
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const dispatch = useDispatch();
@@ -84,7 +85,7 @@ const ShoppingListPage: React.FC = () => {
                 <div key={item.id} className="flex items-center bg-neutral-900 border-b border-neutral-800">
                   <button
                     className="flex items-center pl-4 py-3 flex-1 text-left"
-                    onClick={() => handleItemClick(item.id)}
+                    onClick={(e) => handleToggleCompletion(item.id, e)}
                   >
                     {/* Category-specific icon */}
                     <svg className="w-7 h-7 text-gray-300 mr-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -99,9 +100,9 @@ const ShoppingListPage: React.FC = () => {
                     </svg>
                     <span className="text-lg text-gray-200">
                       {item.name}
-                      {item.description && (
-                        <span className="text-gray-400 text-base ml-1">{item.description}</span>
-                      )}
+                                           {item.description && (
+                       <span className="text-gray-400 text-sm ml-1">{item.description}</span>
+                     )}
                     </span>
                     <span className="flex-1" />
                     {item.amount && item.unit && (
@@ -110,14 +111,17 @@ const ShoppingListPage: React.FC = () => {
                       </span>
                     )}
                   </button>
-                  <button
-                    className="px-4 py-3 hover:bg-neutral-800"
-                    onClick={(e) => handleToggleCompletion(item.id, e)}
-                  >
-                    <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
+                  <div className="flex items-center">
+                    <div className="w-[1px] h-8 bg-neutral-700 mx-2 my-2" />
+                                          <button
+                        className="px-4 py-3 hover:bg-neutral-800"
+                        onClick={() => handleItemClick(item.id)}
+                      >
+                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -127,30 +131,45 @@ const ShoppingListPage: React.FC = () => {
         {/* Gekaufte Produkte */}
         {completed.length > 0 && (
           <div className="mt-6">
-            <div className="flex items-center px-4 pb-2">
-              <span className="text-gray-300 text-xs font-semibold flex-1">GEKAUFTE PRODUKTE <span className="align-middle">^</span></span>
-              <svg className="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" /><path strokeLinecap="round" strokeLinejoin="round" d="M8 16v-4m4 4V8m4 8v-2" /></svg>
-            </div>
-            <div className="divide-y divide-neutral-800">
-              {completed.map((item) => (
-                <div key={item.id} className="flex items-center px-4 py-3">
-                  <svg className="w-7 h-7 text-gray-300 mr-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <rect x="4" y="4" width="16" height="16" rx="2" />
-                  </svg>
-                                     <span className={`text-lg ${item.isCompleted ? 'text-gray-400 line-through' : 'text-gray-200'}`}>
-                     {item.name}
-                     {item.description && (
-                       <span className="text-gray-400 text-base ml-1">{item.description}</span>
-                     )}
-                   </span>
-                  <span className="flex-1" />
-                  {item.amount && item.unit && (
-                    <span className="text-gray-400 text-base">
-                      {item.amount} {item.unit.short}
+            <button
+              className="flex items-center px-4 pb-2 w-full select-none focus:outline-none"
+              onClick={() => setShowCompleted((v) => !v)}
+              type="button"
+            >
+              <span className="text-gray-300 text-xs font-semibold flex-1 text-left">GEKAUFTE PRODUKTE</span>
+              <svg
+                className={`w-5 h-5 text-gray-300 transition-transform duration-200 ${showCompleted ? '' : 'rotate-180'}`}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+            <div
+              className={`overflow-hidden transition-all duration-300 ${showCompleted ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}
+            >
+              <div className="divide-y divide-neutral-800">
+                {completed.map((item) => (
+                  <div key={item.id} className="flex items-center px-4 py-3">
+                    <svg className="w-7 h-7 text-gray-300 mr-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <rect x="4" y="4" width="16" height="16" rx="2" />
+                    </svg>
+                    <span className={`text-lg ${item.isCompleted ? 'text-gray-400 line-through' : 'text-gray-200'}`}> {item.name}
+                      {item.description && (
+                        <span className="text-gray-400 text-sm ml-1">{item.description}</span>
+                      )}
                     </span>
-                  )}
-                </div>
-              ))}
+                    <span className="flex-1" />
+                    {item.amount && item.unit && (
+                      <span className="text-gray-400 text-base">
+                        {item.amount} {item.unit.short}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}

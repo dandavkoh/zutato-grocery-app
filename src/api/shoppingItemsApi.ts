@@ -222,29 +222,30 @@ export const shoppingItemsApi = createApi({
       ],
     }),
 
-    // Item löschen
+    // Item löschen (Soft Delete)
     deleteItem: builder.mutation<null, string>({
       query: (id) => ({
         url: `/api/shopping-items/${id}`,
         method: 'DELETE',
       }),
-      // Optimistic Update: Item sofort aus Cache entfernen
+      // Optimistic Update: Item sofort als gelöscht markieren
       async onQueryStarted(id, { dispatch, queryFulfilled, getState }) {
-        console.log(`🗑️ [RTK Query] Deleting item ID: ${id} (Optimistic Update)`);
+        console.log(`🗑️ [RTK Query] Soft deleting item ID: ${id} (Optimistic Update)`);
         
         const patchResult = dispatch(
           shoppingItemsApi.util.updateQueryData('getItems', 'household-1', (draft) => {
-            const index = draft.findIndex(item => item.id === id);
-            if (index !== -1) {
-              draft.splice(index, 1);
+            const item = draft.find(item => item.id === id);
+            if (item) {
+              item.deleted = true;
+              item.updatedAt = new Date().toISOString();
             }
           })
         );
         try {
           await queryFulfilled;
-          console.log(`✅ [RTK Query] Successfully deleted item ID: ${id} from DATABASE`);
+          console.log(`✅ [RTK Query] Successfully soft deleted item ID: ${id} in DATABASE`);
         } catch (error) {
-          console.error(`❌ [RTK Query] Failed to delete item ID: ${id} from DATABASE`, error);
+          console.error(`❌ [RTK Query] Failed to soft delete item ID: ${id} in DATABASE`, error);
           // Bei Fehler: Optimistic Update rückgängig machen
           patchResult.undo();
         }

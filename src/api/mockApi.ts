@@ -7,11 +7,12 @@ export interface Unit {
 export interface ShoppingItem {
   id: string;
   name: string;
-  description?: string; // NEU: Beschreibung/Unterkategorie
+  description?: string;
   category: string;
   unit?: Unit;
   amount?: number;
   isCompleted: boolean;
+  deleted?: boolean;
   createdAt: string;
   updatedAt: string;
   householdId: string;
@@ -23,7 +24,7 @@ export interface ShoppingItem {
 
 export interface CreateShoppingItemRequest {
   name: string;
-  description?: string; // NEU: Beschreibung/Unterkategorie
+  description?: string;
   category: string;
   unit?: Unit;
   amount?: number;
@@ -36,11 +37,12 @@ export interface CreateShoppingItemRequest {
 
 export interface UpdateShoppingItemRequest {
   name?: string;
-  description?: string; // NEU: Beschreibung/Unterkategorie
+  description?: string;
   category?: string;
   unit?: Unit;
   amount?: number;
   isCompleted?: boolean;
+  deleted?: boolean;
   notes?: string;
   stores?: string[];
   assignedTo?: string[];
@@ -165,7 +167,10 @@ export class ShoppingItemsController {
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      const items = mockItems.filter(item => item.householdId === householdId);
+      const items = mockItems.filter(item => 
+        item.householdId === householdId && 
+        !item.deleted
+      );
       
       return {
         data: items,
@@ -187,7 +192,10 @@ export class ShoppingItemsController {
       await new Promise(resolve => setTimeout(resolve, 200));
       
       const items = mockItems.filter(
-        item => item.householdId === householdId && item.category === category
+        item => 
+          item.householdId === householdId && 
+          item.category === category &&
+          !item.deleted
       );
       
       return {
@@ -210,7 +218,10 @@ export class ShoppingItemsController {
       await new Promise(resolve => setTimeout(resolve, 200));
       
       const items = mockItems.filter(
-        item => item.householdId === householdId && item.isCompleted
+        item => 
+          item.householdId === householdId && 
+          item.isCompleted &&
+          !item.deleted
       );
       
       return {
@@ -308,7 +319,11 @@ export class ShoppingItemsController {
         };
       }
       
-      mockItems.splice(itemIndex, 1);
+      mockItems[itemIndex] = {
+        ...mockItems[itemIndex],
+        deleted: true,
+        updatedAt: new Date().toISOString()
+      };
       
       return {
         data: null,
@@ -369,7 +384,8 @@ export class ShoppingItemsController {
       const items = mockItems.filter(
         item => 
           item.householdId === householdId && 
-          item.name.toLowerCase().includes(query.toLowerCase())
+          item.name.toLowerCase().includes(query.toLowerCase()) &&
+          !item.deleted
       );
       
       return {
@@ -394,7 +410,9 @@ export const shoppingItemsApi = new ShoppingItemsController();
 export const groupItemsByCategory = (items: ShoppingItem[]) => {
   const grouped: { [category: string]: ShoppingItem[] } = {};
   
-  items.forEach(item => {
+  const activeItems = items.filter(item => !item.deleted);
+  
+  activeItems.forEach(item => {
     if (!grouped[item.category]) {
       grouped[item.category] = [];
     }
@@ -406,8 +424,10 @@ export const groupItemsByCategory = (items: ShoppingItem[]) => {
 
 // Helper function to get completed and incomplete items
 export const separateCompletedItems = (items: ShoppingItem[]) => {
-  const completed = items.filter(item => item.isCompleted);
-  const incomplete = items.filter(item => !item.isCompleted);
+  const activeItems = items.filter(item => !item.deleted);
+  
+  const completed = activeItems.filter(item => item.isCompleted);
+  const incomplete = activeItems.filter(item => !item.isCompleted);
   
   return { completed, incomplete };
 }; 

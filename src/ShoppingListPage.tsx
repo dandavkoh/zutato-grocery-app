@@ -5,6 +5,7 @@ import { setHeader, resetHeader, resetFilterClick } from './store';
 import type { RootState } from './store';
 import { useShoppingItemsRTK } from './hooks/useShoppingItemsRTK';
 import { groupItemsByCategory, separateCompletedItems } from './api/mockApi';
+import SwipeAction from './components/SwipeAction';
 
 const ShoppingListPage: React.FC = () => {
   const [sortSheetOpen, setSortSheetOpen] = useState(false);
@@ -14,7 +15,7 @@ const ShoppingListPage: React.FC = () => {
   const dispatch = useDispatch();
   
   // Use the RTK Query shopping items hook
-  const { items, loading, error, toggleItemCompletion } = useShoppingItemsRTK('household-1');
+  const { items, loading, error, toggleItemCompletion, deleteItem } = useShoppingItemsRTK('household-1');
   
   // Group items by category and separate completed items
   const { completed, incomplete } = separateCompletedItems(items);
@@ -57,6 +58,10 @@ const ShoppingListPage: React.FC = () => {
     await toggleItemCompletion(itemId);
   };
 
+  const handleDeleteItem = async (itemId: string) => {
+    await deleteItem(itemId);
+  };
+
   // Loading state
   if (loading && items.length === 0) {
     return (
@@ -96,47 +101,53 @@ const ShoppingListPage: React.FC = () => {
             <div key={category}>
               <div className="px-4 pt-4 pb-1 text-gray-300 text-sm">{category}</div>
               {categoryItems.map((item) => (
-                <div key={item.id} className="flex items-center bg-neutral-900 border-b border-neutral-800">
-                  <button
-                    className="flex items-center pl-4 py-3 flex-1 text-left"
-                    onClick={(e) => handleToggleCompletion(item.id, e)}
-                  >
-                    {/* Category-specific icon */}
-                    <svg className="w-7 h-7 text-gray-300 mr-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      {category === 'Obst' && <path strokeLinecap="round" strokeLinejoin="round" d="M12 2C10 7 7 8 7 12a5 5 0 0010 0c0-4-3-5-5-10z" />}
-                      {category === 'Brot & Backwaren' && <><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="4" /></>}
-                      {category === 'Süßigkeiten & Snacks' && <rect x="6" y="6" width="12" height="12" rx="6" />}
-                      {category === 'Milchprodukte & Eier' && <ellipse cx="12" cy="12" rx="8" ry="6" />}
-                      {/* Default icon for other categories */}
-                      {!['Obst', 'Brot & Backwaren', 'Süßigkeiten & Snacks', 'Milchprodukte & Eier'].includes(category) && 
-                        <rect x="4" y="4" width="16" height="16" rx="2" />
-                      }
-                    </svg>
-                    <span className="text-lg text-gray-200">
-                      {item.name}
-                                           {item.description && (
-                       <span className="text-gray-400 text-sm ml-1">{item.description}</span>
-                     )}
-                    </span>
-                    <span className="flex-1" />
-                    {item.amount && item.unit && (
-                      <span className="text-gray-400 text-base">
-                        {item.amount} {item.unit.short}
+                <SwipeAction
+                  key={item.id}
+                  onDelete={() => handleDeleteItem(item.id)}
+                  className="border-b border-neutral-800"
+                >
+                  <div className="flex items-center bg-neutral-900">
+                    <button
+                      className="flex items-center pl-4 py-3 flex-1 text-left"
+                      onClick={(e) => handleToggleCompletion(item.id, e)}
+                    >
+                      {/* Category-specific icon */}
+                      <svg className="w-7 h-7 text-gray-300 mr-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        {category === 'Obst' && <path strokeLinecap="round" strokeLinejoin="round" d="M12 2C10 7 7 8 7 12a5 5 0 0010 0c0-4-3-5-5-10z" />}
+                        {category === 'Brot & Backwaren' && <><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="4" /></>}
+                        {category === 'Süßigkeiten & Snacks' && <rect x="6" y="6" width="12" height="12" rx="6" />}
+                        {category === 'Milchprodukte & Eier' && <ellipse cx="12" cy="12" rx="8" ry="6" />}
+                        {/* Default icon for other categories */}
+                        {!['Obst', 'Brot & Backwaren', 'Süßigkeiten & Snacks', 'Milchprodukte & Eier'].includes(category) && 
+                          <rect x="4" y="4" width="16" height="16" rx="2" />
+                        }
+                      </svg>
+                      <span className="text-lg text-gray-200">
+                        {item.name}
+                        {item.description && (
+                          <span className="text-gray-400 text-sm ml-1">{item.description}</span>
+                        )}
                       </span>
-                    )}
-                  </button>
-                  <div className="flex items-center">
-                    <div className="w-[1px] h-8 bg-neutral-700 mx-2 my-2" />
-                                          <button
+                      <span className="flex-1" />
+                      {item.amount && item.unit && (
+                        <span className="text-gray-400 text-base">
+                          {item.amount} {item.unit.short}
+                        </span>
+                      )}
+                    </button>
+                    <div className="flex items-center">
+                      <div className="w-[1px] h-8 bg-neutral-700 mx-2 my-2" />
+                      <button
                         className="px-4 py-3 hover:bg-neutral-800"
                         onClick={() => handleItemClick(item.id)}
                       >
-                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
+                        <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
-                </div>
+                </SwipeAction>
               ))}
             </div>
           ))}

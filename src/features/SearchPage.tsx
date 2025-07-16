@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { setHeader, resetHeader } from './store';
-import type { RootState } from './store';
+import { setHeader, resetHeader } from '../stores/store';
+import type { RootState } from '../stores/store';
 
 const recommendations = [
   { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="6" /></svg>, name: 'Zucker', sub: 'Brauner' },

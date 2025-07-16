@@ -1,8 +1,8 @@
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import type { RootState } from '../store';
+import type { RootState } from '../stores/store';
 import { useNavigate } from 'react-router-dom';
-import { setSearch, triggerFilterClick, triggerBackClick, triggerRightButtonClick } from '../store';
+import { setSearch, triggerFilterClick, triggerBackClick, triggerRightButtonClick } from '../stores/store';
 
 const Header: React.FC = () => {
   const header = useSelector((state: RootState) => state.header);

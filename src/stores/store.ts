@@ -1,6 +1,6 @@
 import { configureStore, createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { shoppingItemsApi } from './api/shoppingItemsApi';
+import { shoppingItemsApi } from '../api/shoppingItemsApi';
 
 // Beispiel: Suchtext global speichern
 const searchSlice = createSlice({

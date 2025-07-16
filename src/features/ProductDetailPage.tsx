@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { setHeader, resetHeader, resetBackClick, resetRightButtonClick } from './store';
-import type { RootState } from './store';
-import type { ShoppingItem } from './api/mockApi';
+import { setHeader, resetHeader, resetBackClick, resetRightButtonClick } from '../stores/store';
+import type { RootState } from '../stores/store';
+import type { ShoppingItem } from '../api/mockApi';
 
 const ProductDetailPage: React.FC = () => {
   const navigate = useNavigate();

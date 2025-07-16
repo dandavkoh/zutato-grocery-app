@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { setHeader, resetHeader, resetFilterClick } from './store';
-import type { RootState } from './store';
-import { useShoppingItemsRTK } from './hooks/useShoppingItemsRTK';
-import { groupItemsByCategory, separateCompletedItems } from './api/mockApi';
-import SwipeAction from './components/SwipeAction';
+import { setHeader, resetHeader, resetFilterClick } from '../stores/store';
+import type { RootState } from '../stores/store';
+import { useShoppingItemsRTK } from '../hooks/useShoppingItemsRTK';
+import { groupItemsByCategory, separateCompletedItems } from '../api/mockApi';
+import SwipeAction from '../components/SwipeAction';
 
 const ShoppingListPage: React.FC = () => {
   const [sortSheetOpen, setSortSheetOpen] = useState(false);

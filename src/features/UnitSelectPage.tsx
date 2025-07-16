@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { setHeader, resetHeader, resetBackClick } from './store';
-import type { RootState } from './store';
-import type { Unit } from './api/mockApi';
+import { setHeader, resetHeader, resetBackClick } from '../stores/store';
+import type { RootState } from '../stores/store';
+import type { Unit } from '../api/mockApi';
 
 const units: (Unit | null)[] = [
   null, // Keine

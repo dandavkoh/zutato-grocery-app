@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { setHeader, resetHeader } from './store';
+import { setHeader, resetHeader } from '../stores/store';
 
 const HouseholdsPage: React.FC = () => {
   const navigate = useNavigate();

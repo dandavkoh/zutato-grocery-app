@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { setHeader, resetHeader, resetBackClick } from './store';
-import type { RootState } from './store';
+import { setHeader, resetHeader, resetBackClick } from '../stores/store';
+import type { RootState } from '../stores/store';
 
 const categories = [
   { name: 'Obst', icon: <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h8" /></svg> },

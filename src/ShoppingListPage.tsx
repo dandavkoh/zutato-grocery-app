@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { setHeader, resetHeader } from './store';
-import { useShoppingItems } from './hooks/useShoppingItems';
+import { useShoppingItemsRTK } from './hooks/useShoppingItemsRTK';
 import { groupItemsByCategory, separateCompletedItems } from './api/mockApi';
 
 const ShoppingListPage: React.FC = () => {
@@ -12,8 +12,8 @@ const ShoppingListPage: React.FC = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const dispatch = useDispatch();
   
-  // Use the shopping items hook
-  const { items, loading, error, toggleItemCompletion } = useShoppingItems('household-1');
+  // Use the RTK Query shopping items hook
+  const { items, loading, error, toggleItemCompletion } = useShoppingItemsRTK('household-1');
   
   // Group items by category and separate completed items
   const { completed, incomplete } = separateCompletedItems(items);

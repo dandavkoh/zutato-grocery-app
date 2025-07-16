@@ -1,5 +1,6 @@
 import { configureStore, createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
+import { shoppingItemsApi } from './api/shoppingItemsApi';
 
 // Beispiel: Suchtext global speichern
 const searchSlice = createSlice({
@@ -56,7 +57,12 @@ export const store = configureStore({
   reducer: {
     search: searchSlice.reducer,
     header: headerSlice.reducer,
+    // RTK Query API Reducer hinzufügen
+    [shoppingItemsApi.reducerPath]: shoppingItemsApi.reducer,
   },
+  // RTK Query Middleware hinzufügen
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware().concat(shoppingItemsApi.middleware),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

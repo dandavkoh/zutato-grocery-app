@@ -46,7 +46,7 @@ const ShoppingListPage: React.FC = () => {
     // Navigate to product detail page with item data
     const item = items.find(i => i.id === itemId);
     if (item) {
-      navigate(`/product/${encodeURIComponent(item.name)}`, { 
+      navigate('/product', { 
         state: { item } 
       });
     }

@@ -90,9 +90,9 @@ function App() {
         <Route path="/households" element={<HouseholdsPage />} />
         <Route path="/shopping-list" element={<ShoppingListPage />} />
         <Route path="/shopping-list/search" element={<SearchPage />} />
-        <Route path="/product/:name" element={<ProductDetailPage />} />
-        <Route path="/product/:name/category" element={<CategorySelectPage />} />
-        <Route path="/product/:name/unit" element={<UnitSelectPage />} />
+        <Route path="/product" element={<ProductDetailPage />} />
+        <Route path="/product/category" element={<CategorySelectPage />} />
+        <Route path="/product/unit" element={<UnitSelectPage />} />
       </Route>
     </Routes>
   )

@@ -1,12 +1,11 @@
 import React, { useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setHeader, resetHeader, resetBackClick, resetRightButtonClick } from './store';
 import type { RootState } from './store';
 import type { ShoppingItem } from './api/mockApi';
 
 const ProductDetailPage: React.FC = () => {
-  const { name } = useParams<{ name: string }>();
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
@@ -20,13 +19,13 @@ const ProductDetailPage: React.FC = () => {
 
   useEffect(() => {
     dispatch(setHeader({
-      title: item?.name || name || 'Produkt',
+      title: item?.name || 'Produkt',
       showBack: true,
       showRightButton: true,
       background: 'bg-gradient-to-b from-yellow-400 to-yellow-500',
     }));
     return () => { dispatch(resetHeader()); };
-  }, [dispatch, name, item]);
+  }, [dispatch, item]);
 
   // Handle back button events
   useEffect(() => {
@@ -98,7 +97,7 @@ const ProductDetailPage: React.FC = () => {
           </div>
           <button
             className="flex-1 bg-neutral-900 border-b border-neutral-800 py-4 px-2 flex items-center justify-between text-left"
-            onClick={() => navigate(`/product/${name}/unit`, { state: { item } })}
+            onClick={() => navigate('/product/unit', { state: { item } })}
           >
             <div>
               <div className="text-xs text-gray-400 mb-1">EINHEIT</div>
@@ -112,7 +111,7 @@ const ProductDetailPage: React.FC = () => {
         {/* Kategorie wechseln */}
         <button
           className="bg-neutral-900 border-b border-neutral-800 px-5 py-4 w-full text-left"
-          onClick={() => navigate(`/product/${name}/category`, { state: { item } })}
+          onClick={() => navigate('/product/category', { state: { item } })}
         >
           <div className="text-xs text-gray-400 mb-1">KATEGORIE WECHSELN</div>
           <div className="flex items-center gap-2">

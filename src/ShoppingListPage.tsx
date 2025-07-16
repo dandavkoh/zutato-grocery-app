@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { setHeader, resetHeader } from './store';
+import { useDispatch, useSelector } from 'react-redux';
+import { setHeader, resetHeader, resetFilterClick } from './store';
+import type { RootState } from './store';
 import { useShoppingItemsRTK } from './hooks/useShoppingItemsRTK';
 import { groupItemsByCategory, separateCompletedItems } from './api/mockApi';
 
@@ -19,16 +20,27 @@ const ShoppingListPage: React.FC = () => {
   const { completed, incomplete } = separateCompletedItems(items);
   const groupedIncompleteItems = groupItemsByCategory(incomplete);
 
+  // Watch for filter click events
+  const filterClicked = useSelector((state: RootState) => state.events.filterClicked);
+
   useEffect(() => {
     dispatch(setHeader({
       title: 'Wocheneinkauf',
       showBack: false,
       background: 'bg-yellow-400',
-      showSearchBar: true, // NEU: Suchleiste im Header anzeigen
-      onFilterClick: () => setSortSheetOpen(true), // NEU: Filter icon click handler
+      showSearchBar: true,
+      showFilterIcon: true,
     }));
     return () => { dispatch(resetHeader()); };
   }, [dispatch]);
+
+  // Handle filter click events
+  useEffect(() => {
+    if (filterClicked) {
+      setSortSheetOpen(true);
+      dispatch(resetFilterClick());
+    }
+  }, [filterClicked, dispatch]);
 
   const handleItemClick = (itemId: string) => {
     // Navigate to product detail page with item data

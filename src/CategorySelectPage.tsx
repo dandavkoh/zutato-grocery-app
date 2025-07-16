@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { setHeader, resetHeader } from './store';
+import { useDispatch, useSelector } from 'react-redux';
+import { setHeader, resetHeader, resetBackClick } from './store';
+import type { RootState } from './store';
 
 const categories = [
   { name: 'Obst', icon: <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h8" /></svg> },
@@ -26,15 +27,25 @@ const CategorySelectPage: React.FC = () => {
   const dispatch = useDispatch();
   const selected = 'Obst';
 
+  // Watch for back button events
+  const backClicked = useSelector((state: RootState) => state.events.backClicked);
+
   useEffect(() => {
     dispatch(setHeader({
       title: 'Kategorie wechseln',
       showBack: true,
-      onBack: () => navigate(-1),
       background: 'bg-yellow-400',
     }));
     return () => { dispatch(resetHeader()); };
-  }, [dispatch, navigate]);
+  }, [dispatch]);
+
+  // Handle back button events
+  useEffect(() => {
+    if (backClicked) {
+      navigate(-1);
+      dispatch(resetBackClick());
+    }
+  }, [backClicked, navigate, dispatch]);
 
   return (
     <div className="w-full pb-8 pt-2">

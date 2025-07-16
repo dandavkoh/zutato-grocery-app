@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { setHeader, resetHeader } from './store';
+import { useDispatch, useSelector } from 'react-redux';
+import { setHeader, resetHeader, resetBackClick, resetRightButtonClick } from './store';
+import type { RootState } from './store';
 import type { ShoppingItem } from './api/mockApi';
 
 const ProductDetailPage: React.FC = () => {
@@ -13,20 +14,36 @@ const ProductDetailPage: React.FC = () => {
   // Get item data from navigation state
   const item = location.state?.item as ShoppingItem | undefined;
 
+  // Watch for events
+  const backClicked = useSelector((state: RootState) => state.events.backClicked);
+  const rightButtonClicked = useSelector((state: RootState) => state.events.rightButtonClicked);
+
   useEffect(() => {
     dispatch(setHeader({
       title: item?.name || name || 'Produkt',
       showBack: true,
-      onBack: () => navigate(-1),
-      rightButton: (
-        <button className="bg-yellow-300/80 rounded-full p-3 shadow-lg">
-          <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v8m4-4H8" /></svg>
-        </button>
-      ),
+      showRightButton: true,
       background: 'bg-gradient-to-b from-yellow-400 to-yellow-500',
     }));
     return () => { dispatch(resetHeader()); };
-  }, [dispatch, name, navigate, item]);
+  }, [dispatch, name, item]);
+
+  // Handle back button events
+  useEffect(() => {
+    if (backClicked) {
+      navigate(-1);
+      dispatch(resetBackClick());
+    }
+  }, [backClicked, navigate, dispatch]);
+
+  // Handle right button events
+  useEffect(() => {
+    if (rightButtonClicked) {
+      // Handle right button click - for now just log it
+      console.log('Right button clicked');
+      dispatch(resetRightButtonClick());
+    }
+  }, [rightButtonClicked, dispatch]);
 
   // If no item data is available, show a fallback
   if (!item) {

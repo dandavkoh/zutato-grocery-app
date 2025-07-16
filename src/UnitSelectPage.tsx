@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { setHeader, resetHeader } from './store';
+import { useDispatch, useSelector } from 'react-redux';
+import { setHeader, resetHeader, resetBackClick } from './store';
+import type { RootState } from './store';
 import type { Unit } from './api/mockApi';
 
 const units: (Unit | null)[] = [
@@ -25,15 +26,25 @@ const UnitSelectPage: React.FC = () => {
   const dispatch = useDispatch();
   const selected: Unit = { name: 'Stücke', short: 'Stk' };
 
+  // Watch for back button events
+  const backClicked = useSelector((state: RootState) => state.events.backClicked);
+
   useEffect(() => {
     dispatch(setHeader({
       title: 'Einheit',
       showBack: true,
-      onBack: () => navigate(-1),
       background: 'bg-yellow-400',
     }));
     return () => { dispatch(resetHeader()); };
-  }, [dispatch, navigate]);
+  }, [dispatch]);
+
+  // Handle back button events
+  useEffect(() => {
+    if (backClicked) {
+      navigate(-1);
+      dispatch(resetBackClick());
+    }
+  }, [backClicked, navigate, dispatch]);
 
   const formatUnitDisplay = (unit: Unit | null) => {
     if (!unit) return 'Keine';

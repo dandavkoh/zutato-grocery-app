@@ -2,7 +2,7 @@ import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState } from '../store';
 import { useNavigate } from 'react-router-dom';
-import { setSearch } from '../store';
+import { setSearch, triggerFilterClick, triggerBackClick, triggerRightButtonClick } from '../store';
 
 const Header: React.FC = () => {
   const header = useSelector((state: RootState) => state.header);
@@ -14,19 +14,31 @@ const Header: React.FC = () => {
   const title = header.title || '';
   const subtitle = header.subtitle || '';
   const showBack = header.showBack ?? false;
-  const onBack = header.onBack;
-  const rightButton = header.rightButton;
   const background = header.background || 'bg-yellow-400';
   const className = header.className || '';
   const showSearchBar = header.showSearchBar ?? false;
+  const showFilterIcon = header.showFilterIcon ?? false;
+  const showRightButton = header.showRightButton ?? false;
   const isSearchPage = title === '';
   const searchPlaceholder = isSearchPage ? 'z.B. 100 g dunkle Schokolade' : 'Was brauchst du?';
-  const onFilterClick = header.onFilterClick;
+
+  // Lokale Event-Handler
+  const handleBackClick = () => {
+    dispatch(triggerBackClick());
+  };
+
+  const handleFilterClick = () => {
+    dispatch(triggerFilterClick());
+  };
+
+  const handleRightButtonClick = () => {
+    dispatch(triggerRightButtonClick());
+  };
 
   return (
     <div className={`relative ${background} rounded-b-3xl px-6 pt-8 pb-6 flex flex-col items-center ${className}`}>
       {showBack && (
-        <button className="absolute left-4 top-14 bg-yellow-400/60 rounded-full p-2" onClick={onBack ?? undefined}>
+        <button className="absolute left-4 top-14 bg-yellow-400/60 rounded-full p-2" onClick={handleBackClick}>
           <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
         </button>
       )}
@@ -46,10 +58,10 @@ const Header: React.FC = () => {
             </div>
             <div className="text-3xl font-cursive text-white font-bold text-left">{title}</div>
           </div>
-          {onFilterClick && (
+          {showFilterIcon && (
             <div
               className="cursor-pointer"
-              onClick={onFilterClick}
+              onClick={handleFilterClick}
             >
               <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -62,8 +74,15 @@ const Header: React.FC = () => {
         <div className="text-3xl font-cursive text-white font-bold mt-6 mb-2 drop-shadow-lg text-center">{title}</div>
       )}
       {subtitle && <div className="text-lg text-white mb-2">{subtitle}</div>}
-      {rightButton && (
-        <div className="absolute right-6 top-14">{rightButton}</div>
+      {showRightButton && (
+        <div className="absolute right-6 top-14">
+          <button 
+            className="bg-yellow-300/80 rounded-full p-3 shadow-lg"
+            onClick={handleRightButtonClick}
+          >
+            <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v8m4-4H8" /></svg>
+          </button>
+        </div>
       )}
       {showSearchBar && (
         <div className="w-full flex justify-center mt-4">

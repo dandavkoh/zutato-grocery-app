@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setHeader, resetHeader, resetFilterClick } from '../stores/store';
@@ -43,6 +43,15 @@ const ShoppingListPage: React.FC = () => {
     }
   }, [filterClicked, dispatch]);
 
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(toggleDebounceRef.current).forEach(timeoutId => {
+        clearTimeout(timeoutId);
+      });
+    };
+  }, []);
+
   const handleItemClick = (itemId: string) => {
     // Navigate to product detail page with item data
     const item = items.find(i => i.id === itemId);
@@ -53,13 +62,35 @@ const ShoppingListPage: React.FC = () => {
     }
   };
 
-  const handleToggleCompletion = async (itemId: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent navigation
-    await toggleItemCompletion(itemId);
-  };
+  // Debounce function to prevent rapid clicks
+  const toggleDebounceRef = useRef<{ [key: string]: number }>({});
 
-  const handleDeleteItem = async (itemId: string) => {
-    await deleteItem(itemId);
+  const handleToggleCompletion = useCallback((itemId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent navigation
+    
+    // Clear existing timeout for this item
+    if (toggleDebounceRef.current[itemId]) {
+      clearTimeout(toggleDebounceRef.current[itemId]);
+    }
+    
+    // Set a new timeout to prevent rapid clicks
+    toggleDebounceRef.current[itemId] = setTimeout(() => {
+      // Fire and forget - don't await the result for better UX
+      toggleItemCompletion(itemId).catch(error => {
+        console.error('Failed to toggle item completion:', error);
+        // Optionally show a toast notification here
+      });
+      // Clean up the timeout reference
+      delete toggleDebounceRef.current[itemId];
+    }, 100); // 100ms debounce
+  }, [toggleItemCompletion]);
+
+  const handleDeleteItem = (itemId: string) => {
+    // Fire and forget - don't await the result for better UX
+    deleteItem(itemId).catch(error => {
+      console.error('Failed to delete item:', error);
+      // Optionally show a toast notification here
+    });
   };
 
   // Loading state

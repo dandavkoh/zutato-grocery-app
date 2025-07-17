@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import type { RootState } from '../stores/store';
 import { useNavigate } from 'react-router-dom';
 import { setSearch, triggerFilterClick, triggerBackClick, triggerRightButtonClick } from '../stores/store';
+import FontAwesomeIcon from './FontAwesomeIcon';
 
 const Header: React.FC = () => {
   const header = useSelector((state: RootState) => state.header);
@@ -39,7 +40,7 @@ const Header: React.FC = () => {
     <div className={`relative ${background} rounded-b-3xl px-6 pt-8 pb-6 flex flex-col items-center ${className}`}>
       {showBack && (
         <button className="absolute left-4 top-14 bg-yellow-400/60 rounded-full p-2" onClick={handleBackClick}>
-          <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+          <FontAwesomeIcon icon="fa-chevron-left" size="xl" style="regular"/>
         </button>
       )}
       {/* Title Row: Different layouts for ShoppingListPage vs other pages */}
@@ -51,10 +52,7 @@ const Header: React.FC = () => {
               className="mr-3 cursor-pointer"
               onClick={() => navigate('/households')}
             >
-              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l9-7 9 7v7a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 21V9h6v12" />
-              </svg>
+              <FontAwesomeIcon icon="fa-house" size="2xl"/>
             </div>
             <div className="text-3xl font-cursive text-white font-bold text-left">{title}</div>
           </div>
@@ -63,9 +61,7 @@ const Header: React.FC = () => {
               className="cursor-pointer"
               onClick={handleFilterClick}
             >
-              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-              </svg>
+              <FontAwesomeIcon icon="fa-filter" size="2xl"/>
             </div>
           )}
         </div>
@@ -80,14 +76,14 @@ const Header: React.FC = () => {
             className="bg-yellow-300/80 rounded-full p-3 shadow-lg"
             onClick={handleRightButtonClick}
           >
-            <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v8m4-4H8" /></svg>
+            <FontAwesomeIcon icon="fa-square-plus" size="xl" style="regular"/>
           </button>
         </div>
       )}
       {showSearchBar && (
         <div className="w-full flex justify-center mt-4">
           <div className="flex items-center bg-black rounded-2xl w-full px-4 py-2 relative">
-            <svg className="w-6 h-6 text-gray-400 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-2-2" /></svg>
+            <FontAwesomeIcon icon="fa-magnifying-glass" size="base" style="regular"/>
             <input
               className="bg-transparent outline-none text-white placeholder-gray-400 flex-1 cursor-pointer"
               placeholder={searchPlaceholder}

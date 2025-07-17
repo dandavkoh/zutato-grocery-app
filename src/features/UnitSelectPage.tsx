@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setHeader, resetHeader, resetBackClick } from '../stores/store';
 import type { RootState } from '../stores/store';
 import type { Unit } from '../api/mockApi';
+import FontAwesomeIcon from '../components/FontAwesomeIcon';
 
 const units: (Unit | null)[] = [
   null, // Keine
@@ -63,7 +64,7 @@ const UnitSelectPage: React.FC = () => {
           <span className="text-lg text-gray-300 flex-1">{formatUnitDisplay(unit)}</span>
           {isSelected(unit) && (
             <span className="text-yellow-400">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" /><path strokeLinecap="round" strokeLinejoin="round" d="M8 12l2 2 4-4" /></svg>
+              <FontAwesomeIcon icon="fa-circle-check" size="xl" style="regular"/>
             </span>
           )}
         </div>

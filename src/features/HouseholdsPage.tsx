@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { setHeader, resetHeader } from '../stores/store';
+import FontAwesomeIcon from '../components/FontAwesomeIcon';
 
 const HouseholdsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -28,18 +29,15 @@ const HouseholdsPage: React.FC = () => {
             <div className="text-gray-400 text-sm">daniel.kohsyk@web.de</div>
           </div>
           <button className="text-gray-400 hover:text-yellow-400 text-2xl">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
+            <FontAwesomeIcon icon="fa-plus" size="xl" style="regular"/>
           </button>
         </div>
         <button className="w-full bg-yellow-400 text-white font-semibold py-3 rounded-xl mb-4 flex items-center justify-center text-lg gap-2">
-          <span className="text-2xl">+</span> Neue Einkaufsliste
+          <FontAwesomeIcon icon="fa-plus" size="xl" style="regular"/>
+          Neue Einkaufsliste
         </button>
         <button className="w-full bg-yellow-400 text-white font-semibold py-3 rounded-xl mb-6 flex items-center justify-center text-lg gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-3A2.25 2.25 0 008.25 5.25V9m7.5 0h-7.5m7.5 0v10.5A2.25 2.25 0 0113.5 21h-3a2.25 2.25 0 01-2.25-2.25V9m7.5 0h-7.5" />
-          </svg>
+          <FontAwesomeIcon icon="fa-right-to-bracket" size="xl" style="regular"/>
           Einkaufsliste beitreten
         </button>
         <button
@@ -51,14 +49,18 @@ const HouseholdsPage: React.FC = () => {
             <div>
               <div className="text-white text-xl font-semibold mb-2">Wocheneinkauf</div>
               <div className="flex items-center gap-4 text-white/80 text-base">
-                <span className="flex items-center gap-1"><svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' strokeWidth={1.5} stroke='currentColor' className='w-5 h-5'><path strokeLinecap='round' strokeLinejoin='round' d='M17 20h5v-2a3 3 0 00-3-3h-1.28a2 2 0 01-1.42-.59l-2.83-2.83a2 2 0 00-1.42-.59H9.41a2 2 0 00-1.42.59l-2.83 2.83A2 2 0 014.59 15H3a3 3 0 00-3 3v2h5' /></svg>2</span>
-                <span className="flex items-center gap-1"><svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' strokeWidth={1.5} stroke='currentColor' className='w-5 h-5'><path strokeLinecap='round' strokeLinejoin='round' d='M5.25 6.75A2.25 2.25 0 017.5 4.5h9a2.25 2.25 0 012.25 2.25v12a2.25 2.25 0 01-2.25 2.25h-9a2.25 2.25 0 01-2.25-2.25v-12z' /></svg>3</span>
+                <span className="flex items-center gap-1">
+                  <FontAwesomeIcon icon="fa-users" size="base" style="regular"/>
+                  2
+                </span>
+                <span className="flex items-center gap-1">
+                  <FontAwesomeIcon icon="fa-clipboard-list-check" size="base" style="regular"/>
+                  3
+                </span>
               </div>
             </div>
             <span className="bg-white/30 rounded-full p-2 text-white">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 13h6m2 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <FontAwesomeIcon icon="fa-pen" size="base" style="regular"/>
             </span>
           </div>
           {/* Illustration */}

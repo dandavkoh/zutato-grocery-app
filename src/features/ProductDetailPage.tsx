@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setHeader, resetHeader, resetBackClick, resetRightButtonClick } from '../stores/store';
 import type { RootState } from '../stores/store';
 import type { ShoppingItem } from '../api/mockApi';
+import FontAwesomeIcon from '../components/FontAwesomeIcon';
 
 const ProductDetailPage: React.FC = () => {
   const navigate = useNavigate();
@@ -115,7 +116,7 @@ const ProductDetailPage: React.FC = () => {
         >
           <div className="text-xs text-gray-400 mb-1">KATEGORIE WECHSELN</div>
           <div className="flex items-center gap-2">
-            <svg className="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h8" /></svg>
+            <FontAwesomeIcon icon="fa-circle-minus" size="2xl" style="regular"/>
             <span className="text-gray-300">{item.category}</span>
           </div>
         </button>

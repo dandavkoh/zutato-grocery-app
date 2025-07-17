@@ -9,6 +9,7 @@ export interface ShoppingItem {
   name: string;
   description?: string;
   category: string;
+  icon?: string; // Font Awesome icon name (e.g., "fa-apple", "fa-bread-slice")
   unit?: Unit;
   amount?: number;
   isCompleted: boolean;
@@ -26,6 +27,7 @@ export interface CreateShoppingItemRequest {
   name: string;
   description?: string;
   category: string;
+  icon?: string;
   unit?: Unit;
   amount?: number;
   householdId: string;
@@ -39,6 +41,7 @@ export interface UpdateShoppingItemRequest {
   name?: string;
   description?: string;
   category?: string;
+  icon?: string;
   unit?: Unit;
   amount?: number;
   isCompleted?: boolean;
@@ -60,6 +63,7 @@ const mockItems: ShoppingItem[] = [
     id: '1',
     name: 'Ananas',
     category: 'Obst',
+    icon: 'fa-pineapple',
     unit: { name: 'Stücke', short: 'Stk' },
     amount: 1,
     isCompleted: false,
@@ -75,6 +79,7 @@ const mockItems: ShoppingItem[] = [
     id: '2',
     name: 'Donuts',
     category: 'Brot & Backwaren',
+    icon: 'fa-donut',
     unit: { name: 'Stücke', short: 'Stk' },
     amount: 6,
     isCompleted: false,
@@ -90,6 +95,7 @@ const mockItems: ShoppingItem[] = [
     name: 'Haribo',
     description: 'Schlangen',
     category: 'Süßigkeiten & Snacks',
+    icon: undefined,
     unit: { name: 'Packungen', short: 'Pkg' },
     amount: 2,
     isCompleted: false,
@@ -104,6 +110,7 @@ const mockItems: ShoppingItem[] = [
     id: '4',
     name: 'Butter',
     category: 'Milchprodukte & Eier',
+    icon: 'fa-butter',
     unit: { name: 'Packungen', short: 'Pkg' },
     amount: 1,
     isCompleted: true,
@@ -118,6 +125,7 @@ const mockItems: ShoppingItem[] = [
     id: '5',
     name: 'Milch',
     category: 'Milchprodukte & Eier',
+    icon: 'fa-glass',
     unit: { name: 'Liter', short: 'l' },
     amount: 1.5,
     isCompleted: true,
@@ -132,6 +140,7 @@ const mockItems: ShoppingItem[] = [
     id: '6',
     name: 'Eier',
     category: 'Milchprodukte & Eier',
+    icon: 'fa-egg',
     unit: { name: 'Stücke', short: 'Stk' },
     amount: 10,
     isCompleted: false,
@@ -146,6 +155,7 @@ const mockItems: ShoppingItem[] = [
     id: '7',
     name: 'Sahne',
     category: 'Milchprodukte & Eier',
+    icon: 'fa-bowl-soft-serve',
     unit: { name: 'Packungen', short: 'Pkg' },
     amount: 4,
     isCompleted: false,

@@ -6,6 +6,7 @@ import type { RootState } from '../stores/store';
 import { useShoppingItemsRTK } from '../hooks/useShoppingItemsRTK';
 import { groupItemsByCategory, separateCompletedItems } from '../api/mockApi';
 import SwipeAction from '../components/SwipeAction';
+import FontAwesomeIcon from '../components/FontAwesomeIcon';
 
 const ShoppingListPage: React.FC = () => {
   const [sortSheetOpen, setSortSheetOpen] = useState(false);
@@ -120,7 +121,7 @@ const ShoppingListPage: React.FC = () => {
       {/* Header entfernt, global! */}
       {/* Info-Box */}
       <div className="bg-neutral-900 flex items-center gap-3 px-4 py-3 mt-2 mb-2">
-        <svg className="w-10 h-10 text-yellow-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 17h18M4 17V7a2 2 0 012-2h12a2 2 0 012 2v10" /><circle cx="12" cy="14" r="4" /></svg>
+        <FontAwesomeIcon icon="fa-sun-haze" className="text-yellow-400" size="2xl"/>
         <span className="text-gray-200 text-sm flex-1">HNGRY wird ab dem 31. März 2025 nicht mehr verfügbar sein. <a href="#" className="underline text-gray-300">Mehr erfahren</a></span>
       </div>
 
@@ -142,17 +143,23 @@ const ShoppingListPage: React.FC = () => {
                       className="flex items-center pl-4 py-3 flex-1 text-left"
                       onClick={(e) => handleToggleCompletion(item.id, e)}
                     >
-                      {/* Category-specific icon */}
-                      <svg className="w-7 h-7 text-gray-300 mr-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        {category === 'Obst' && <path strokeLinecap="round" strokeLinejoin="round" d="M12 2C10 7 7 8 7 12a5 5 0 0010 0c0-4-3-5-5-10z" />}
-                        {category === 'Brot & Backwaren' && <><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="4" /></>}
-                        {category === 'Süßigkeiten & Snacks' && <rect x="6" y="6" width="12" height="12" rx="6" />}
-                        {category === 'Milchprodukte & Eier' && <ellipse cx="12" cy="12" rx="8" ry="6" />}
-                        {/* Default icon for other categories */}
-                        {!['Obst', 'Brot & Backwaren', 'Süßigkeiten & Snacks', 'Milchprodukte & Eier'].includes(category) && 
-                          <rect x="4" y="4" width="16" height="16" rx="2" />
-                        }
-                      </svg>
+                      {/* Font Awesome icon from API with fixed width container */}
+                      <div className="w-8 flex justify-center mr-4">
+                        {item.icon ? (
+                          <FontAwesomeIcon 
+                            icon={item.icon} 
+                            className="text-gray-300" 
+                            size="2xl"
+                          />
+                        ) : (
+                          // Fallback icon if no icon is specified
+                          <FontAwesomeIcon 
+                            icon="fa-cart-shopping" 
+                            className="text-gray-300" 
+                            size="2xl"
+                          />
+                        )}
+                      </div>
                       <span className="text-lg text-gray-200">
                         {item.name}
                         {item.description && (
@@ -209,9 +216,23 @@ const ShoppingListPage: React.FC = () => {
               <div className="divide-y divide-neutral-800">
                 {completed.map((item) => (
                   <div key={item.id} className="flex items-center px-4 py-3">
-                    <svg className="w-7 h-7 text-gray-300 mr-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <rect x="4" y="4" width="16" height="16" rx="2" />
-                    </svg>
+                    {/* Font Awesome icon from API for completed items with fixed width container */}
+                    <div className="w-8 flex justify-center mr-4">
+                      {item.icon ? (
+                        <FontAwesomeIcon 
+                          icon={item.icon} 
+                          className="text-gray-300" 
+                          size="2xl"
+                        />
+                      ) : (
+                        // Fallback icon if no icon is specified
+                        <FontAwesomeIcon 
+                          icon="fa-cart-shopping" 
+                          className="text-gray-300" 
+                          size="2xl"
+                        />
+                      )}
+                    </div>
                     <span className={`text-lg ${item.isCompleted ? 'text-gray-400 line-through' : 'text-gray-200'}`}> {item.name}
                       {item.description && (
                         <span className="text-gray-400 text-sm ml-1">{item.description}</span>
@@ -234,11 +255,11 @@ const ShoppingListPage: React.FC = () => {
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 w-full bg-neutral-900 border-t border-neutral-800 flex justify-around items-center h-20 z-20">
         <button className="flex flex-col items-center justify-center flex-1 py-2 text-yellow-400">
-          <svg className="w-7 h-7 mb-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" /><path strokeLinecap="round" strokeLinejoin="round" d="M8 16v-4m4 4V8m4 8v-2" /></svg>
+          <FontAwesomeIcon icon="fa-square-poll-vertical" size="3xl" style="regular"/>
           <span className="text-xs font-semibold">Einkaufsliste</span>
         </button>
         <button className="flex flex-col items-center justify-center flex-1 py-2 text-gray-400">
-          <svg className="w-7 h-7 mb-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="6" y="4" width="12" height="16" rx="2" /></svg>
+          <FontAwesomeIcon icon="fa-shelves" size="3xl" style="regular"/>
           <span className="text-xs font-semibold">Vorrat</span>
         </button>
       </div>

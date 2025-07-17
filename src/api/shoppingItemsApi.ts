@@ -3,8 +3,7 @@ import { mockBaseQuery } from './mockApiAdapter';
 import type { 
   ShoppingItem, 
   CreateShoppingItemRequest, 
-  UpdateShoppingItemRequest,
-  ApiResponse 
+  UpdateShoppingItemRequest
 } from './mockApi';
 
 // RTK Query API für Shopping Items

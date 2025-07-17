@@ -83,7 +83,7 @@ const Header: React.FC = () => {
       {showSearchBar && (
         <div className="w-full flex justify-center mt-4">
           <div className="flex items-center bg-black rounded-2xl w-full px-4 py-2 relative">
-            <FontAwesomeIcon icon="fa-magnifying-glass" size="base" style="regular"/>
+            <FontAwesomeIcon icon="fa-magnifying-glass" size="base" style="regular" className="mr-3"/>
             <input
               className="bg-transparent outline-none text-white placeholder-gray-400 flex-1 cursor-pointer"
               placeholder={searchPlaceholder}

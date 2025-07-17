@@ -3,32 +3,33 @@ import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { setHeader, resetHeader } from '../stores/store';
 import type { RootState } from '../stores/store';
+import FontAwesomeIcon from '../components/FontAwesomeIcon';
 
 const recommendations = [
-  { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="6" /></svg>, name: 'Zucker', sub: 'Brauner' },
-  { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" /></svg>, name: 'Toast' },
-  { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" /></svg>, name: 'Brei' },
-  { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" /></svg>, name: 'Gouda' },
-  { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" /></svg>, name: 'Zitronensaft' },
-  { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" /></svg>, name: 'Paprika' },
-  { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" /></svg>, name: 'Tomaten', sub: 'Gehackte' },
-  { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" /></svg>, name: 'Rucola' },
+  { icon: <FontAwesomeIcon icon="sack" className="text-gray-300" size="2xl"/>, name: 'Zucker', sub: 'Brauner' },
+  { icon: <FontAwesomeIcon icon="bread-slice" className="text-gray-300" size="2xl"/>, name: 'Toast' },
+  { icon: <FontAwesomeIcon icon="bowl-spoon" className="text-gray-300" size="2xl"/>, name: 'Brei' },
+  { icon: <FontAwesomeIcon icon="cheese-swiss" className="text-gray-300" size="2xl"/>, name: 'Gouda' },
+  { icon: <FontAwesomeIcon icon="glass-citrus" className="text-gray-300" size="2xl"/>, name: 'Zitronensaft' },
+  { icon: <FontAwesomeIcon icon="pepper" className="text-gray-300" size="2xl"/>, name: 'Paprika' },
+  { icon: <FontAwesomeIcon icon="tomato" className="text-gray-300" size="2xl"/>, name: 'Tomaten', sub: 'Gehackte' },
+  { icon: <FontAwesomeIcon icon="leaf" className="text-gray-300" size="2xl"/>, name: 'Rucola' },
 ];
 const seasonal = [
-  { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="8" ry="6" /></svg>, name: 'Champignons' },
-  { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="8" ry="6" /></svg>, name: 'Chicorée' },
-  { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="8" ry="6" /></svg>, name: 'Rote Bete' },
-  { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="8" ry="6" /></svg>, name: 'Weißkohl' },
+  { icon: <FontAwesomeIcon icon="mushroom" className="text-gray-300" size="2xl"/>, name: 'Champignons' },
+  { icon: <FontAwesomeIcon icon="salad" className="text-gray-300" size="2xl"/>, name: 'Chicorée' },
+  { icon: <FontAwesomeIcon icon="carrot" className="text-gray-300" size="2xl"/>, name: 'Rote Bete' },
+  { icon: <FontAwesomeIcon icon="leafy-green" className="text-gray-300" size="2xl"/>, name: 'Weißkohl' },
 ];
 
 const searchResults = [
-  { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" /></svg>, name: 'Mehl Roggen' },
-  { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" /></svg>, name: 'Mehl Roggen 500', amount: '500' },
-  { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" /></svg>, name: 'Mehl', sub: 'Roggen', amount: '500 g' },
-  { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" /></svg>, name: 'Roggenmehl', sub: 'Mehl', amount: '500 g' },
-  { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" /></svg>, name: 'Weizenmehl', sub: 'Roggen', amount: '500 kg' },
-  { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" /></svg>, name: 'Dinkelmehl', sub: 'Roggen', amount: '500 g' },
-  { icon: <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" /></svg>, name: 'Paniermehl', sub: 'Roggen', amount: '500 g' },
+  { icon: <FontAwesomeIcon icon="jar-wheat" className="text-gray-300" size="2xl"/>, name: 'Mehl Roggen' },
+  { icon: <FontAwesomeIcon icon="jar-wheat" className="text-gray-300" size="2xl"/>, name: 'Mehl Roggen 500', amount: '500' },
+  { icon: <FontAwesomeIcon icon="jar-wheat" className="text-gray-300" size="2xl"/>, name: 'Mehl', sub: 'Roggen', amount: '500 g' },
+  { icon: <FontAwesomeIcon icon="jar-wheat" className="text-gray-300" size="2xl"/>, name: 'Roggenmehl', sub: 'Mehl', amount: '500 g' },
+  { icon: <FontAwesomeIcon icon="jar-wheat" className="text-gray-300" size="2xl"/>, name: 'Weizenmehl', sub: 'Roggen', amount: '500 kg' },
+  { icon: <FontAwesomeIcon icon="jar-wheat" className="text-gray-300" size="2xl"/>, name: 'Dinkelmehl', sub: 'Roggen', amount: '500 g' },
+  { icon: <FontAwesomeIcon icon="jar-wheat" className="text-gray-300" size="2xl"/>, name: 'Paniermehl', sub: 'Roggen', amount: '500 g' },
 ];
 
 const SearchPage: React.FC = () => {
@@ -54,7 +55,7 @@ const SearchPage: React.FC = () => {
       {showResults ? (
         <div className="w-full pb-8 pt-2">
           <div className="px-4 pt-2 pb-1 flex items-center gap-2 text-gray-300 text-base font-semibold">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3" /><path strokeLinecap="round" strokeLinejoin="round" d="M8 8h8v8H8z" /></svg>
+           <FontAwesomeIcon icon="fa-clipboard-list-check" size="base" style="regular"/>
             Einkaufsvorschläge
           </div>
           <div className="divide-y divide-neutral-800">
@@ -66,7 +67,7 @@ const SearchPage: React.FC = () => {
                 </span>
                 {item.amount && <span className="text-gray-400 text-sm mr-2">{item.amount}</span>}
                 <button className="rounded-full border-2 border-yellow-400 text-yellow-400 w-8 h-8 flex items-center justify-center ml-2">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" /></svg>
+                  <FontAwesomeIcon icon="fa-circle-plus" size="2xl" style="regular"/>
                 </button>
               </div>
             ))}
@@ -117,11 +118,11 @@ const SearchPage: React.FC = () => {
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 w-full bg-neutral-900 border-t border-neutral-800 flex justify-around items-center h-20 z-20">
         <button className="flex flex-col items-center justify-center flex-1 py-2 text-yellow-400">
-          <svg className="w-7 h-7 mb-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" /><path strokeLinecap="round" strokeLinejoin="round" d="M8 16v-4m4 4V8m4 8v-2" /></svg>
+        <FontAwesomeIcon icon="fa-square-poll-vertical" size="3xl" style="regular" className="mb-1"/>
           <span className="text-xs font-semibold">Einkaufsliste</span>
         </button>
         <button className="flex flex-col items-center justify-center flex-1 py-2 text-gray-400">
-          <svg className="w-7 h-7 mb-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="6" y="4" width="12" height="16" rx="2" /></svg>
+          <FontAwesomeIcon icon="fa-shelves" size="3xl" style="regular" className="mb-1"/>
           <span className="text-xs font-semibold">Vorrat</span>
         </button>
       </div>

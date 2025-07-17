@@ -63,12 +63,6 @@ const HouseholdsPage: React.FC = () => {
               <FontAwesomeIcon icon="fa-pen" size="base" style="regular"/>
             </span>
           </div>
-          {/* Illustration */}
-          <div className="absolute left-4 bottom-4 flex gap-2 opacity-80 z-0">
-            <svg width="40" height="40" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff3" /></svg>
-            <svg width="40" height="40" fill="none" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="8" fill="#fff3" /></svg>
-            <svg width="40" height="40" fill="none" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="10" ry="6" fill="#fff3" /></svg>
-          </div>
         </button>
       </div>
     </div>

@@ -179,9 +179,7 @@ const ShoppingListPage: React.FC = () => {
                         className="px-4 py-3 hover:bg-neutral-800"
                         onClick={() => handleItemClick(item.id)}
                       >
-                        <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                        </svg>
+                        <FontAwesomeIcon className="text-gray-500" icon="fa-chevron-right" size="base" style="regular"/>
                       </button>
                     </div>
                   </div>
@@ -200,15 +198,11 @@ const ShoppingListPage: React.FC = () => {
               type="button"
             >
               <span className="text-gray-300 text-xs font-semibold flex-1 text-left">GEKAUFTE PRODUKTE</span>
-              <svg
+              <FontAwesomeIcon
                 className={`w-5 h-5 text-gray-300 transition-transform duration-200 ${showCompleted ? '' : 'rotate-180'}`}
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
-              </svg>
+                icon="fa-chevron-down"
+                size="base"
+                style="regular"/>
             </button>
             <div
               className={`overflow-hidden transition-all duration-300 ${showCompleted ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}
@@ -255,11 +249,11 @@ const ShoppingListPage: React.FC = () => {
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 w-full bg-neutral-900 border-t border-neutral-800 flex justify-around items-center h-20 z-20">
         <button className="flex flex-col items-center justify-center flex-1 py-2 text-yellow-400">
-          <FontAwesomeIcon icon="fa-square-poll-vertical" size="3xl" style="regular"/>
+          <FontAwesomeIcon icon="fa-square-poll-vertical" size="3xl" style="regular" className="mb-1"/>
           <span className="text-xs font-semibold">Einkaufsliste</span>
         </button>
         <button className="flex flex-col items-center justify-center flex-1 py-2 text-gray-400">
-          <FontAwesomeIcon icon="fa-shelves" size="3xl" style="regular"/>
+          <FontAwesomeIcon icon="fa-shelves" size="3xl" style="regular" className="mb-1"/>
           <span className="text-xs font-semibold">Vorrat</span>
         </button>
       </div>
@@ -278,26 +272,26 @@ const ShoppingListPage: React.FC = () => {
               <div className="w-12 h-1.5 bg-neutral-700 rounded-full mx-auto mb-4" onClick={() => setSortSheetOpen(false)} />
               <div className="text-center text-gray-400 text-sm mb-6">Liste sortieren</div>
               <div className="flex flex-col gap-4">
-                <div className="flex items-center text-yellow-400 font-semibold text-lg">
-                  <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h8m-8 6h16" /></svg>
-                  Nach Kategorie
+                <div className="flex items-center justify-between text-yellow-400 font-semibold text-lg">
+                  <div className="flex items-center">
+                    <FontAwesomeIcon icon="fa-list" size="base" style="regular" className="mr-3"/>
+                    Nach Kategorie
+                  </div>
+                  <FontAwesomeIcon icon="fa-pen-circle" size="base" className="text-yellow-400"/>
                 </div>
                 <div className="flex items-center text-gray-300 text-base">
-                  <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7v10m8-10v10M4 17h16" /></svg>
+                  <FontAwesomeIcon icon="fa-arrow-down-9-1" size="base" style="regular" className="mr-3"/>
                   Letztes Produkt oben
                 </div>
                 <div className="flex items-center text-gray-300 text-base">
-                  <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 17V7m8 10V7M4 7h16" /></svg>
+                  <FontAwesomeIcon icon="fa-arrow-down-1-9" size="base" style="regular" className="mr-3"/>
                   Letztes Produkt unten
                 </div>
                 <div className="flex items-center text-gray-300 text-base">
-                  <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h7" /><text x="17" y="21" fontSize="10" fill="currentColor">A</text></svg>
+                  <FontAwesomeIcon icon="fa-arrow-down-a-z" size="base" style="regular" className="mr-3"/>
                   Alphabetisch
                 </div>
               </div>
-              <button className="absolute right-6 top-6 bg-yellow-400 rounded-full p-2 shadow-lg">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 13h6m2 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              </button>
             </div>
           </div>
         </>

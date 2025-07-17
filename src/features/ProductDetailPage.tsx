@@ -69,7 +69,7 @@ const ProductDetailPage: React.FC = () => {
                 : 'Wähle Läden aus, die diesem Produkt zugeordnet werden sollen.'
               }
             </span>
-            <svg className="w-5 h-5 text-gray-500 ml-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+            <FontAwesomeIcon className="w-5 h-5 text-gray-500 ml-2" icon="fa-chevron-right" size="base" style="regular"/>
           </div>
         </div>
         {/* Personen */}
@@ -82,7 +82,7 @@ const ProductDetailPage: React.FC = () => {
                 : 'Wähle Personen aus, die diesem Produkt zugeordnet werden sollen.'
               }
             </span>
-            <svg className="w-5 h-5 text-gray-500 ml-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+            <FontAwesomeIcon className="w-5 h-5 text-gray-500 ml-2" icon="fa-chevron-right" size="base" style="regular"/>
           </div>
         </div>
         {/* Notiz */}
@@ -92,12 +92,12 @@ const ProductDetailPage: React.FC = () => {
         </div>
         {/* Menge & Einheit */}
         <div className="flex gap-2">
-          <div className="flex-1 bg-neutral-900 border-b border-neutral-800 py-4 px-2">
+          <div className="flex-1 bg-neutral-900 border-b border-neutral-800 py-4 px-5 rounded-r-lg">
             <div className="text-xs text-gray-400 mb-1">MENGE</div>
             <div className="text-gray-300">{item.amount || 'Menge'}</div>
           </div>
           <button
-            className="flex-1 bg-neutral-900 border-b border-neutral-800 py-4 px-2 flex items-center justify-between text-left"
+            className="flex-1 bg-neutral-900 border-b border-neutral-800 py-4 px-5 flex items-center justify-between text-left rounded-l-lg"
             onClick={() => navigate('/product/unit', { state: { item } })}
           >
             <div>
@@ -106,7 +106,7 @@ const ProductDetailPage: React.FC = () => {
                 {item.unit ? `${item.unit.name} (${item.unit.short})` : 'Stücke (Stk)'}
               </div>
             </div>
-            <svg className="w-5 h-5 text-gray-500 ml-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+            <FontAwesomeIcon className="w-5 h-5 text-gray-500 ml-2" icon="fa-chevron-right" size="base" style="regular"/>
           </button>
         </div>
         {/* Kategorie wechseln */}
@@ -116,7 +116,7 @@ const ProductDetailPage: React.FC = () => {
         >
           <div className="text-xs text-gray-400 mb-1">KATEGORIE WECHSELN</div>
           <div className="flex items-center gap-2">
-            <FontAwesomeIcon icon="fa-circle-minus" size="2xl" style="regular"/>
+            <FontAwesomeIcon icon="fa-apple-whole" size="2xl" style="regular"/>
             <span className="text-gray-300">{item.category}</span>
           </div>
         </button>

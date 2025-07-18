@@ -10,6 +10,7 @@ import UnitSelectPage from './features/UnitSelectPage'
 import SearchPage from './features/SearchPage'
 import Header from './components/Header'
 import PWAUpdateBanner from './components/PWAUpdateBanner'
+import OfflineIndicator from './components/OfflineIndicator'
 
 function Layout() {
   const location = useLocation();
@@ -17,6 +18,7 @@ function Layout() {
   // const hideHeader = location.pathname === '/';
   return (
     <div className="min-h-screen bg-black">
+      <OfflineIndicator />
       <PWAUpdateBanner />
       <Header />
       <div className="w-full"><Outlet /></div>

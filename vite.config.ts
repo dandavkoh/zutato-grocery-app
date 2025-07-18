@@ -13,6 +13,23 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
+          // API Caching für Shopping Items
+          {
+            urlPattern: /\/api\/shopping-items\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'shopping-items-api-cache',
+              networkTimeoutSeconds: 3,
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 // 24 Stunden
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          // Fonts
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: 'CacheFirst',
@@ -35,6 +52,7 @@ export default defineConfig({
               }
             }
           },
+          // Images
           {
             urlPattern: /\.(?:png|jpg|jpeg|svg|gif)$/,
             handler: 'CacheFirst',
@@ -46,6 +64,7 @@ export default defineConfig({
               }
             }
           },
+          // FontAwesome
           {
             urlPattern: /\/fontawesome\/.*/i,
             handler: 'CacheFirst',

@@ -2,13 +2,21 @@
 import { registerSW } from 'virtual:pwa-register';
 
 export interface PWAUpdateEvent {
-  type: 'update' | 'offline' | 'online';
+  type: 'update' | 'offline' | 'online' | 'queue_processed';
   message: string;
+  data?: any;
+}
+
+export interface QueueStatus {
+  queueLength: number;
+  isProcessing: boolean;
 }
 
 class PWAService {
   private updateSW: (() => Promise<void>) | undefined;
   private updateCallback: ((event: PWAUpdateEvent) => void) | undefined;
+  private swRegistration: ServiceWorkerRegistration | null = null;
+  private queueStatus: QueueStatus = { queueLength: 0, isProcessing: false };
 
   constructor() {
     this.initialize();
@@ -33,6 +41,11 @@ class PWAService {
       },
       onRegistered: (swRegistration: any) => {
         console.log('✅ PWA: Service Worker registriert', swRegistration);
+        this.swRegistration = swRegistration;
+        this.setupServiceWorkerCommunication();
+        
+        // Registriere zusätzlichen Service Worker für Offline-API-Funktionalität
+        this.registerOfflineServiceWorker();
       },
       onRegisterError: (error: any) => {
         console.error('❌ PWA: Service Worker Registrierung fehlgeschlagen', error);
@@ -46,6 +59,7 @@ class PWAService {
         type: 'online',
         message: 'Verbindung wiederhergestellt'
       });
+      this.processQueuedRequests();
     });
 
     window.addEventListener('offline', () => {
@@ -55,6 +69,101 @@ class PWAService {
         message: 'Keine Internetverbindung'
       });
     });
+
+    // Service Worker Message Handler
+    navigator.serviceWorker?.addEventListener('message', (event) => {
+      const { type, count } = event.data;
+      
+      if (type === 'QUEUE_PROCESSED') {
+        console.log(`✅ PWA: ${count} queued requests processed`);
+        this.notifyUpdate({
+          type: 'queue_processed',
+          message: `${count} Offline-Requests wurden verarbeitet`,
+          data: { count }
+        });
+        this.updateQueueStatus();
+      }
+    });
+  }
+
+  private setupServiceWorkerCommunication() {
+    if (!this.swRegistration?.active) {
+      console.log('⚠️ PWA: Service Worker not active yet');
+      return;
+    }
+
+    // Initial queue status check
+    this.updateQueueStatus();
+  }
+
+  private async updateQueueStatus() {
+    if (!this.swRegistration?.active) return;
+
+    try {
+      const channel = new MessageChannel();
+      
+      channel.port1.onmessage = (event) => {
+        this.queueStatus = event.data;
+        console.log(`📊 PWA: Queue status updated - ${this.queueStatus.queueLength} items, processing: ${this.queueStatus.isProcessing}`);
+      };
+
+      this.swRegistration.active.postMessage(
+        { type: 'GET_QUEUE_STATUS' },
+        [channel.port2]
+      );
+    } catch (error) {
+      console.error('❌ PWA: Failed to get queue status:', error);
+    }
+  }
+
+  public async processQueuedRequests(): Promise<void> {
+    if (!this.swRegistration?.active) {
+      console.log('⚠️ PWA: Service Worker not active');
+      return;
+    }
+
+    try {
+      this.swRegistration.active.postMessage({ type: 'PROCESS_QUEUE' });
+      console.log('🔄 PWA: Requested queue processing');
+    } catch (error) {
+      console.error('❌ PWA: Failed to process queue:', error);
+    }
+  }
+
+  public async clearQueuedRequests(): Promise<void> {
+    if (!this.swRegistration?.active) {
+      console.log('⚠️ PWA: Service Worker not active');
+      return;
+    }
+
+    try {
+      this.swRegistration.active.postMessage({ type: 'CLEAR_QUEUE' });
+      console.log('🗑️ PWA: Requested queue clearing');
+      this.queueStatus = { queueLength: 0, isProcessing: false };
+    } catch (error) {
+      console.error('❌ PWA: Failed to clear queue:', error);
+    }
+  }
+
+  public getQueueStatus(): QueueStatus {
+    return { ...this.queueStatus };
+  }
+
+  public hasQueuedRequests(): boolean {
+    return this.queueStatus.queueLength > 0;
+  }
+
+  private async registerOfflineServiceWorker(): Promise<void> {
+    if ('serviceWorker' in navigator) {
+      try {
+        const registration = await navigator.serviceWorker.register('/sw.js', {
+          scope: '/'
+        });
+        console.log('✅ PWA: Offline Service Worker registriert', registration);
+      } catch (error) {
+        console.error('❌ PWA: Offline Service Worker Registrierung fehlgeschlagen', error);
+      }
+    }
   }
 
   public setUpdateCallback(callback: (event: PWAUpdateEvent) => void) {

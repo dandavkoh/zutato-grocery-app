@@ -8,15 +8,32 @@ import './index.css'
 import App from './App.tsx'
 // Initialize PWA Service
 import './services/pwaService'
+// Initialize Supabase
+import { initializeSupabase } from './config/supabase'
+import { logInfo } from './config/environment'
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <Provider store={store}>
-      <BrowserRouter>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
-      </BrowserRouter>
-    </Provider>
-  </StrictMode>,
-)
+// Initialize services
+const initializeApp = async () => {
+  try {
+    logInfo('Initializing HNGRY PWA...');
+    await initializeSupabase();
+    logInfo('App initialization completed');
+  } catch (error) {
+    console.error('Failed to initialize app:', error);
+  }
+};
+
+// Initialize app and render
+initializeApp().then(() => {
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <Provider store={store}>
+        <BrowserRouter>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </BrowserRouter>
+      </Provider>
+    </StrictMode>,
+  );
+});

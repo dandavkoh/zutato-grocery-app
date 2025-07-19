@@ -1,3 +1,6 @@
+import { supabase, supabaseService } from '../config/supabase';
+import { logDebug, logError } from '../config/environment';
+
 // Supabase API Types - Compatible with Supabase
 export interface Unit {
   name: string; // Langer Name, z.B. "Packungen"
@@ -174,20 +177,36 @@ export class ShoppingItemsController {
   // Get all items for a list
   async getItems(listId: string): Promise<ApiResponse<ShoppingItem[]>> {
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 300));
+      logDebug('Fetching items from Supabase', { listId });
       
-      const items = mockItems.filter(item => 
-        item.listId === listId && 
-        !item.deleted
-      );
+      const { data, error } = await supabase
+        .from('shopping_items')
+        .select('*')
+        .eq('list_id', listId)
+        .eq('deleted', false)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        logError('Failed to fetch items from Supabase', error);
+        return {
+          data: null,
+          error: error.message,
+          status: 500
+        };
+      }
+      
+      logDebug('Successfully fetched items from Supabase', { 
+        listId, 
+        count: data?.length || 0 
+      });
       
       return {
-        data: items,
+        data: data || [],
         error: null,
         status: 200
       };
     } catch (error) {
+      logError('Unexpected error fetching items', error);
       return {
         data: null,
         error: 'Failed to fetch items',

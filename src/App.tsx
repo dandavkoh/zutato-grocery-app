@@ -8,6 +8,8 @@ import ProductDetailPage from './features/ProductDetailPage'
 import CategorySelectPage from './features/CategorySelectPage'
 import UnitSelectPage from './features/UnitSelectPage'
 import SearchPage from './features/SearchPage'
+import LoginPage from './features/LoginPage'
+import RegisterPage from './features/RegisterPage'
 import Header from './components/Header'
 import PWAUpdateBanner from './components/PWAUpdateBanner'
 import OfflineIndicator from './components/OfflineIndicator'
@@ -61,13 +63,27 @@ function Home() {
           </p>
         </div>
         
-        {/* Button zur Haushalte-Seite */}
-        <button
-          className="w-full bg-yellow-400 text-white font-semibold py-3 rounded-xl mb-6 text-lg hover:bg-yellow-500 transition-colors"
-          onClick={() => navigate('/households')}
-        >
-          Zu "Meine Haushalte"
-        </button>
+        {/* Authentication Buttons */}
+        <div className="space-y-4 mb-6">
+          <button
+            className="w-full bg-yellow-400 text-white font-semibold py-3 rounded-xl text-lg hover:bg-yellow-500 transition-colors"
+            onClick={() => navigate('/households')}
+          >
+            Zu "Meine Haushalte"
+          </button>
+          <button
+            className="w-full bg-blue-500 text-white font-semibold py-3 rounded-xl text-lg hover:bg-blue-600 transition-colors"
+            onClick={() => navigate('/login')}
+          >
+            Anmelden
+          </button>
+          <button
+            className="w-full bg-green-500 text-white font-semibold py-3 rounded-xl text-lg hover:bg-green-600 transition-colors"
+            onClick={() => navigate('/register')}
+          >
+            Registrieren
+          </button>
+        </div>
         
         {/* Footer */}
         <p className="text-gray-600 text-sm">
@@ -90,6 +106,8 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
       <Route element={<Layout />}>
         <Route path="/households" element={<HouseholdsPage />} />
         <Route path="/shopping-list" element={<ShoppingListPage />} />

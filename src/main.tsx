@@ -5,6 +5,8 @@ import { Provider } from 'react-redux'
 import { store } from './stores/store'
 import './index.css'
 import App from './App.tsx'
+// Initialize PWA Service
+import './services/pwaService'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

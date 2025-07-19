@@ -26,12 +26,12 @@ Diese Implementierung verwendet RTK Query von Redux Toolkit, um die Shopping Ite
 ```
 src/
 ├── api/
-│   ├── mockApi.ts              # Bestehende Mock-API
-│   ├── mockApiAdapter.ts       # Adapter für RTK Query
+│   ├── supabaseApi.ts          # Bestehende Supabase-API
+│   ├── supabaseApiAdapter.ts       # Adapter für RTK Query
 │   └── shoppingItemsApi.ts     # RTK Query API Definition
 ├── hooks/
 │   └── useShoppingItemsRTK.ts  # RTK Query Hook (mit Cache)
-└── store.ts                   # Redux Store mit RTK Query
+└── store.ts                    # Redux Store mit RTK Query
 ```
 
 ## API Endpoints

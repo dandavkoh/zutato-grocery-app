@@ -7,7 +7,7 @@ import {
   useToggleItemCompletionMutation,
   useSearchItemsQuery,
 } from '../api/shoppingItemsApi';
-import type { CreateShoppingItemRequest, UpdateShoppingItemRequest } from '../api/mockApi';
+import type { CreateShoppingItemRequest, UpdateShoppingItemRequest } from '../api/supabaseApi';
 
 // RTK Query Hook für Shopping Items
 export const useShoppingItemsRTK = (listId: string) => {

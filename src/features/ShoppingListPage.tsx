@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setHeader, resetHeader, resetFilterClick } from '../stores/store';
 import type { RootState } from '../stores/store';
 import { useShoppingItemsRTK } from '../hooks/useShoppingItemsRTK';
-import { groupItemsByCategory, separateCompletedItems } from '../api/mockApi';
+import { groupItemsByCategory, separateCompletedItems } from '../api/supabaseApi';
 import SwipeAction from '../components/SwipeAction';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
 

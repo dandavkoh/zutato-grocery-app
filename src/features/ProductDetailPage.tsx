@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setHeader, resetHeader, resetBackClick, resetRightButtonClick } from '../stores/store';
 import type { RootState } from '../stores/store';
-import type { ShoppingItem } from '../api/mockApi';
+import type { ShoppingItem } from '../api/supabaseApi';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
 
 const ProductDetailPage: React.FC = () => {

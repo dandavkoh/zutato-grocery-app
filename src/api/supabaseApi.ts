@@ -1,4 +1,4 @@
-// Mock API Types - Compatible with Supabase
+// Supabase API Types - Compatible with Supabase
 export interface Unit {
   name: string; // Langer Name, z.B. "Packungen"
   short: string; // Kurze Abkürzung, z.B. "Pkg"
@@ -169,7 +169,7 @@ const mockItems: ShoppingItem[] = [
   }
 ];
 
-// Mock API Controller
+// Supabase API Controller
 export class ShoppingItemsController {
   // Get all items for a list
   async getItems(listId: string): Promise<ApiResponse<ShoppingItem[]>> {

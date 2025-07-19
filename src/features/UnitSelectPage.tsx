@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setHeader, resetHeader, resetBackClick } from '../stores/store';
 import type { RootState } from '../stores/store';
-import type { Unit } from '../api/mockApi';
+import type { Unit } from '../api/supabaseApi';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
 
 const units: (Unit | null)[] = [

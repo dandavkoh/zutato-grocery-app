@@ -1,15 +1,15 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
-import { mockBaseQuery } from './mockApiAdapter';
+import { supabaseBaseQuery } from './supabaseApiAdapter';
 import type { 
   ShoppingItem, 
   CreateShoppingItemRequest, 
   UpdateShoppingItemRequest
-} from './mockApi';
+} from './supabaseApi';
 
 // RTK Query API für Shopping Items
 export const shoppingItemsApi = createApi({
   reducerPath: 'shoppingItemsApi',
-  baseQuery: mockBaseQuery, // Mock API Adapter verwenden
+  baseQuery: supabaseBaseQuery, // Supabase API Adapter verwenden
   tagTypes: ['ShoppingItem'],
   endpoints: (builder) => ({
     // Alle Items für eine List abrufen

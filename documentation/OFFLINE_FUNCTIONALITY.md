@@ -64,10 +64,10 @@ Der `pwaService` wurde um folgende Funktionen erweitert:
 ## Unterstützte API-Endpoints
 
 ### GET Endpoints (Network First + Cache)
-- `GET /api/shopping-items/:householdId`
-- `GET /api/shopping-items/:householdId/category/:category`
-- `GET /api/shopping-items/:householdId/completed`
-- `GET /api/shopping-items/:householdId/search`
+- `GET /api/shopping-items/:listId`
+- `GET /api/shopping-items/:listId/category/:category`
+- `GET /api/shopping-items/:listId/completed`
+- `GET /api/shopping-items/:listId/search`
 
 ### Mutation Endpoints (Network First + Queue)
 - `POST /api/shopping-items` (Create)
@@ -129,7 +129,7 @@ Bestehende Komponente für PWA-Updates (unverändert)
 Alle Service Worker Aktivitäten werden in der Konsole geloggt:
 
 ```
-🌐 [SW] Intercepting API request: GET /api/shopping-items/household-1
+🌐 [SW] Intercepting API request: GET /api/shopping-items/list-1
 📝 [SW] Request queued: POST /api/shopping-items
 ✅ [SW] Queued request successful: POST /api/shopping-items
 ```

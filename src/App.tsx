@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Routes, Route, useNavigate, useLocation, Outlet } from 'react-router-dom'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
-import HouseholdsPage from './features/HouseholdsPage'
+import ListsPage from './features/ListsPage'
 import ShoppingListPage from './features/ShoppingListPage'
 import ProductDetailPage from './features/ProductDetailPage'
 import CategorySelectPage from './features/CategorySelectPage'
@@ -67,9 +67,9 @@ function Home() {
         <div className="space-y-4 mb-6">
           <button
             className="w-full bg-yellow-400 text-white font-semibold py-3 rounded-xl text-lg hover:bg-yellow-500 transition-colors"
-            onClick={() => navigate('/households')}
+            onClick={() => navigate('/lists')}
           >
-            Zu "Meine Haushalte"
+            Zu "Meine Listen"
           </button>
           <button
             className="w-full bg-blue-500 text-white font-semibold py-3 rounded-xl text-lg hover:bg-blue-600 transition-colors"
@@ -109,7 +109,7 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route element={<Layout />}>
-        <Route path="/households" element={<HouseholdsPage />} />
+        <Route path="/lists" element={<ListsPage />} />
         <Route path="/shopping-list" element={<ShoppingListPage />} />
         <Route path="/shopping-list/search" element={<SearchPage />} />
         <Route path="/product" element={<ProductDetailPage />} />

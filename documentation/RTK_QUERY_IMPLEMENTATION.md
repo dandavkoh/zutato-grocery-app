@@ -37,10 +37,10 @@ src/
 ## API Endpoints
 
 ### Queries (GET)
-- `GET /api/shopping-items/:householdId` - Alle Items abrufen
-- `GET /api/shopping-items/:householdId/category/:category` - Items nach Kategorie
-- `GET /api/shopping-items/:householdId/completed` - Abgeschlossene Items
-- `GET /api/shopping-items/:householdId/search?q=:query` - Items suchen
+- `GET /api/shopping-items/:listId` - Alle Items abrufen
+- `GET /api/shopping-items/:listId/category/:category` - Items nach Kategorie
+- `GET /api/shopping-items/:listId/completed` - Abgeschlossene Items
+- `GET /api/shopping-items/:listId/search?q=:query` - Items suchen
 
 ### Mutations (POST/PUT/DELETE/PATCH)
 - `POST /api/shopping-items` - Neues Item erstellen
@@ -56,7 +56,7 @@ src/
 import { useShoppingItemsRTK } from './hooks/useShoppingItemsRTK';
 
 const MyComponent = () => {
-  const { items, loading, error, toggleItemCompletion } = useShoppingItemsRTK('household-1');
+  const { items, loading, error, toggleItemCompletion } = useShoppingItemsRTK('list-1');
   
   // Items werden automatisch gecacht und bei Bedarf geladen
   // toggleItemCompletion führt Optimistic Updates durch
@@ -76,7 +76,7 @@ const MyComponent = () => {
     await createItem({
       name: 'Neues Item',
       category: 'Obst',
-      householdId: 'household-1',
+      listId: 'list-1',
       addedBy: 'user-1'
     });
   };
@@ -126,7 +126,7 @@ export const store = configureStore({
 
 ### Tag-basierte Cache-Invalidierung
 ```typescript
-providesTags: (result, error, householdId) =>
+providesTags: (result, error, listId) =>
   result
     ? [
         ...result.map(({ id }) => ({ type: 'ShoppingItem' as const, id })),
@@ -139,7 +139,7 @@ providesTags: (result, error, householdId) =>
 ```typescript
 async onQueryStarted(id, { dispatch, queryFulfilled, getState }) {
   const patchResult = dispatch(
-    shoppingItemsApi.util.updateQueryData('getItems', 'household-1', (draft) => {
+    shoppingItemsApi.util.updateQueryData('getItems', 'list-1', (draft) => {
       // Optimistische Änderung
     })
   );

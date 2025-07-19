@@ -16,7 +16,7 @@ const ShoppingListPage: React.FC = () => {
   const dispatch = useDispatch();
   
   // Use the RTK Query shopping items hook
-  const { items, loading, error, toggleItemCompletion, deleteItem } = useShoppingItemsRTK('household-1');
+  const { items, loading, error, toggleItemCompletion, deleteItem } = useShoppingItemsRTK('list-1');
   
   // Group items by category and separate completed items
   const { completed, incomplete } = separateCompletedItems(items);

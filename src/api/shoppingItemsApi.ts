@@ -12,15 +12,15 @@ export const shoppingItemsApi = createApi({
   baseQuery: mockBaseQuery, // Mock API Adapter verwenden
   tagTypes: ['ShoppingItem'],
   endpoints: (builder) => ({
-    // Alle Items für einen Household abrufen
+    // Alle Items für eine List abrufen
     getItems: builder.query<ShoppingItem[], string>({
-      query: (householdId) => ({
-        url: `/api/shopping-items/${householdId}`,
+      query: (listId) => ({
+        url: `/api/shopping-items/${listId}`,
         method: 'GET',
       }),
       // Cache für 3 Minuten (180 Sekunden)
       keepUnusedDataFor: 180,
-      providesTags: (result, error, householdId) =>
+      providesTags: (result, error, listId) =>
         result
           ? [
               ...result.map(({ id }) => ({ type: 'ShoppingItem' as const, id })),
@@ -28,29 +28,29 @@ export const shoppingItemsApi = createApi({
             ]
           : [{ type: 'ShoppingItem', id: 'LIST' }],
       // Logs für Cache-Verhalten
-      async onQueryStarted(householdId, { queryFulfilled, getState }) {
+      async onQueryStarted(listId, { queryFulfilled, getState }) {
         // Prüfen ob Daten bereits im Cache sind
         const state = getState() as any;
-        const queryKey = `getItems("${householdId}")`;
+        const queryKey = `getItems("${listId}")`;
         const queryState = state.shoppingItemsApi.queries[queryKey];
         
         if (queryState && queryState.data && !queryState.isLoading) {
-          console.log(`⚡ [RTK Query] Using CACHED data for household: ${householdId} (${queryState.data.length} items)`);
+          console.log(`⚡ [RTK Query] Using CACHED data for list: ${listId} (${queryState.data.length} items)`);
           return; // Kein API-Call nötig
         }
         
-        console.log(`🔄 [RTK Query] Starting DATABASE query for household: ${householdId}`);
+        console.log(`🔄 [RTK Query] Starting DATABASE query for list: ${listId}`);
         
         try {
           const { data } = await queryFulfilled;
-          console.log(`✅ [RTK Query] Successfully loaded ${data.length} items from DATABASE for household: ${householdId}`);
+          console.log(`✅ [RTK Query] Successfully loaded ${data.length} items from DATABASE for list: ${listId}`);
         } catch (error) {
-          console.error(`❌ [RTK Query] Failed to load items from DATABASE for household: ${householdId}`, error);
+          console.error(`❌ [RTK Query] Failed to load items from DATABASE for list: ${listId}`, error);
         }
       },
       // Logs für Cache-Entry Lifecycle
       async onCacheEntryAdded(
-        householdId,
+        listId,
         { dispatch, getState, cacheEntryRemoved, cacheDataLoaded }
       ) {
         try {
@@ -59,7 +59,7 @@ export const shoppingItemsApi = createApi({
           
           // Cache-Entry wurde entfernt (z.B. nach 3 Minuten)
           await cacheEntryRemoved;
-          console.log(`🗑️ [RTK Query] Cache entry removed for household: ${householdId} (after 3 minutes)`);
+          console.log(`🗑️ [RTK Query] Cache entry removed for list: ${listId} (after 3 minutes)`);
         } catch {
           // Cache-Entry wurde entfernt bevor Daten geladen wurden
         }
@@ -67,23 +67,23 @@ export const shoppingItemsApi = createApi({
     }),
 
     // Items nach Kategorie abrufen
-    getItemsByCategory: builder.query<ShoppingItem[], { householdId: string; category: string }>({
-      query: ({ householdId, category }) => ({
-        url: `/api/shopping-items/${householdId}/category/${encodeURIComponent(category)}`,
+    getItemsByCategory: builder.query<ShoppingItem[], { listId: string; category: string }>({
+      query: ({ listId, category }) => ({
+        url: `/api/shopping-items/${listId}/category/${encodeURIComponent(category)}`,
         method: 'GET',
       }),
       keepUnusedDataFor: 180,
-      providesTags: (result, error, { householdId, category }) =>
+      providesTags: (result, error, { listId, category }) =>
         result
           ? [
               ...result.map(({ id }) => ({ type: 'ShoppingItem' as const, id })),
               { type: 'ShoppingItem', id: `CATEGORY-${category}` }
             ]
           : [{ type: 'ShoppingItem', id: `CATEGORY-${category}` }],
-      async onQueryStarted({ householdId, category }, { queryFulfilled, getState }) {
+      async onQueryStarted({ listId, category }, { queryFulfilled, getState }) {
         // Prüfen ob Daten bereits im Cache sind
         const state = getState() as any;
-        const queryKey = `getItemsByCategory({"householdId":"${householdId}","category":"${category}"})`;
+        const queryKey = `getItemsByCategory({"listId":"${listId}","category":"${category}"})`;
         const queryState = state.shoppingItemsApi.queries[queryKey];
         
         if (queryState && queryState.data && !queryState.isLoading) {
@@ -91,7 +91,7 @@ export const shoppingItemsApi = createApi({
           return;
         }
         
-        console.log(`🔄 [RTK Query] Starting DATABASE query for category: ${category} in household: ${householdId}`);
+        console.log(`🔄 [RTK Query] Starting DATABASE query for category: ${category} in list: ${listId}`);
         
         try {
           const { data } = await queryFulfilled;
@@ -104,22 +104,22 @@ export const shoppingItemsApi = createApi({
 
     // Abgeschlossene Items abrufen
     getCompletedItems: builder.query<ShoppingItem[], string>({
-      query: (householdId) => ({
-        url: `/api/shopping-items/${householdId}/completed`,
+      query: (listId) => ({
+        url: `/api/shopping-items/${listId}/completed`,
         method: 'GET',
       }),
       keepUnusedDataFor: 180,
-      providesTags: (result, error, householdId) =>
+      providesTags: (result, error, listId) =>
         result
           ? [
               ...result.map(({ id }) => ({ type: 'ShoppingItem' as const, id })),
               { type: 'ShoppingItem', id: 'COMPLETED' }
             ]
           : [{ type: 'ShoppingItem', id: 'COMPLETED' }],
-      async onQueryStarted(householdId, { queryFulfilled, getState }) {
+      async onQueryStarted(listId, { queryFulfilled, getState }) {
         // Prüfen ob Daten bereits im Cache sind
         const state = getState() as any;
-        const queryKey = `getCompletedItems("${householdId}")`;
+        const queryKey = `getCompletedItems("${listId}")`;
         const queryState = state.shoppingItemsApi.queries[queryKey];
         
         if (queryState && queryState.data && !queryState.isLoading) {
@@ -127,7 +127,7 @@ export const shoppingItemsApi = createApi({
           return;
         }
         
-        console.log(`🔄 [RTK Query] Starting DATABASE query for completed items in household: ${householdId}`);
+        console.log(`🔄 [RTK Query] Starting DATABASE query for completed items in list: ${listId}`);
         
         try {
           const { data } = await queryFulfilled;
@@ -150,7 +150,7 @@ export const shoppingItemsApi = createApi({
         console.log(`➕ [RTK Query] Creating new item: "${itemData.name}" (Optimistic Update)`);
         
         const patchResult = dispatch(
-          shoppingItemsApi.util.updateQueryData('getItems', itemData.householdId, (draft) => {
+          shoppingItemsApi.util.updateQueryData('getItems', itemData.listId, (draft) => {
             const newItem: ShoppingItem = {
               id: `temp-${Date.now()}`, // Temporäre ID
               ...itemData,
@@ -167,7 +167,7 @@ export const shoppingItemsApi = createApi({
           
           // Temporäre ID durch echte ID ersetzen
           dispatch(
-            shoppingItemsApi.util.updateQueryData('getItems', itemData.householdId, (draft) => {
+            shoppingItemsApi.util.updateQueryData('getItems', itemData.listId, (draft) => {
               const index = draft.findIndex(item => item.id === `temp-${Date.now() - 1000}`);
               if (index !== -1) {
                 draft[index] = newItem;
@@ -180,7 +180,7 @@ export const shoppingItemsApi = createApi({
           patchResult.undo();
         }
       },
-      invalidatesTags: (result, error, { householdId }) => [
+      invalidatesTags: (result, error, { listId }) => [
         { type: 'ShoppingItem', id: 'LIST' },
         { type: 'ShoppingItem', id: 'COMPLETED' }
       ],
@@ -198,7 +198,7 @@ export const shoppingItemsApi = createApi({
         console.log(`✏️ [RTK Query] Updating item ID: ${id} (Optimistic Update)`);
         
         const patchResult = dispatch(
-          shoppingItemsApi.util.updateQueryData('getItems', 'household-1', (draft) => {
+          shoppingItemsApi.util.updateQueryData('getItems', 'list-1', (draft) => {
             const item = draft.find(item => item.id === id);
             if (item) {
               Object.assign(item, updates, { updatedAt: new Date().toISOString() });
@@ -232,7 +232,7 @@ export const shoppingItemsApi = createApi({
         console.log(`🗑️ [RTK Query] Soft deleting item ID: ${id} (Optimistic Update)`);
         
         const patchResult = dispatch(
-          shoppingItemsApi.util.updateQueryData('getItems', 'household-1', (draft) => {
+          shoppingItemsApi.util.updateQueryData('getItems', 'list-1', (draft) => {
             const item = draft.find(item => item.id === id);
             if (item) {
               item.deleted = true;
@@ -267,7 +267,7 @@ export const shoppingItemsApi = createApi({
         console.log(`🔄 [RTK Query] Toggling completion for item ID: ${id} (Optimistic Update)`);
         
         const patchResult = dispatch(
-          shoppingItemsApi.util.updateQueryData('getItems', 'household-1', (draft) => {
+          shoppingItemsApi.util.updateQueryData('getItems', 'list-1', (draft) => {
             const item = draft.find(item => item.id === id);
             if (item) {
               item.isCompleted = !item.isCompleted;
@@ -292,24 +292,24 @@ export const shoppingItemsApi = createApi({
     }),
 
     // Items suchen
-    searchItems: builder.query<ShoppingItem[], { householdId: string; query: string }>({
-      query: ({ householdId, query }) => ({
-        url: `/api/shopping-items/${householdId}/search`,
+    searchItems: builder.query<ShoppingItem[], { listId: string; query: string }>({
+      query: ({ listId, query }) => ({
+        url: `/api/shopping-items/${listId}/search`,
         method: 'GET',
         params: { q: query },
       }),
       keepUnusedDataFor: 60, // Kürzerer Cache für Suchergebnisse
-      providesTags: (result, error, { householdId, query }) =>
+      providesTags: (result, error, { listId, query }) =>
         result
           ? [
               ...result.map(({ id }) => ({ type: 'ShoppingItem' as const, id })),
               { type: 'ShoppingItem', id: `SEARCH-${query}` }
             ]
           : [{ type: 'ShoppingItem', id: `SEARCH-${query}` }],
-      async onQueryStarted({ householdId, query }, { queryFulfilled, getState }) {
+      async onQueryStarted({ listId, query }, { queryFulfilled, getState }) {
         // Prüfen ob Daten bereits im Cache sind
         const state = getState() as any;
-        const queryKey = `searchItems({"householdId":"${householdId}","query":"${query}"})`;
+        const queryKey = `searchItems({"listId":"${listId}","query":"${query}"})`;
         const queryState = state.shoppingItemsApi.queries[queryKey];
         
         if (queryState && queryState.data && !queryState.isLoading) {
@@ -317,7 +317,7 @@ export const shoppingItemsApi = createApi({
           return;
         }
         
-        console.log(`🔍 [RTK Query] Starting DATABASE search for: "${query}" in household: ${householdId}`);
+        console.log(`🔍 [RTK Query] Starting DATABASE search for: "${query}" in list: ${listId}`);
         
         try {
           const { data } = await queryFulfilled;

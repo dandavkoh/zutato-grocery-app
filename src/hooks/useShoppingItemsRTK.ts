@@ -10,7 +10,7 @@ import {
 import type { CreateShoppingItemRequest, UpdateShoppingItemRequest } from '../api/mockApi';
 
 // RTK Query Hook für Shopping Items
-export const useShoppingItemsRTK = (householdId: string) => {
+export const useShoppingItemsRTK = (listId: string) => {
   // Queries
   const {
     data: items = [],
@@ -20,7 +20,7 @@ export const useShoppingItemsRTK = (householdId: string) => {
     isFetching,
     isSuccess,
     isError,
-  } = useGetItemsQuery(householdId);
+  } = useGetItemsQuery(listId);
 
   // Mutations
   const [createItemMutation, { isLoading: isCreating }] = useCreateItemMutation();
@@ -31,15 +31,15 @@ export const useShoppingItemsRTK = (householdId: string) => {
   // Logs für Hook-Verhalten
   useEffect(() => {
     if (isSuccess && !loading) {
-      console.log(`📊 [Hook] Data loaded successfully: ${items.length} items for household: ${householdId}`);
+      console.log(`📊 [Hook] Data loaded successfully: ${items.length} items for list: ${listId}`);
     }
     if (isError) {
-      console.error(`💥 [Hook] Error loading data for household: ${householdId}`, error);
+      console.error(`💥 [Hook] Error loading data for list: ${listId}`, error);
     }
     if (isFetching && !loading) {
-      console.log(`🔄 [Hook] Refetching data for household: ${householdId}`);
+      console.log(`🔄 [Hook] Refetching data for list: ${listId}`);
     }
-  }, [items.length, loading, isSuccess, isError, isFetching, householdId, error]);
+  }, [items.length, loading, isSuccess, isError, isFetching, listId, error]);
 
   // Wrapper-Funktionen für bessere API-Kompatibilität
   const createItem = useCallback(async (itemData: CreateShoppingItemRequest) => {

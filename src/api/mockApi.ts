@@ -16,7 +16,7 @@ export interface ShoppingItem {
   deleted?: boolean;
   createdAt: string;
   updatedAt: string;
-  householdId: string;
+  listId: string;
   addedBy: string;
   notes?: string;
   stores?: string[];
@@ -30,7 +30,7 @@ export interface CreateShoppingItemRequest {
   icon?: string;
   unit?: Unit;
   amount?: number;
-  householdId: string;
+  listId: string;
   addedBy: string;
   notes?: string;
   stores?: string[];
@@ -69,7 +69,7 @@ const mockItems: ShoppingItem[] = [
     isCompleted: false,
     createdAt: '2024-01-15T10:00:00Z',
     updatedAt: '2024-01-15T10:00:00Z',
-    householdId: 'household-1',
+    listId: 'list-1',
     addedBy: 'user-1',
     notes: 'Reife Ananas bevorzugen',
     stores: ['Rewe', 'Edeka'],
@@ -85,7 +85,7 @@ const mockItems: ShoppingItem[] = [
     isCompleted: false,
     createdAt: '2024-01-15T09:30:00Z',
     updatedAt: '2024-01-15T09:30:00Z',
-    householdId: 'household-1',
+    listId: 'list-1',
     addedBy: 'user-2',
     stores: ['Bäckerei'],
     assignedTo: ['user-2']
@@ -101,7 +101,7 @@ const mockItems: ShoppingItem[] = [
     isCompleted: false,
     createdAt: '2024-01-15T08:45:00Z',
     updatedAt: '2024-01-15T08:45:00Z',
-    householdId: 'household-1',
+    listId: 'list-1',
     addedBy: 'user-1',
     stores: ['Rewe', 'Lidl'],
     assignedTo: ['user-1']
@@ -116,7 +116,7 @@ const mockItems: ShoppingItem[] = [
     isCompleted: true,
     createdAt: '2024-01-14T16:20:00Z',
     updatedAt: '2024-01-15T11:30:00Z',
-    householdId: 'household-1',
+    listId: 'list-1',
     addedBy: 'user-1',
     stores: ['Rewe'],
     assignedTo: ['user-1']
@@ -131,7 +131,7 @@ const mockItems: ShoppingItem[] = [
     isCompleted: true,
     createdAt: '2024-01-14T15:10:00Z',
     updatedAt: '2024-01-15T10:15:00Z',
-    householdId: 'household-1',
+    listId: 'list-1',
     addedBy: 'user-2',
     stores: ['Rewe'],
     assignedTo: ['user-2']
@@ -146,7 +146,7 @@ const mockItems: ShoppingItem[] = [
     isCompleted: false,
     createdAt: '2024-01-15T07:30:00Z',
     updatedAt: '2024-01-15T07:30:00Z',
-    householdId: 'household-1',
+    listId: 'list-1',
     addedBy: 'user-1',
     stores: ['Rewe', 'Edeka'],
     assignedTo: ['user-1']
@@ -161,7 +161,7 @@ const mockItems: ShoppingItem[] = [
     isCompleted: false,
     createdAt: '2024-01-15T06:45:00Z',
     updatedAt: '2024-01-15T06:45:00Z',
-    householdId: 'household-1',
+    listId: 'list-1',
     addedBy: 'user-2',
     notes: 'Für Kuchen',
     stores: ['Rewe'],
@@ -171,14 +171,14 @@ const mockItems: ShoppingItem[] = [
 
 // Mock API Controller
 export class ShoppingItemsController {
-  // Get all items for a household
-  async getItems(householdId: string): Promise<ApiResponse<ShoppingItem[]>> {
+  // Get all items for a list
+  async getItems(listId: string): Promise<ApiResponse<ShoppingItem[]>> {
     try {
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 300));
       
       const items = mockItems.filter(item => 
-        item.householdId === householdId && 
+        item.listId === listId && 
         !item.deleted
       );
       
@@ -197,13 +197,13 @@ export class ShoppingItemsController {
   }
 
   // Get items by category
-  async getItemsByCategory(householdId: string, category: string): Promise<ApiResponse<ShoppingItem[]>> {
+  async getItemsByCategory(listId: string, category: string): Promise<ApiResponse<ShoppingItem[]>> {
     try {
       await new Promise(resolve => setTimeout(resolve, 200));
       
       const items = mockItems.filter(
         item => 
-          item.householdId === householdId && 
+          item.listId === listId && 
           item.category === category &&
           !item.deleted
       );
@@ -223,13 +223,13 @@ export class ShoppingItemsController {
   }
 
   // Get completed items
-  async getCompletedItems(householdId: string): Promise<ApiResponse<ShoppingItem[]>> {
+  async getCompletedItems(listId: string): Promise<ApiResponse<ShoppingItem[]>> {
     try {
       await new Promise(resolve => setTimeout(resolve, 200));
       
       const items = mockItems.filter(
         item => 
-          item.householdId === householdId && 
+          item.listId === listId && 
           item.isCompleted &&
           !item.deleted
       );
@@ -387,13 +387,13 @@ export class ShoppingItemsController {
   }
 
   // Search items
-  async searchItems(householdId: string, query: string): Promise<ApiResponse<ShoppingItem[]>> {
+  async searchItems(listId: string, query: string): Promise<ApiResponse<ShoppingItem[]>> {
     try {
       await new Promise(resolve => setTimeout(resolve, 300));
       
       const items = mockItems.filter(
         item => 
-          item.householdId === householdId && 
+          item.listId === listId && 
           item.name.toLowerCase().includes(query.toLowerCase()) &&
           !item.deleted
       );

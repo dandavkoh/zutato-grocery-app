@@ -50,7 +50,7 @@ const Header: React.FC = () => {
           <div className="flex items-center">
             <div
               className="mr-3 cursor-pointer"
-              onClick={() => navigate('/households')}
+              onClick={() => navigate('/lists')}
             >
               <FontAwesomeIcon icon="fa-house" size="2xl"/>
             </div>

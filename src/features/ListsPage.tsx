@@ -4,13 +4,13 @@ import { useDispatch } from 'react-redux';
 import { setHeader, resetHeader } from '../stores/store';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
 
-const HouseholdsPage: React.FC = () => {
+const ListsPage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
   useEffect(() => {
     dispatch(setHeader({
-      title: 'Meine Haushalte',
+      title: 'Meine Listen',
       showBack: false,
       background: 'bg-yellow-400',
     }));
@@ -21,7 +21,7 @@ const HouseholdsPage: React.FC = () => {
     <div className="flex-1">
       {/* Content */}
       <div className="flex-1 px-4 pt-6 pb-10">
-        <p className="text-gray-200 mb-3">Haushalte anzeigen für</p>
+        <p className="text-gray-200 mb-3">Listen anzeigen für</p>
         <div className="flex items-center bg-neutral-900 rounded-2xl p-4 mb-6 border border-gray-700">
           <img src="https://randomuser.me/api/portraits/men/1.jpg" alt="Profil" className="w-12 h-12 rounded-full mr-4 border-2 border-yellow-400" />
           <div className="flex-1">
@@ -69,4 +69,4 @@ const HouseholdsPage: React.FC = () => {
   );
 };
 
-export default HouseholdsPage; 
+export default ListsPage; 

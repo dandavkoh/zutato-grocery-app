@@ -10,19 +10,19 @@ import type {
 // Dieser Adapter fängt die HTTP-Requests von RTK Query ab und leitet sie an die Mock-API weiter
 
 export const mockApiAdapter = {
-  // GET /api/shopping-items/:householdId
-  async getItems(householdId: string): Promise<ApiResponse<ShoppingItem[]>> {
-    return await mockApi.getItems(householdId);
+  // GET /api/shopping-items/:listId
+  async getItems(listId: string): Promise<ApiResponse<ShoppingItem[]>> {
+    return await mockApi.getItems(listId);
   },
 
-  // GET /api/shopping-items/:householdId/category/:category
-  async getItemsByCategory(householdId: string, category: string): Promise<ApiResponse<ShoppingItem[]>> {
-    return await mockApi.getItemsByCategory(householdId, category);
+  // GET /api/shopping-items/:listId/category/:category
+  async getItemsByCategory(listId: string, category: string): Promise<ApiResponse<ShoppingItem[]>> {
+    return await mockApi.getItemsByCategory(listId, category);
   },
 
-  // GET /api/shopping-items/:householdId/completed
-  async getCompletedItems(householdId: string): Promise<ApiResponse<ShoppingItem[]>> {
-    return await mockApi.getCompletedItems(householdId);
+  // GET /api/shopping-items/:listId/completed
+  async getCompletedItems(listId: string): Promise<ApiResponse<ShoppingItem[]>> {
+    return await mockApi.getCompletedItems(listId);
   },
 
   // POST /api/shopping-items
@@ -45,9 +45,9 @@ export const mockApiAdapter = {
     return await mockApi.toggleItemCompletion(id);
   },
 
-  // GET /api/shopping-items/:householdId/search?q=:query
-  async searchItems(householdId: string, query: string): Promise<ApiResponse<ShoppingItem[]>> {
-    return await mockApi.searchItems(householdId, query);
+  // GET /api/shopping-items/:listId/search?q=:query
+  async searchItems(listId: string, query: string): Promise<ApiResponse<ShoppingItem[]>> {
+    return await mockApi.searchItems(listId, query);
   },
 };
 
@@ -61,24 +61,24 @@ export const mockBaseQuery = async (args: { url: string; method: string; body?: 
     // URL-Parsing für verschiedene Endpoints
     if (method === 'GET') {
       if (url.includes('/api/shopping-items/') && url.includes('/category/')) {
-        // GET /api/shopping-items/:householdId/category/:category
+        // GET /api/shopping-items/:listId/category/:category
         const parts = url.split('/');
-        const householdId = parts[3];
+        const listId = parts[3];
         const category = decodeURIComponent(parts[5]);
-        response = await mockApiAdapter.getItemsByCategory(householdId, category);
+        response = await mockApiAdapter.getItemsByCategory(listId, category);
       } else if (url.includes('/api/shopping-items/') && url.includes('/completed')) {
-        // GET /api/shopping-items/:householdId/completed
-        const householdId = url.split('/')[3];
-        response = await mockApiAdapter.getCompletedItems(householdId);
+        // GET /api/shopping-items/:listId/completed
+        const listId = url.split('/')[3];
+        response = await mockApiAdapter.getCompletedItems(listId);
       } else if (url.includes('/api/shopping-items/') && url.includes('/search')) {
-        // GET /api/shopping-items/:householdId/search?q=:query
-        const householdId = url.split('/')[3];
+        // GET /api/shopping-items/:listId/search?q=:query
+        const listId = url.split('/')[3];
         const query = params?.q || '';
-        response = await mockApiAdapter.searchItems(householdId, query);
+        response = await mockApiAdapter.searchItems(listId, query);
       } else if (url.includes('/api/shopping-items/')) {
-        // GET /api/shopping-items/:householdId
-        const householdId = url.split('/')[3];
-        response = await mockApiAdapter.getItems(householdId);
+        // GET /api/shopping-items/:listId
+        const listId = url.split('/')[3];
+        response = await mockApiAdapter.getItems(listId);
       }
     } else if (method === 'POST' && url === '/api/shopping-items') {
       // POST /api/shopping-items

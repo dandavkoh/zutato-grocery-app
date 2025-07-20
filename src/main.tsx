@@ -8,15 +8,14 @@ import './index.css'
 import App from './App.tsx'
 // Initialize PWA Service
 import './services/pwaService'
-// Initialize Supabase
-import { initializeSupabase } from './config/supabase'
+// Supabase is automatically initialized
 import { logInfo } from './config/environment'
 
 // Initialize services
 const initializeApp = async () => {
   try {
     logInfo('Initializing HNGRY PWA...');
-    await initializeSupabase();
+    // Supabase is automatically initialized when the client is created
     logInfo('App initialization completed');
   } catch (error) {
     console.error('Failed to initialize app:', error);

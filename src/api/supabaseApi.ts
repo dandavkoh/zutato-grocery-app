@@ -1,5 +1,22 @@
-import { supabase, supabaseService } from '../config/supabase';
-import { logDebug, logError } from '../config/environment';
+import { supabase } from '../config/supabase';
+import { logDebug, logError, logInfo } from '../config/environment';
+import type { AuthError } from '@supabase/supabase-js';
+
+// Auth Types
+export interface AuthUser {
+  id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  emailVerified?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AuthResponse {
+  user?: AuthUser;
+  error?: AuthError;
+}
 
 // Supabase API Types - Compatible with Supabase
 export interface Unit {
@@ -60,117 +77,7 @@ export interface ApiResponse<T> {
   status: number;
 }
 
-// Mock Data
-const mockItems: ShoppingItem[] = [
-  {
-    id: '1',
-    name: 'Ananas',
-    category: 'Obst',
-    icon: 'fa-pineapple',
-    unit: { name: 'Stücke', short: 'Stk' },
-    amount: 1,
-    isCompleted: false,
-    createdAt: '2024-01-15T10:00:00Z',
-    updatedAt: '2024-01-15T10:00:00Z',
-    listId: 'list-1',
-    addedBy: 'user-1',
-    notes: 'Reife Ananas bevorzugen',
-    stores: ['Rewe', 'Edeka'],
-    assignedTo: ['user-1']
-  },
-  {
-    id: '2',
-    name: 'Donuts',
-    category: 'Brot & Backwaren',
-    icon: 'fa-donut',
-    unit: { name: 'Stücke', short: 'Stk' },
-    amount: 6,
-    isCompleted: false,
-    createdAt: '2024-01-15T09:30:00Z',
-    updatedAt: '2024-01-15T09:30:00Z',
-    listId: 'list-1',
-    addedBy: 'user-2',
-    stores: ['Bäckerei'],
-    assignedTo: ['user-2']
-  },
-  {
-    id: '3',
-    name: 'Haribo',
-    description: 'Schlangen',
-    category: 'Süßigkeiten & Snacks',
-    icon: undefined,
-    unit: { name: 'Packungen', short: 'Pkg' },
-    amount: 2,
-    isCompleted: false,
-    createdAt: '2024-01-15T08:45:00Z',
-    updatedAt: '2024-01-15T08:45:00Z',
-    listId: 'list-1',
-    addedBy: 'user-1',
-    stores: ['Rewe', 'Lidl'],
-    assignedTo: ['user-1']
-  },
-  {
-    id: '4',
-    name: 'Butter',
-    category: 'Milchprodukte & Eier',
-    icon: 'fa-butter',
-    unit: { name: 'Packungen', short: 'Pkg' },
-    amount: 1,
-    isCompleted: true,
-    createdAt: '2024-01-14T16:20:00Z',
-    updatedAt: '2024-01-15T11:30:00Z',
-    listId: 'list-1',
-    addedBy: 'user-1',
-    stores: ['Rewe'],
-    assignedTo: ['user-1']
-  },
-  {
-    id: '5',
-    name: 'Milch',
-    category: 'Milchprodukte & Eier',
-    icon: 'fa-glass',
-    unit: { name: 'Liter', short: 'l' },
-    amount: 1.5,
-    isCompleted: true,
-    createdAt: '2024-01-14T15:10:00Z',
-    updatedAt: '2024-01-15T10:15:00Z',
-    listId: 'list-1',
-    addedBy: 'user-2',
-    stores: ['Rewe'],
-    assignedTo: ['user-2']
-  },
-  {
-    id: '6',
-    name: 'Eier',
-    category: 'Milchprodukte & Eier',
-    icon: 'fa-egg',
-    unit: { name: 'Stücke', short: 'Stk' },
-    amount: 10,
-    isCompleted: false,
-    createdAt: '2024-01-15T07:30:00Z',
-    updatedAt: '2024-01-15T07:30:00Z',
-    listId: 'list-1',
-    addedBy: 'user-1',
-    stores: ['Rewe', 'Edeka'],
-    assignedTo: ['user-1']
-  },
-  {
-    id: '7',
-    name: 'Sahne',
-    category: 'Milchprodukte & Eier',
-    icon: 'fa-bowl-soft-serve',
-    unit: { name: 'Packungen', short: 'Pkg' },
-    amount: 4,
-    isCompleted: false,
-    createdAt: '2024-01-15T06:45:00Z',
-    updatedAt: '2024-01-15T06:45:00Z',
-    listId: 'list-1',
-    addedBy: 'user-2',
-    notes: 'Für Kuchen',
-    stores: ['Rewe'],
-    assignedTo: ['user-2']
-  }
-];
+// No more mock data - using real Supabase database
 
 // Supabase API Controller
 export class ShoppingItemsController {
@@ -218,21 +125,38 @@ export class ShoppingItemsController {
   // Get items by category
   async getItemsByCategory(listId: string, category: string): Promise<ApiResponse<ShoppingItem[]>> {
     try {
-      await new Promise(resolve => setTimeout(resolve, 200));
+      logDebug('Fetching items by category from Supabase', { listId, category });
       
-      const items = mockItems.filter(
-        item => 
-          item.listId === listId && 
-          item.category === category &&
-          !item.deleted
-      );
+      const { data, error } = await supabase
+        .from('shopping_items')
+        .select('*')
+        .eq('list_id', listId)
+        .eq('category', category)
+        .eq('deleted', false)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        logError('Failed to fetch items by category from Supabase', error);
+        return {
+          data: null,
+          error: error.message,
+          status: 500
+        };
+      }
+      
+      logDebug('Successfully fetched items by category from Supabase', { 
+        listId, 
+        category,
+        count: data?.length || 0 
+      });
       
       return {
-        data: items,
+        data: data || [],
         error: null,
         status: 200
       };
     } catch (error) {
+      logError('Unexpected error fetching items by category', error);
       return {
         data: null,
         error: 'Failed to fetch items by category',
@@ -244,21 +168,37 @@ export class ShoppingItemsController {
   // Get completed items
   async getCompletedItems(listId: string): Promise<ApiResponse<ShoppingItem[]>> {
     try {
-      await new Promise(resolve => setTimeout(resolve, 200));
+      logDebug('Fetching completed items from Supabase', { listId });
       
-      const items = mockItems.filter(
-        item => 
-          item.listId === listId && 
-          item.isCompleted &&
-          !item.deleted
-      );
+      const { data, error } = await supabase
+        .from('shopping_items')
+        .select('*')
+        .eq('list_id', listId)
+        .eq('is_completed', true)
+        .eq('deleted', false)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        logError('Failed to fetch completed items from Supabase', error);
+        return {
+          data: null,
+          error: error.message,
+          status: 500
+        };
+      }
+      
+      logDebug('Successfully fetched completed items from Supabase', { 
+        listId, 
+        count: data?.length || 0 
+      });
       
       return {
-        data: items,
+        data: data || [],
         error: null,
         status: 200
       };
     } catch (error) {
+      logError('Unexpected error fetching completed items', error);
       return {
         data: null,
         error: 'Failed to fetch completed items',
@@ -270,17 +210,59 @@ export class ShoppingItemsController {
   // Create new item
   async createItem(itemData: CreateShoppingItemRequest): Promise<ApiResponse<ShoppingItem>> {
     try {
-      await new Promise(resolve => setTimeout(resolve, 400));
+      logDebug('Creating new item in Supabase', { name: itemData.name, listId: itemData.listId });
       
+      const { data, error } = await supabase
+        .from('shopping_items')
+        .insert([{
+          name: itemData.name,
+          description: itemData.description,
+          category: itemData.category,
+          icon: itemData.icon,
+          unit_name: itemData.unit?.name,
+          unit_short: itemData.unit?.short,
+          amount: itemData.amount,
+          list_id: itemData.listId,
+          added_by: itemData.addedBy,
+          notes: itemData.notes,
+          stores: itemData.stores,
+          assigned_to: itemData.assignedTo,
+          is_completed: false,
+          deleted: false,
+        }])
+        .select()
+        .single();
+      
+      if (error) {
+        logError('Failed to create item in Supabase', error);
+        return {
+          data: null,
+          error: error.message,
+          status: 500
+        };
+      }
+      
+      // Transform Supabase data to ShoppingItem format
       const newItem: ShoppingItem = {
-        id: Date.now().toString(),
-        ...itemData,
-        isCompleted: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        id: data.id,
+        name: data.name,
+        description: data.description,
+        category: data.category,
+        icon: data.icon,
+        unit: data.unit_name ? { name: data.unit_name, short: data.unit_short } : undefined,
+        amount: data.amount,
+        isCompleted: data.is_completed,
+        deleted: data.deleted,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+        listId: data.list_id,
+        addedBy: data.added_by,
+        notes: data.notes,
+        stores: data.stores,
+        assignedTo: data.assigned_to,
       };
       
-      mockItems.push(newItem);
+      logDebug('Successfully created item in Supabase', { itemId: newItem.id });
       
       return {
         data: newItem,
@@ -288,6 +270,7 @@ export class ShoppingItemsController {
         status: 201
       };
     } catch (error) {
+      logError('Unexpected error creating item', error);
       return {
         data: null,
         error: 'Failed to create item',
@@ -299,11 +282,44 @@ export class ShoppingItemsController {
   // Update item
   async updateItem(id: string, updates: UpdateShoppingItemRequest): Promise<ApiResponse<ShoppingItem>> {
     try {
-      await new Promise(resolve => setTimeout(resolve, 300));
+      logDebug('Updating item in Supabase', { itemId: id, updates });
       
-      const itemIndex = mockItems.findIndex(item => item.id === id);
+      const updateData: any = {};
       
-      if (itemIndex === -1) {
+      if (updates.name !== undefined) updateData.name = updates.name;
+      if (updates.description !== undefined) updateData.description = updates.description;
+      if (updates.category !== undefined) updateData.category = updates.category;
+      if (updates.icon !== undefined) updateData.icon = updates.icon;
+      if (updates.unit !== undefined) {
+        updateData.unit_name = updates.unit.name;
+        updateData.unit_short = updates.unit.short;
+      }
+      if (updates.amount !== undefined) updateData.amount = updates.amount;
+      if (updates.isCompleted !== undefined) updateData.is_completed = updates.isCompleted;
+      if (updates.deleted !== undefined) updateData.deleted = updates.deleted;
+      if (updates.notes !== undefined) updateData.notes = updates.notes;
+      if (updates.stores !== undefined) updateData.stores = updates.stores;
+      if (updates.assignedTo !== undefined) updateData.assigned_to = updates.assignedTo;
+      
+      updateData.updated_at = new Date().toISOString();
+      
+      const { data, error } = await supabase
+        .from('shopping_items')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) {
+        logError('Failed to update item in Supabase', error);
+        return {
+          data: null,
+          error: error.message,
+          status: 500
+        };
+      }
+      
+      if (!data) {
         return {
           data: null,
           error: 'Item not found',
@@ -311,13 +327,27 @@ export class ShoppingItemsController {
         };
       }
       
-      const updatedItem = {
-        ...mockItems[itemIndex],
-        ...updates,
-        updatedAt: new Date().toISOString()
+      // Transform Supabase data to ShoppingItem format
+      const updatedItem: ShoppingItem = {
+        id: data.id,
+        name: data.name,
+        description: data.description,
+        category: data.category,
+        icon: data.icon,
+        unit: data.unit_name ? { name: data.unit_name, short: data.unit_short } : undefined,
+        amount: data.amount,
+        isCompleted: data.is_completed,
+        deleted: data.deleted,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+        listId: data.list_id,
+        addedBy: data.added_by,
+        notes: data.notes,
+        stores: data.stores,
+        assignedTo: data.assigned_to,
       };
       
-      mockItems[itemIndex] = updatedItem;
+      logDebug('Successfully updated item in Supabase', { itemId: updatedItem.id });
       
       return {
         data: updatedItem,
@@ -325,6 +355,7 @@ export class ShoppingItemsController {
         status: 200
       };
     } catch (error) {
+      logError('Unexpected error updating item', error);
       return {
         data: null,
         error: 'Failed to update item',
@@ -333,26 +364,29 @@ export class ShoppingItemsController {
     }
   }
 
-  // Delete item
+  // Delete item (soft delete)
   async deleteItem(id: string): Promise<ApiResponse<null>> {
     try {
-      await new Promise(resolve => setTimeout(resolve, 300));
+      logDebug('Deleting item in Supabase', { itemId: id });
       
-      const itemIndex = mockItems.findIndex(item => item.id === id);
+      const { error } = await supabase
+        .from('shopping_items')
+        .update({ 
+          deleted: true, 
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', id);
       
-      if (itemIndex === -1) {
+      if (error) {
+        logError('Failed to delete item in Supabase', error);
         return {
           data: null,
-          error: 'Item not found',
-          status: 404
+          error: error.message,
+          status: 500
         };
       }
       
-      mockItems[itemIndex] = {
-        ...mockItems[itemIndex],
-        deleted: true,
-        updatedAt: new Date().toISOString()
-      };
+      logDebug('Successfully deleted item in Supabase', { itemId: id });
       
       return {
         data: null,
@@ -360,6 +394,7 @@ export class ShoppingItemsController {
         status: 204
       };
     } catch (error) {
+      logError('Unexpected error deleting item', error);
       return {
         data: null,
         error: 'Failed to delete item',
@@ -371,11 +406,25 @@ export class ShoppingItemsController {
   // Toggle item completion
   async toggleItemCompletion(id: string): Promise<ApiResponse<ShoppingItem>> {
     try {
-      await new Promise(resolve => setTimeout(resolve, 200));
+      logDebug('Toggling item completion in Supabase', { itemId: id });
       
-      const itemIndex = mockItems.findIndex(item => item.id === id);
+      // First get current item to toggle the completion status
+      const { data: currentItem, error: fetchError } = await supabase
+        .from('shopping_items')
+        .select('*')
+        .eq('id', id)
+        .single();
       
-      if (itemIndex === -1) {
+      if (fetchError) {
+        logError('Failed to fetch item for toggle in Supabase', fetchError);
+        return {
+          data: null,
+          error: fetchError.message,
+          status: 500
+        };
+      }
+      
+      if (!currentItem) {
         return {
           data: null,
           error: 'Item not found',
@@ -383,13 +432,50 @@ export class ShoppingItemsController {
         };
       }
       
-      const updatedItem = {
-        ...mockItems[itemIndex],
-        isCompleted: !mockItems[itemIndex].isCompleted,
-        updatedAt: new Date().toISOString()
+      // Toggle completion status
+      const { data, error } = await supabase
+        .from('shopping_items')
+        .update({ 
+          is_completed: !currentItem.is_completed,
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) {
+        logError('Failed to toggle item completion in Supabase', error);
+        return {
+          data: null,
+          error: error.message,
+          status: 500
+        };
+      }
+      
+      // Transform Supabase data to ShoppingItem format
+      const updatedItem: ShoppingItem = {
+        id: data.id,
+        name: data.name,
+        description: data.description,
+        category: data.category,
+        icon: data.icon,
+        unit: data.unit_name ? { name: data.unit_name, short: data.unit_short } : undefined,
+        amount: data.amount,
+        isCompleted: data.is_completed,
+        deleted: data.deleted,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+        listId: data.list_id,
+        addedBy: data.added_by,
+        notes: data.notes,
+        stores: data.stores,
+        assignedTo: data.assigned_to,
       };
       
-      mockItems[itemIndex] = updatedItem;
+      logDebug('Successfully toggled item completion in Supabase', { 
+        itemId: updatedItem.id, 
+        isCompleted: updatedItem.isCompleted 
+      });
       
       return {
         data: updatedItem,
@@ -397,6 +483,7 @@ export class ShoppingItemsController {
         status: 200
       };
     } catch (error) {
+      logError('Unexpected error toggling item completion', error);
       return {
         data: null,
         error: 'Failed to toggle item completion',
@@ -408,21 +495,38 @@ export class ShoppingItemsController {
   // Search items
   async searchItems(listId: string, query: string): Promise<ApiResponse<ShoppingItem[]>> {
     try {
-      await new Promise(resolve => setTimeout(resolve, 300));
+      logDebug('Searching items in Supabase', { listId, query });
       
-      const items = mockItems.filter(
-        item => 
-          item.listId === listId && 
-          item.name.toLowerCase().includes(query.toLowerCase()) &&
-          !item.deleted
-      );
+      const { data, error } = await supabase
+        .from('shopping_items')
+        .select('*')
+        .eq('list_id', listId)
+        .eq('deleted', false)
+        .ilike('name', `%${query}%`)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        logError('Failed to search items in Supabase', error);
+        return {
+          data: null,
+          error: error.message,
+          status: 500
+        };
+      }
+      
+      logDebug('Successfully searched items in Supabase', { 
+        listId, 
+        query,
+        count: data?.length || 0 
+      });
       
       return {
-        data: items,
+        data: data || [],
         error: null,
         status: 200
       };
     } catch (error) {
+      logError('Unexpected error searching items', error);
       return {
         data: null,
         error: 'Failed to search items',
@@ -432,7 +536,188 @@ export class ShoppingItemsController {
   }
 }
 
-// Export singleton instance
+// Auth Service Functions
+export const authService = {
+  // Register user
+  async register(email: string, password: string, userData: { firstName: string; lastName: string }): Promise<AuthResponse> {
+    try {
+      logDebug('Registering user', { email, firstName: userData.firstName });
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            first_name: userData.firstName,
+            last_name: userData.lastName,
+          }
+        }
+      });
+      
+      if (error) {
+        logError('Registration failed', error);
+        return { error };
+      }
+      
+      if (data.user) {
+        const authUser: AuthUser = {
+          id: data.user.id,
+          email: data.user.email!,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          emailVerified: data.user.email_confirmed_at !== null,
+          createdAt: data.user.created_at,
+          updatedAt: data.user.updated_at,
+        };
+        
+        logInfo('User registered successfully', { userId: authUser.id });
+        return { user: authUser };
+      }
+      
+      return { error: { message: 'Registration failed' } as AuthError };
+    } catch (error) {
+      logError('Unexpected registration error', error);
+      return { error: { message: 'Registration failed' } as AuthError };
+    }
+  },
+
+  // Login user
+  async login(email: string, password: string): Promise<AuthResponse> {
+    try {
+      logDebug('Logging in user', { email });
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (error) {
+        logError('Login failed', error);
+        return { error };
+      }
+      
+      if (data.user) {
+        const authUser: AuthUser = {
+          id: data.user.id,
+          email: data.user.email!,
+          firstName: data.user.user_metadata?.first_name,
+          lastName: data.user.user_metadata?.last_name,
+          emailVerified: data.user.email_confirmed_at !== null,
+          createdAt: data.user.created_at,
+          updatedAt: data.user.updated_at,
+        };
+        
+        logInfo('User logged in successfully', { userId: authUser.id });
+        return { user: authUser };
+      }
+      
+      return { error: { message: 'Login failed' } as AuthError };
+    } catch (error) {
+      logError('Unexpected login error', error);
+      return { error: { message: 'Login failed' } as AuthError };
+    }
+  },
+
+  // Reset password
+  async resetPassword(email: string): Promise<AuthResponse> {
+    try {
+      logDebug('Resetting password', { email });
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      
+      if (error) {
+        logError('Password reset failed', error);
+        return { error };
+      }
+      
+      logInfo('Password reset email sent', { email });
+      return {};
+    } catch (error) {
+      logError('Unexpected password reset error', error);
+      return { error: { message: 'Password reset failed' } as AuthError };
+    }
+  },
+
+  // Logout user
+  async logout(): Promise<void> {
+    try {
+      logDebug('Logging out user');
+      
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        logError('Logout failed', error);
+        throw error;
+      }
+      
+      logInfo('User logged out successfully');
+    } catch (error) {
+      logError('Unexpected logout error', error);
+      throw error;
+    }
+  },
+
+  // Get current user
+  async getCurrentUser(): Promise<AuthUser | null> {
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      
+      if (error) {
+        logError('Failed to get current user', error);
+        return null;
+      }
+      
+      if (user) {
+        const authUser: AuthUser = {
+          id: user.id,
+          email: user.email!,
+          firstName: user.user_metadata?.first_name,
+          lastName: user.user_metadata?.last_name,
+          emailVerified: user.email_confirmed_at !== null,
+          createdAt: user.created_at,
+          updatedAt: user.updated_at,
+        };
+        
+        return authUser;
+      }
+      
+      return null;
+    } catch (error) {
+      logError('Unexpected error getting current user', error);
+      return null;
+    }
+  },
+
+  // Check if user is authenticated
+  async isAuthenticated(): Promise<boolean> {
+    const user = await this.getCurrentUser();
+    return user !== null;
+  },
+
+  // Listen to auth state changes
+  onAuthStateChange(callback: (user: AuthUser | null) => void) {
+    return supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        const authUser: AuthUser = {
+          id: session.user.id,
+          email: session.user.email!,
+          firstName: session.user.user_metadata?.first_name,
+          lastName: session.user.user_metadata?.last_name,
+          emailVerified: session.user.email_confirmed_at !== null,
+          createdAt: session.user.created_at,
+          updatedAt: session.user.updated_at,
+        };
+        callback(authUser);
+      } else {
+        callback(null);
+      }
+    });
+  }
+};
+
+// Database Service Functions
 export const shoppingItemsApi = new ShoppingItemsController();
 
 // Helper function to group items by category

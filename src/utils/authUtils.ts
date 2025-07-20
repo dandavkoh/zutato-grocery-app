@@ -1,23 +1,11 @@
 // Authentication utility functions for Supabase compatibility
 
-export interface AuthUser {
-  id: string;
-  email: string;
-  firstName?: string;
-  lastName?: string;
-  emailVerified?: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-}
+// Import types from Supabase API
+import type { AuthUser, AuthResponse } from '../api/supabaseApi';
 
 export interface AuthError {
   message: string;
   code?: string;
-}
-
-export interface AuthResponse {
-  user?: AuthUser;
-  error?: AuthError;
 }
 
 // Email validation
@@ -148,97 +136,11 @@ export const validateLoginForm = (formData: {
   return { isValid: Object.keys(errors).length === 0, errors };
 };
 
-// TODO: Supabase authentication functions (to be implemented)
-export const authService = {
-  // Register user
-  async register(email: string, password: string, userData: { firstName: string; lastName: string }): Promise<AuthResponse> {
-    // TODO: Replace with actual Supabase implementation
-    // const { data, error } = await supabase.auth.signUp({
-    //   email,
-    //   password,
-    //   options: {
-    //     data: {
-    //       first_name: userData.firstName,
-    //       last_name: userData.lastName,
-    //     }
-    //   }
-    // });
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    return {
-      user: {
-        id: 'temp-id',
-        email,
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        emailVerified: false,
-        createdAt: new Date().toISOString(),
-      }
-    };
-  },
+// Import Supabase auth service
+import { authService as supabaseAuthService } from '../api/supabaseApi';
 
-  // Login user
-  async login(email: string, password: string): Promise<AuthResponse> {
-    // TODO: Replace with actual Supabase implementation
-    // const { data, error } = await supabase.auth.signInWithPassword({
-    //   email,
-    //   password,
-    // });
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    return {
-      user: {
-        id: 'temp-id',
-        email,
-        firstName: 'Max',
-        lastName: 'Mustermann',
-        emailVerified: true,
-        createdAt: new Date().toISOString(),
-      }
-    };
-  },
-
-  // Reset password
-  async resetPassword(email: string): Promise<AuthResponse> {
-    // TODO: Replace with actual Supabase implementation
-    // const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-    //   redirectTo: `${window.location.origin}/reset-password`,
-    // });
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    return {};
-  },
-
-  // Logout user
-  async logout(): Promise<void> {
-    // TODO: Replace with actual Supabase implementation
-    // const { error } = await supabase.auth.signOut();
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-  },
-
-  // Get current user
-  async getCurrentUser(): Promise<AuthUser | null> {
-    // TODO: Replace with actual Supabase implementation
-    // const { data: { user } } = await supabase.auth.getUser();
-    // return user;
-    
-    return null;
-  },
-
-  // Check if user is authenticated
-  async isAuthenticated(): Promise<boolean> {
-    const user = await this.getCurrentUser();
-    return user !== null;
-  },
-};
+// Re-export Supabase auth service
+export const authService = supabaseAuthService;
 
 // Local storage helpers for authentication state
 export const authStorage = {

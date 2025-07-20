@@ -73,9 +73,8 @@ const ShoppingListPage: React.FC = () => {
     if (toggleDebounceRef.current[itemId]) {
       clearTimeout(toggleDebounceRef.current[itemId]);
     }
-    
     // Set a new timeout to prevent rapid clicks
-    toggleDebounceRef.current[itemId] = setTimeout(() => {
+    toggleDebounceRef.current[itemId] = window.setTimeout(() => {
       // Fire and forget - don't await the result for better UX
       toggleItemCompletion(itemId).catch(error => {
         console.error('Failed to toggle item completion:', error);

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { authService, authStorage } from '../utils/authUtils';
-import type { AuthUser } from '../utils/authUtils';
+import type { AuthUser } from '../api/supabaseApi';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -27,21 +27,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        // Check if user is authenticated
-        const isAuth = await authService.isAuthenticated();
-        
-        if (isAuth) {
-          const currentUser = await authService.getCurrentUser();
-          if (currentUser) {
-            setUser(currentUser);
-            authStorage.setUser(currentUser);
-          }
-        } else {
-          // Check local storage for cached user
-          const cachedUser = authStorage.getUser();
-          if (cachedUser) {
-            setUser(cachedUser);
-          }
+        // Get current user from Supabase
+        const currentUser = await authService.getCurrentUser();
+        if (currentUser) {
+          setUser(currentUser);
+          authStorage.setUser(currentUser);
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
@@ -52,7 +42,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     };
 
+    // Listen to auth state changes
+    const { data: { subscription } } = authService.onAuthStateChange((user) => {
+      setUser(user);
+      if (user) {
+        authStorage.setUser(user);
+      } else {
+        authStorage.clear();
+      }
+    });
+
     initializeAuth();
+
+    // Cleanup subscription
+    return () => subscription.unsubscribe();
   }, []);
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {

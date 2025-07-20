@@ -95,7 +95,9 @@ const LoginPage: React.FC = () => {
       const result = await login(formData.email, formData.password);
 
       if (result.success) {
-        navigate('/');
+        // Redirect to the page they were trying to access, or to home
+        const from = location.state?.from?.pathname || '/';
+        navigate(from, { replace: true });
       } else {
         setErrors({ general: result.error || 'Anmeldung fehlgeschlagen' });
       }

@@ -24,12 +24,12 @@ const seasonal = [
 
 const searchResults = [
   { icon: <FontAwesomeIcon icon="jar-wheat" className="text-gray-300" size="2xl"/>, name: 'Mehl Roggen' },
-  { icon: <FontAwesomeIcon icon="jar-wheat" className="text-gray-300" size="2xl"/>, name: 'Mehl Roggen 500', amount: '500' },
-  { icon: <FontAwesomeIcon icon="jar-wheat" className="text-gray-300" size="2xl"/>, name: 'Mehl', sub: 'Roggen', amount: '500 g' },
-  { icon: <FontAwesomeIcon icon="jar-wheat" className="text-gray-300" size="2xl"/>, name: 'Roggenmehl', sub: 'Mehl', amount: '500 g' },
-  { icon: <FontAwesomeIcon icon="jar-wheat" className="text-gray-300" size="2xl"/>, name: 'Weizenmehl', sub: 'Roggen', amount: '500 kg' },
-  { icon: <FontAwesomeIcon icon="jar-wheat" className="text-gray-300" size="2xl"/>, name: 'Dinkelmehl', sub: 'Roggen', amount: '500 g' },
-  { icon: <FontAwesomeIcon icon="jar-wheat" className="text-gray-300" size="2xl"/>, name: 'Paniermehl', sub: 'Roggen', amount: '500 g' },
+          { icon: <FontAwesomeIcon icon="jar-wheat" className="text-gray-300" size="2xl"/>, name: 'Mehl Roggen 500', quantity: '500' },
+        { icon: <FontAwesomeIcon icon="jar-wheat" className="text-gray-300" size="2xl"/>, name: 'Mehl', sub: 'Roggen', quantity: '500 g' },
+        { icon: <FontAwesomeIcon icon="jar-wheat" className="text-gray-300" size="2xl"/>, name: 'Roggenmehl', sub: 'Mehl', quantity: '500 g' },
+        { icon: <FontAwesomeIcon icon="jar-wheat" className="text-gray-300" size="2xl"/>, name: 'Weizenmehl', sub: 'Roggen', quantity: '500 kg' },
+        { icon: <FontAwesomeIcon icon="jar-wheat" className="text-gray-300" size="2xl"/>, name: 'Dinkelmehl', sub: 'Roggen', quantity: '500 g' },
+        { icon: <FontAwesomeIcon icon="jar-wheat" className="text-gray-300" size="2xl"/>, name: 'Paniermehl', sub: 'Roggen', quantity: '500 g' },
 ];
 
 const SearchPage: React.FC = () => {
@@ -65,7 +65,7 @@ const SearchPage: React.FC = () => {
                 <span className="text-base text-gray-200 flex-1">
                   {item.name} {item.sub && <span className="text-gray-400 text-sm ml-1">{item.sub}</span>}
                 </span>
-                {item.amount && <span className="text-gray-400 text-sm mr-2">{item.amount}</span>}
+                {item.quantity && <span className="text-gray-400 text-sm mr-2">{item.quantity}</span>}
                 <button className="rounded-full border-2 border-yellow-400 text-yellow-400 w-8 h-8 flex items-center justify-center ml-2">
                   <FontAwesomeIcon icon="fa-circle-plus" size="2xl" style="regular"/>
                 </button>

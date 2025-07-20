@@ -154,8 +154,8 @@ export const shoppingItemsApi = createApi({
             const newItem: ShoppingItem = {
               id: `temp-${Date.now()}`, // Temporäre ID
               ...itemData,
-              isCompleted: false,
-              createdAt: new Date().toISOString(),
+              is_completed: false,
+              created_at: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             };
             draft.push(newItem);
@@ -235,7 +235,7 @@ export const shoppingItemsApi = createApi({
           shoppingItemsApi.util.updateQueryData('getItems', 'list-1', (draft) => {
             const item = draft.find(item => item.id === id);
             if (item) {
-              item.deleted = true;
+              item.is_deleted = true;
               item.updatedAt = new Date().toISOString();
             }
           })
@@ -270,7 +270,7 @@ export const shoppingItemsApi = createApi({
           shoppingItemsApi.util.updateQueryData('getItems', 'list-1', (draft) => {
             const item = draft.find(item => item.id === id);
             if (item) {
-              item.isCompleted = !item.isCompleted;
+              item.is_completed = !item.is_completed;
               item.updatedAt = new Date().toISOString();
             }
           })

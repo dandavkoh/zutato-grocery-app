@@ -16,7 +16,7 @@ const ShoppingListPage: React.FC = () => {
   const dispatch = useDispatch();
   
   // Use the RTK Query shopping items hook
-  const { items, loading, error, toggleItemCompletion, deleteItem } = useShoppingItemsRTK('list-1');
+  const { items, loading, error, toggleItemCompletion, deleteItem } = useShoppingItemsRTK('cdfb31e4-420e-41bd-b672-af72ff92b783');
   
   // Group items by category and separate completed items
   const { completed, incomplete } = separateCompletedItems(items);
@@ -161,14 +161,14 @@ const ShoppingListPage: React.FC = () => {
                       </div>
                       <span className="text-lg text-gray-200">
                         {item.name}
-                        {item.description && (
-                          <span className="text-gray-400 text-sm ml-1">{item.description}</span>
+                        {item.notes && (
+                          <span className="text-gray-400 text-sm ml-1">{item.notes}</span>
                         )}
                       </span>
                       <span className="flex-1" />
-                      {item.amount && item.unit && (
+                      {item.quantity && item.unit && (
                         <span className="text-gray-400 text-base">
-                          {item.amount} {item.unit.short}
+                          {item.quantity} {item.unit.short}
                         </span>
                       )}
                     </button>
@@ -226,15 +226,15 @@ const ShoppingListPage: React.FC = () => {
                         />
                       )}
                     </div>
-                    <span className={`text-lg ${item.isCompleted ? 'text-gray-400 line-through' : 'text-gray-200'}`}> {item.name}
-                      {item.description && (
-                        <span className="text-gray-400 text-sm ml-1">{item.description}</span>
+                    <span className={`text-lg ${item.is_completed ? 'text-gray-400 line-through' : 'text-gray-200'}`}> {item.name}
+                      {item.notes && (
+                        <span className="text-gray-400 text-sm ml-1">{item.notes}</span>
                       )}
                     </span>
                     <span className="flex-1" />
-                    {item.amount && item.unit && (
+                    {item.quantity && item.unit && (
                       <span className="text-gray-400 text-base">
-                        {item.amount} {item.unit.short}
+                        {item.quantity} {item.unit.short}
                       </span>
                     )}
                   </div>

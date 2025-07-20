@@ -94,7 +94,7 @@ const ProductDetailPage: React.FC = () => {
         <div className="flex gap-2">
           <div className="flex-1 bg-neutral-900 border-b border-neutral-800 py-4 px-5 rounded-r-lg">
             <div className="text-xs text-gray-400 mb-1">MENGE</div>
-            <div className="text-gray-300">{item.amount || 'Menge'}</div>
+                            <div className="text-gray-300">{item.quantity || 'Menge'}</div>
           </div>
           <button
             className="flex-1 bg-neutral-900 border-b border-neutral-800 py-4 px-5 flex items-center justify-between text-left rounded-l-lg"

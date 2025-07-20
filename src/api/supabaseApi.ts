@@ -9,7 +9,7 @@ export interface AuthUser {
   firstName?: string;
   lastName?: string;
   emailVerified?: boolean;
-  createdAt?: string;
+  created_at?: string;
   updatedAt?: string;
 }
 
@@ -27,14 +27,13 @@ export interface Unit {
 export interface ShoppingItem {
   id: string;
   name: string;
-  description?: string;
   category: string;
   icon?: string; // Font Awesome icon name (e.g., "fa-apple", "fa-bread-slice")
   unit?: Unit;
-  amount?: number;
-  isCompleted: boolean;
-  deleted?: boolean;
-  createdAt: string;
+  quantity?: number;
+  is_completed: boolean;
+  is_deleted?: boolean;
+  created_at: string;
   updatedAt: string;
   listId: string;
   addedBy: string;
@@ -45,11 +44,10 @@ export interface ShoppingItem {
 
 export interface CreateShoppingItemRequest {
   name: string;
-  description?: string;
   category: string;
   icon?: string;
   unit?: Unit;
-  amount?: number;
+  quantity?: number;
   listId: string;
   addedBy: string;
   notes?: string;
@@ -59,13 +57,12 @@ export interface CreateShoppingItemRequest {
 
 export interface UpdateShoppingItemRequest {
   name?: string;
-  description?: string;
   category?: string;
   icon?: string;
   unit?: Unit;
-  amount?: number;
-  isCompleted?: boolean;
-  deleted?: boolean;
+  quantity?: number;
+  is_completed?: boolean;
+  is_deleted?: boolean;
   notes?: string;
   stores?: string[];
   assignedTo?: string[];
@@ -90,7 +87,7 @@ export class ShoppingItemsController {
         .from('shopping_items')
         .select('*')
         .eq('list_id', listId)
-        .eq('deleted', false)
+        .eq('is_deleted', false)
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -132,7 +129,7 @@ export class ShoppingItemsController {
         .select('*')
         .eq('list_id', listId)
         .eq('category', category)
-        .eq('deleted', false)
+        .eq('is_deleted', false)
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -175,7 +172,7 @@ export class ShoppingItemsController {
         .select('*')
         .eq('list_id', listId)
         .eq('is_completed', true)
-        .eq('deleted', false)
+        .eq('is_deleted', false)
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -216,12 +213,11 @@ export class ShoppingItemsController {
         .from('shopping_items')
         .insert([{
           name: itemData.name,
-          description: itemData.description,
           category: itemData.category,
           icon: itemData.icon,
           unit_name: itemData.unit?.name,
           unit_short: itemData.unit?.short,
-          amount: itemData.amount,
+          quantity: itemData.quantity,
           list_id: itemData.listId,
           added_by: itemData.addedBy,
           notes: itemData.notes,
@@ -246,14 +242,13 @@ export class ShoppingItemsController {
       const newItem: ShoppingItem = {
         id: data.id,
         name: data.name,
-        description: data.description,
         category: data.category,
         icon: data.icon,
         unit: data.unit_name ? { name: data.unit_name, short: data.unit_short } : undefined,
-        amount: data.amount,
-        isCompleted: data.is_completed,
-        deleted: data.deleted,
-        createdAt: data.created_at,
+        quantity: data.quantity,
+        is_completed: data.is_completed,
+        is_deleted: data.is_deleted,
+        created_at: data.created_at,
         updatedAt: data.updated_at,
         listId: data.list_id,
         addedBy: data.added_by,
@@ -287,16 +282,15 @@ export class ShoppingItemsController {
       const updateData: any = {};
       
       if (updates.name !== undefined) updateData.name = updates.name;
-      if (updates.description !== undefined) updateData.description = updates.description;
       if (updates.category !== undefined) updateData.category = updates.category;
       if (updates.icon !== undefined) updateData.icon = updates.icon;
       if (updates.unit !== undefined) {
         updateData.unit_name = updates.unit.name;
         updateData.unit_short = updates.unit.short;
       }
-      if (updates.amount !== undefined) updateData.amount = updates.amount;
-      if (updates.isCompleted !== undefined) updateData.is_completed = updates.isCompleted;
-      if (updates.deleted !== undefined) updateData.deleted = updates.deleted;
+      if (updates.quantity !== undefined) updateData.quantity = updates.quantity;
+      if (updates.is_completed !== undefined) updateData.is_completed = updates.is_completed;
+      if (updates.is_deleted !== undefined) updateData.is_deleted = updates.is_deleted;
       if (updates.notes !== undefined) updateData.notes = updates.notes;
       if (updates.stores !== undefined) updateData.stores = updates.stores;
       if (updates.assignedTo !== undefined) updateData.assigned_to = updates.assignedTo;
@@ -331,14 +325,13 @@ export class ShoppingItemsController {
       const updatedItem: ShoppingItem = {
         id: data.id,
         name: data.name,
-        description: data.description,
         category: data.category,
         icon: data.icon,
         unit: data.unit_name ? { name: data.unit_name, short: data.unit_short } : undefined,
-        amount: data.amount,
-        isCompleted: data.is_completed,
-        deleted: data.deleted,
-        createdAt: data.created_at,
+        quantity: data.quantity,
+        is_completed: data.is_completed,
+        is_deleted: data.is_deleted,
+        created_at: data.created_at,
         updatedAt: data.updated_at,
         listId: data.list_id,
         addedBy: data.added_by,
@@ -372,7 +365,7 @@ export class ShoppingItemsController {
       const { error } = await supabase
         .from('shopping_items')
         .update({ 
-          deleted: true, 
+          is_deleted: true, 
           updated_at: new Date().toISOString() 
         })
         .eq('id', id);
@@ -456,14 +449,13 @@ export class ShoppingItemsController {
       const updatedItem: ShoppingItem = {
         id: data.id,
         name: data.name,
-        description: data.description,
         category: data.category,
         icon: data.icon,
         unit: data.unit_name ? { name: data.unit_name, short: data.unit_short } : undefined,
-        amount: data.amount,
-        isCompleted: data.is_completed,
-        deleted: data.deleted,
-        createdAt: data.created_at,
+        quantity: data.quantity,
+        is_completed: data.is_completed,
+        is_deleted: data.is_deleted,
+        created_at: data.created_at,
         updatedAt: data.updated_at,
         listId: data.list_id,
         addedBy: data.added_by,
@@ -474,7 +466,7 @@ export class ShoppingItemsController {
       
       logDebug('Successfully toggled item completion in Supabase', { 
         itemId: updatedItem.id, 
-        isCompleted: updatedItem.isCompleted 
+        isCompleted: updatedItem.is_completed 
       });
       
       return {
@@ -501,7 +493,7 @@ export class ShoppingItemsController {
         .from('shopping_items')
         .select('*')
         .eq('list_id', listId)
-        .eq('deleted', false)
+        .eq('is_deleted', false)
         .ilike('name', `%${query}%`)
         .order('created_at', { ascending: false });
       
@@ -566,7 +558,7 @@ export const authService = {
           firstName: userData.firstName,
           lastName: userData.lastName,
           emailVerified: data.user.email_confirmed_at !== null,
-          createdAt: data.user.created_at,
+          created_at: data.user.created_at,
           updatedAt: data.user.updated_at,
         };
         
@@ -603,7 +595,7 @@ export const authService = {
           firstName: data.user.user_metadata?.first_name,
           lastName: data.user.user_metadata?.last_name,
           emailVerified: data.user.email_confirmed_at !== null,
-          createdAt: data.user.created_at,
+          created_at: data.user.created_at,
           updatedAt: data.user.updated_at,
         };
         
@@ -676,7 +668,7 @@ export const authService = {
           firstName: user.user_metadata?.first_name,
           lastName: user.user_metadata?.last_name,
           emailVerified: user.email_confirmed_at !== null,
-          createdAt: user.created_at,
+          created_at: user.created_at,
           updatedAt: user.updated_at,
         };
         
@@ -706,7 +698,7 @@ export const authService = {
           firstName: session.user.user_metadata?.first_name,
           lastName: session.user.user_metadata?.last_name,
           emailVerified: session.user.email_confirmed_at !== null,
-          createdAt: session.user.created_at,
+          created_at: session.user.created_at,
           updatedAt: session.user.updated_at,
         };
         callback(authUser);
@@ -724,7 +716,7 @@ export const shoppingItemsApi = new ShoppingItemsController();
 export const groupItemsByCategory = (items: ShoppingItem[]) => {
   const grouped: { [category: string]: ShoppingItem[] } = {};
   
-  const activeItems = items.filter(item => !item.deleted);
+  const activeItems = items.filter(item => !item.is_deleted);
   
   activeItems.forEach(item => {
     if (!grouped[item.category]) {
@@ -738,10 +730,10 @@ export const groupItemsByCategory = (items: ShoppingItem[]) => {
 
 // Helper function to get completed and incomplete items
 export const separateCompletedItems = (items: ShoppingItem[]) => {
-  const activeItems = items.filter(item => !item.deleted);
+  const activeItems = items.filter(item => !item.is_deleted);
   
-  const completed = activeItems.filter(item => item.isCompleted);
-  const incomplete = activeItems.filter(item => !item.isCompleted);
+  const completed = activeItems.filter(item => item.is_completed);
+  const incomplete = activeItems.filter(item => !item.is_completed);
   
   return { completed, incomplete };
 }; 

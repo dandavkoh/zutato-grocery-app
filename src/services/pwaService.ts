@@ -56,7 +56,26 @@ class PWAService {
       onRegistered: (swRegistration: ServiceWorkerRegistration) => {
         console.log('✅ PWA: Service Worker registriert', swRegistration);
         this.swRegistration = swRegistration;
-        this.setupServiceWorkerCommunication();
+        
+        // Check if service worker is active
+        if (swRegistration.active) {
+          console.log('✅ PWA: Service Worker is active');
+          this.setupServiceWorkerCommunication();
+        } else {
+          console.log('⏳ PWA: Service Worker is installing/activating');
+          // Wait for service worker to become active
+          swRegistration.addEventListener('updatefound', () => {
+            const newWorker = swRegistration.installing;
+            if (newWorker) {
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'activated') {
+                  console.log('✅ PWA: Service Worker activated');
+                  this.setupServiceWorkerCommunication();
+                }
+              });
+            }
+          });
+        }
       },
       onRegisterError: (error: Error) => {
         console.error('❌ PWA: Service Worker Registrierung fehlgeschlagen', error);
@@ -64,6 +83,9 @@ class PWAService {
           type: 'error',
           message: 'Service Worker Registrierung fehlgeschlagen'
         });
+      },
+      onUpdateFound: () => {
+        console.log('🔄 PWA: Service Worker update found');
       }
     });
 
@@ -88,12 +110,21 @@ class PWAService {
     // Intercept fetch requests for offline functionality
     this.setupFetchInterceptor();
     
+    // Intercept Supabase client requests
+    this.setupSupabaseInterceptor();
+    
     // Regular cache cleanup
     setInterval(() => {
       this.cleanupOldCache().catch(error => {
         console.error('❌ [PWA] Cache cleanup failed:', error);
       });
     }, 60 * 60 * 1000); // Every hour
+
+    // Log service worker status after a delay
+    setTimeout(async () => {
+      const status = await this.getServiceWorkerStatus();
+      console.log('🔧 [PWA] Service Worker Status:', status);
+    }, 2000);
   }
 
   private setupFetchInterceptor() {
@@ -103,12 +134,37 @@ class PWAService {
       const request = new Request(input, init);
       const url = new URL(request.url);
       
-      // Only intercept API requests
-      if (!url.pathname.startsWith('/api/shopping-items')) {
+      // Debug: Log all requests to see what's happening
+      console.log(`🔍 [PWA] Checking request: ${request.method} ${request.url}`);
+      console.log(`🔍 [PWA] URL details:`, {
+        hostname: url.hostname,
+        pathname: url.pathname,
+        search: url.search
+      });
+      
+      // Intercept Supabase API requests (direct and via RTK Query)
+      const isDirectSupabaseRequest = url.pathname.includes('/rest/v1/') && 
+        (url.pathname.includes('shopping_items') || 
+         url.pathname.includes('lists') || 
+         url.pathname.includes('list_members')) &&
+        (url.hostname === '127.0.0.1' || url.hostname.includes('supabase.co'));
+      
+      // Intercept RTK Query API requests that go through our adapter
+      const isRTKQueryRequest = url.pathname.includes('/api/') && 
+        (url.pathname.includes('shopping-items') || 
+         url.pathname.includes('lists') || 
+         url.pathname.includes('members'));
+      
+      const isSupabaseRequest = isDirectSupabaseRequest || isRTKQueryRequest;
+      
+      console.log(`🔍 [PWA] Is Supabase request: ${isSupabaseRequest}`);
+      
+      if (!isSupabaseRequest) {
+        console.log(`🔍 [PWA] Not intercepting - not a Supabase request`);
         return originalFetch(request);
       }
 
-      console.log(`🌐 [PWA] Intercepting API request: ${request.method} ${request.url}`);
+      console.log(`🌐 [PWA] Intercepting Supabase request: ${request.method} ${request.url}`);
 
       // GET requests: try network first, then cache
       if (request.method === 'GET') {
@@ -263,8 +319,22 @@ class PWAService {
 
   private async cacheResponse(request: Request, response: Response): Promise<void> {
     try {
-      const cache = await caches.open('shopping-items-api-cache');
+      const url = new URL(request.url);
+      let cacheName = 'api-cache';
+      
+      // Handle both direct Supabase requests and RTK Query requests
+      if (url.pathname.includes('shopping_items') || url.pathname.includes('shopping-items')) {
+        cacheName = 'shopping-items-api-cache';
+      } else if (url.pathname.includes('lists')) {
+        cacheName = 'lists-api-cache';
+      } else if (url.pathname.includes('list_members') || url.pathname.includes('members')) {
+        cacheName = 'list-members-api-cache';
+      }
+      
+      console.log(`💾 [PWA] Caching response in ${cacheName}: ${request.method} ${request.url}`);
+      const cache = await caches.open(cacheName);
       await cache.put(request, response);
+      console.log(`✅ [PWA] Successfully cached response in ${cacheName}`);
     } catch (error) {
       console.error('❌ [PWA] Failed to cache response:', error);
       this.notifyUpdate({
@@ -276,8 +346,28 @@ class PWAService {
 
   private async getCachedResponse(request: Request): Promise<Response | null> {
     try {
-      const cache = await caches.open('shopping-items-api-cache');
+      const url = new URL(request.url);
+      let cacheName = 'api-cache';
+      
+      // Handle both direct Supabase requests and RTK Query requests
+      if (url.pathname.includes('shopping_items') || url.pathname.includes('shopping-items')) {
+        cacheName = 'shopping-items-api-cache';
+      } else if (url.pathname.includes('lists')) {
+        cacheName = 'lists-api-cache';
+      } else if (url.pathname.includes('list_members') || url.pathname.includes('members')) {
+        cacheName = 'list-members-api-cache';
+      }
+      
+      console.log(`🔍 [PWA] Looking for cached response in ${cacheName}: ${request.method} ${request.url}`);
+      const cache = await caches.open(cacheName);
       const response = await cache.match(request);
+      
+      if (response) {
+        console.log(`⚡ [PWA] Found cached response in ${cacheName}`);
+      } else {
+        console.log(`❌ [PWA] No cached response found in ${cacheName}`);
+      }
+      
       return response || null;
     } catch (error) {
       console.error('❌ [PWA] Failed to get cached response:', error);
@@ -287,15 +377,32 @@ class PWAService {
 
   private async invalidateRelatedCaches(request: Request): Promise<void> {
     try {
-      const cache = await caches.open('shopping-items-api-cache');
+      const url = new URL(request.url);
+      let cacheName = 'api-cache';
+      
+      // Handle both direct Supabase requests and RTK Query requests
+      if (url.pathname.includes('shopping_items') || url.pathname.includes('shopping-items')) {
+        cacheName = 'shopping-items-api-cache';
+      } else if (url.pathname.includes('lists')) {
+        cacheName = 'lists-api-cache';
+      } else if (url.pathname.includes('list_members') || url.pathname.includes('members')) {
+        cacheName = 'list-members-api-cache';
+      }
+      
+      const cache = await caches.open(cacheName);
       const keys = await cache.keys();
       const relatedKeys = keys.filter(key => {
         const keyUrl = new URL(key.url);
-        return keyUrl.pathname.startsWith('/api/shopping-items');
+        return (keyUrl.pathname.includes('/rest/v1/') || keyUrl.pathname.includes('/api/')) && 
+               (keyUrl.pathname.includes('shopping_items') || 
+                keyUrl.pathname.includes('shopping-items') ||
+                keyUrl.pathname.includes('lists') || 
+                keyUrl.pathname.includes('list_members') ||
+                keyUrl.pathname.includes('members'));
       });
       
       await Promise.all(relatedKeys.map(key => cache.delete(key)));
-      console.log(`🗑️ [PWA] Invalidated ${relatedKeys.length} cache entries`);
+      console.log(`🗑️ [PWA] Invalidated ${relatedKeys.length} cache entries in ${cacheName}`);
     } catch (error) {
       console.error('❌ [PWA] Failed to invalidate caches:', error);
     }
@@ -303,24 +410,34 @@ class PWAService {
 
   private async cleanupOldCache(): Promise<void> {
     try {
-      const cache = await caches.open('shopping-items-api-cache');
-      const keys = await cache.keys();
-      const now = Date.now();
-      let cleanedCount = 0;
+      const cacheNames = ['shopping-items-api-cache', 'lists-api-cache', 'list-members-api-cache'];
+      let totalCleanedCount = 0;
       
-      for (const key of keys) {
-        const response = await cache.match(key);
-        if (response) {
-          const date = response.headers.get('date');
-          if (date && (now - new Date(date).getTime()) > this.CACHE_DURATION) {
-            await cache.delete(key);
-            cleanedCount++;
+      for (const cacheName of cacheNames) {
+        const cache = await caches.open(cacheName);
+        const keys = await cache.keys();
+        const now = Date.now();
+        let cleanedCount = 0;
+        
+        for (const key of keys) {
+          const response = await cache.match(key);
+          if (response) {
+            const date = response.headers.get('date');
+            if (date && (now - new Date(date).getTime()) > this.CACHE_DURATION) {
+              await cache.delete(key);
+              cleanedCount++;
+            }
           }
+        }
+        
+        if (cleanedCount > 0) {
+          console.log(`🧹 [PWA] Cleaned ${cleanedCount} old cache entries from ${cacheName}`);
+          totalCleanedCount += cleanedCount;
         }
       }
       
-      if (cleanedCount > 0) {
-        console.log(`🧹 [PWA] Cleaned ${cleanedCount} old cache entries`);
+      if (totalCleanedCount > 0) {
+        console.log(`🧹 [PWA] Total cleaned: ${totalCleanedCount} old cache entries`);
       }
     } catch (error) {
       console.error('❌ [PWA] Cache cleanup failed:', error);
@@ -378,8 +495,73 @@ class PWAService {
       return;
     }
 
+    console.log('✅ PWA: Service Worker is active and ready');
+    
+    // Check available caches
+    this.checkAvailableCaches();
+
     // Initial queue status check
     this.updateQueueStatus();
+  }
+
+  private async checkAvailableCaches() {
+    try {
+      const cacheNames = await caches.keys();
+      console.log('📋 [PWA] Available caches:', cacheNames);
+      
+      // Check specific cache contents
+      for (const cacheName of ['shopping-items-api-cache', 'lists-api-cache', 'list-members-api-cache']) {
+        if (cacheNames.includes(cacheName)) {
+          const cache = await caches.open(cacheName);
+          const keys = await cache.keys();
+          console.log(`📋 [PWA] Cache ${cacheName} has ${keys.length} entries`);
+        } else {
+          console.log(`📋 [PWA] Cache ${cacheName} not found`);
+        }
+      }
+    } catch (error) {
+      console.error('❌ [PWA] Failed to check caches:', error);
+    }
+  }
+
+  private setupSupabaseInterceptor() {
+    // Intercept Supabase client requests by monkey-patching the fetch method
+    // This will catch requests made by the Supabase client directly
+    const originalSupabaseFetch = (window as any).supabase?.rest?.fetch;
+    
+    if (originalSupabaseFetch) {
+      (window as any).supabase.rest.fetch = async (...args: any[]) => {
+        const [url, options] = args;
+        console.log(`🔍 [PWA] Intercepting Supabase client request: ${options?.method || 'GET'} ${url}`);
+        
+        // Check if this is a request we want to cache
+        const isCacheableRequest = url.includes('/rest/v1/') && 
+          (url.includes('shopping_items') || url.includes('lists') || url.includes('list_members'));
+        
+        if (isCacheableRequest && options?.method === 'GET') {
+          // Try cache first for GET requests
+          const cachedResponse = await this.getCachedResponse(new Request(url, options));
+          if (cachedResponse) {
+            console.log(`⚡ [PWA] Serving Supabase request from cache: ${url}`);
+            return cachedResponse;
+          }
+        }
+        
+        // Make the original request
+        const response = await originalSupabaseFetch(...args);
+        
+        // Cache successful responses
+        if (response.ok && isCacheableRequest) {
+          await this.cacheResponse(new Request(url, options), response.clone());
+          console.log(`✅ [PWA] Cached Supabase client response: ${url}`);
+        }
+        
+        return response;
+      };
+      console.log('✅ [PWA] Supabase client interceptor installed');
+    } else {
+      console.log('⚠️ [PWA] Supabase client not found, skipping interceptor');
+    }
   }
 
   private async updateQueueStatus() {
@@ -436,6 +618,30 @@ class PWAService {
 
   public isOnline(): boolean {
     return navigator.onLine;
+  }
+
+  public async getServiceWorkerStatus(): Promise<{
+    registered: boolean;
+    active: boolean;
+    cacheNames: string[];
+  }> {
+    try {
+      const registration = await navigator.serviceWorker.getRegistration();
+      const cacheNames = await caches.keys();
+      
+      return {
+        registered: !!registration,
+        active: !!registration?.active,
+        cacheNames
+      };
+    } catch (error) {
+      console.error('❌ [PWA] Failed to get service worker status:', error);
+      return {
+        registered: false,
+        active: false,
+        cacheNames: []
+      };
+    }
   }
 
   public async requestNotificationPermission(): Promise<boolean> {

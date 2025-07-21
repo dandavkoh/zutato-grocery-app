@@ -945,6 +945,16 @@ export const authService = {
       }
     });
   },
+
+  resetPassword: async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      if (error) throw error;
+      return { error: null };
+    } catch (error) {
+      return { error };
+    }
+  },
 };
 
 // Helper function to group items by category

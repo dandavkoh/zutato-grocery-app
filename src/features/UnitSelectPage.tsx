@@ -8,24 +8,24 @@ import FontAwesomeIcon from '../components/FontAwesomeIcon';
 
 const units: (Unit | null)[] = [
   null, // Keine
-  { name: 'Stücke', short: 'Stk' },
-  { name: 'Milliliter', short: 'ml' },
-  { name: 'Liter', short: 'l' },
-  { name: 'Gramm', short: 'g' },
-  { name: 'Kilogramm', short: 'kg' },
-  { name: 'Packungen', short: 'Pkg' },
-  { name: 'Flaschen', short: 'Fl' },
-  { name: 'Kästen', short: 'Kst' },
-  { name: 'Boxen', short: 'Box' },
-  { name: 'Gläser', short: 'Gl' },
-  { name: 'Dosen', short: 'Dose' },
-  { name: 'Tuben', short: 'Tube' },
+  { id: 'stk', name: 'Stücke', short: 'Stk' },
+  { id: 'ml', name: 'Milliliter', short: 'ml' },
+  { id: 'l', name: 'Liter', short: 'l' },
+  { id: 'g', name: 'Gramm', short: 'g' },
+  { id: 'kg', name: 'Kilogramm', short: 'kg' },
+  { id: 'pkg', name: 'Packungen', short: 'Pkg' },
+  { id: 'fl', name: 'Flaschen', short: 'Fl' },
+  { id: 'kst', name: 'Kästen', short: 'Kst' },
+  { id: 'box', name: 'Boxen', short: 'Box' },
+  { id: 'gl', name: 'Gläser', short: 'Gl' },
+  { id: 'dose', name: 'Dosen', short: 'Dose' },
+  { id: 'tube', name: 'Tuben', short: 'Tube' },
 ];
 
 const UnitSelectPage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const selected: Unit = { name: 'Stücke', short: 'Stk' };
+  const selected: Unit = { id: 'stk', name: 'Stücke', short: 'Stk' };
 
   // Watch for back button events
   const backClicked = useSelector((state: RootState) => state.events.backClicked);

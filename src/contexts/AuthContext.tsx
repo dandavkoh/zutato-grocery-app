@@ -63,12 +63,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await authService.login(email, password);
       
       if (response.error) {
-        return { success: false, error: response.error.message };
+        const errorMsg = typeof response.error === 'object' && response.error !== null && 'message' in response.error
+          ? (response.error as any).message
+          : String(response.error);
+        return { success: false, error: errorMsg };
       }
       
       if (response.user) {
-        setUser(response.user);
-        authStorage.setUser(response.user);
+        // Map auf AuthUser falls nötig
+        const user = response.user;
+        const authUser = {
+          id: user.id,
+          email: user.email || '',
+          firstName: user.user_metadata?.first_name,
+          lastName: user.user_metadata?.last_name,
+          emailVerified: user.email_confirmed_at !== null,
+          created_at: user.created_at,
+          updatedAt: user.updated_at,
+        };
+        setUser(authUser);
+        authStorage.setUser(authUser);
         return { success: true };
       }
       
@@ -84,7 +98,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await authService.register(email, password, userData);
       
       if (response.error) {
-        return { success: false, error: response.error.message };
+        const errorMsg = typeof response.error === 'object' && response.error !== null && 'message' in response.error
+          ? (response.error as any).message
+          : String(response.error);
+        return { success: false, error: errorMsg };
       }
       
       return { success: true };
@@ -110,11 +127,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const resetPassword = async (email: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const response = await authService.resetPassword(email);
-      
       if (response.error) {
-        return { success: false, error: response.error.message };
+        const errorMsg = typeof response.error === 'object' && response.error !== null && 'message' in response.error
+          ? (response.error as any).message
+          : String(response.error);
+        return { success: false, error: errorMsg };
       }
-      
       return { success: true };
     } catch (error) {
       console.error('Password reset error:', error);

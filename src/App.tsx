@@ -47,7 +47,7 @@ function App() {
             <ListsPage />
           </ProtectedRoute>
         } />
-        <Route path="/shopping-list" element={
+        <Route path="/shopping-list/:listId" element={
           <ProtectedRoute>
             <ShoppingListPage />
           </ProtectedRoute>

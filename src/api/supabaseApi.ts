@@ -69,6 +69,36 @@ export interface UpdateShoppingItemRequest {
   assignedTo?: string[];
 }
 
+// Lists API Types
+export interface List {
+  id: string;
+  name: string;
+  description?: string;
+  created_by: string;
+  created_at: string;
+  updated_at?: string;
+  is_deleted: boolean;
+}
+
+export interface CreateListRequest {
+  name: string;
+  description?: string;
+  created_by: string;
+}
+
+export interface UpdateListRequest {
+  name?: string;
+  description?: string;
+}
+
+export interface ListMember {
+  id: string;
+  list_id: string;
+  user_id: string;
+  role: 'owner' | 'member';
+  created_at: string;
+}
+
 export interface ApiResponse<T> {
   data: T | null;
   error: string | null;
@@ -100,11 +130,7 @@ export class ShoppingItemsController {
         };
       }
       
-      logDebug('Successfully fetched items from Supabase', { 
-        listId, 
-        count: data?.length || 0 
-      });
-      
+      logInfo('Successfully fetched items from Supabase', { count: data?.length || 0 });
       return {
         data: data || [],
         error: null,
@@ -114,7 +140,7 @@ export class ShoppingItemsController {
       logError('Unexpected error fetching items', error);
       return {
         data: null,
-        error: 'Failed to fetch items',
+        error: 'Internal server error',
         status: 500
       };
     }
@@ -142,12 +168,7 @@ export class ShoppingItemsController {
         };
       }
       
-      logDebug('Successfully fetched items by category from Supabase', { 
-        listId, 
-        category,
-        count: data?.length || 0 
-      });
-      
+      logInfo('Successfully fetched items by category from Supabase', { count: data?.length || 0 });
       return {
         data: data || [],
         error: null,
@@ -157,7 +178,7 @@ export class ShoppingItemsController {
       logError('Unexpected error fetching items by category', error);
       return {
         data: null,
-        error: 'Failed to fetch items by category',
+        error: 'Internal server error',
         status: 500
       };
     }
@@ -185,11 +206,7 @@ export class ShoppingItemsController {
         };
       }
       
-      logDebug('Successfully fetched completed items from Supabase', { 
-        listId, 
-        count: data?.length || 0 
-      });
-      
+      logInfo('Successfully fetched completed items from Supabase', { count: data?.length || 0 });
       return {
         data: data || [],
         error: null,
@@ -199,7 +216,7 @@ export class ShoppingItemsController {
       logError('Unexpected error fetching completed items', error);
       return {
         data: null,
-        error: 'Failed to fetch completed items',
+        error: 'Internal server error',
         status: 500
       };
     }
@@ -208,7 +225,7 @@ export class ShoppingItemsController {
   // Create new item
   async createItem(itemData: CreateShoppingItemRequest): Promise<ApiResponse<ShoppingItem>> {
     try {
-      logDebug('Creating new item in Supabase', { name: itemData.name, listId: itemData.listId });
+      logDebug('Creating new item in Supabase', { name: itemData.name });
       
       const { data, error } = await supabase
         .from('shopping_items')
@@ -224,7 +241,7 @@ export class ShoppingItemsController {
           stores: itemData.stores,
           assigned_to: itemData.assignedTo,
           is_completed: false,
-          deleted: false,
+          is_deleted: false,
         }])
         .select()
         .single();
@@ -238,8 +255,8 @@ export class ShoppingItemsController {
         };
       }
       
-      // Transform Supabase data to ShoppingItem format
-      const newItem: ShoppingItem = {
+      // Map database response to our interface
+      const shoppingItem: ShoppingItem = {
         id: data.id,
         name: data.name,
         category: data.category,
@@ -257,10 +274,9 @@ export class ShoppingItemsController {
         assignedTo: data.assigned_to,
       };
       
-      logDebug('Successfully created item in Supabase', { itemId: newItem.id });
-      
+      logInfo('Successfully created item in Supabase', { itemId: data.id });
       return {
-        data: newItem,
+        data: shoppingItem,
         error: null,
         status: 201
       };
@@ -268,7 +284,7 @@ export class ShoppingItemsController {
       logError('Unexpected error creating item', error);
       return {
         data: null,
-        error: 'Failed to create item',
+        error: 'Internal server error',
         status: 500
       };
     }
@@ -277,21 +293,9 @@ export class ShoppingItemsController {
   // Update item
   async updateItem(id: string, updates: UpdateShoppingItemRequest): Promise<ApiResponse<ShoppingItem>> {
     try {
-      logDebug('Updating item in Supabase', { itemId: id, updates });
+      logDebug('Updating item in Supabase', { itemId: id });
       
-      const updateData: any = {};
-      
-      if (updates.name !== undefined) updateData.name = updates.name;
-      if (updates.category !== undefined) updateData.category = updates.category;
-      if (updates.icon !== undefined) updateData.icon = updates.icon;
-      if (updates.unit_id !== undefined) updateData.unit_id = updates.unit_id;
-      if (updates.quantity !== undefined) updateData.quantity = updates.quantity;
-      if (updates.is_completed !== undefined) updateData.is_completed = updates.is_completed;
-      if (updates.is_deleted !== undefined) updateData.is_deleted = updates.is_deleted;
-      if (updates.notes !== undefined) updateData.notes = updates.notes;
-      if (updates.stores !== undefined) updateData.stores = updates.stores;
-      if (updates.assignedTo !== undefined) updateData.assigned_to = updates.assignedTo;
-      
+      const updateData: any = { ...updates };
       updateData.updated_at = new Date().toISOString();
       
       const { data, error } = await supabase
@@ -310,16 +314,8 @@ export class ShoppingItemsController {
         };
       }
       
-      if (!data) {
-        return {
-          data: null,
-          error: 'Item not found',
-          status: 404
-        };
-      }
-      
-      // Transform Supabase data to ShoppingItem format
-      const updatedItem: ShoppingItem = {
+      // Map database response to our interface
+      const shoppingItem: ShoppingItem = {
         id: data.id,
         name: data.name,
         category: data.category,
@@ -337,10 +333,9 @@ export class ShoppingItemsController {
         assignedTo: data.assigned_to,
       };
       
-      logDebug('Successfully updated item in Supabase', { itemId: updatedItem.id });
-      
+      logInfo('Successfully updated item in Supabase', { itemId: id });
       return {
-        data: updatedItem,
+        data: shoppingItem,
         error: null,
         status: 200
       };
@@ -348,7 +343,7 @@ export class ShoppingItemsController {
       logError('Unexpected error updating item', error);
       return {
         data: null,
-        error: 'Failed to update item',
+        error: 'Internal server error',
         status: 500
       };
     }
@@ -376,18 +371,17 @@ export class ShoppingItemsController {
         };
       }
       
-      logDebug('Successfully deleted item in Supabase', { itemId: id });
-      
+      logInfo('Successfully deleted item in Supabase', { itemId: id });
       return {
         data: null,
         error: null,
-        status: 204
+        status: 200
       };
     } catch (error) {
       logError('Unexpected error deleting item', error);
       return {
         data: null,
-        error: 'Failed to delete item',
+        error: 'Internal server error',
         status: 500
       };
     }
@@ -398,7 +392,7 @@ export class ShoppingItemsController {
     try {
       logDebug('Toggling item completion in Supabase', { itemId: id });
       
-      // First get current item to toggle the completion status
+      // First get the current item to toggle its completion status
       const { data: currentItem, error: fetchError } = await supabase
         .from('shopping_items')
         .select('*')
@@ -406,7 +400,7 @@ export class ShoppingItemsController {
         .single();
       
       if (fetchError) {
-        logError('Failed to fetch item for toggle in Supabase', fetchError);
+        logError('Failed to fetch item for toggle', fetchError);
         return {
           data: null,
           error: fetchError.message,
@@ -414,19 +408,12 @@ export class ShoppingItemsController {
         };
       }
       
-      if (!currentItem) {
-        return {
-          data: null,
-          error: 'Item not found',
-          status: 404
-        };
-      }
+      const newCompletionStatus = !currentItem.is_completed;
       
-      // Toggle completion status
       const { data, error } = await supabase
         .from('shopping_items')
         .update({ 
-          is_completed: !currentItem.is_completed,
+          is_completed: newCompletionStatus,
           updated_at: new Date().toISOString() 
         })
         .eq('id', id)
@@ -442,8 +429,8 @@ export class ShoppingItemsController {
         };
       }
       
-      // Transform Supabase data to ShoppingItem format
-      const updatedItem: ShoppingItem = {
+      // Map database response to our interface
+      const shoppingItem: ShoppingItem = {
         id: data.id,
         name: data.name,
         category: data.category,
@@ -461,13 +448,9 @@ export class ShoppingItemsController {
         assignedTo: data.assigned_to,
       };
       
-      logDebug('Successfully toggled item completion in Supabase', { 
-        itemId: updatedItem.id, 
-        isCompleted: updatedItem.is_completed 
-      });
-      
+      logInfo('Successfully toggled item completion in Supabase', { itemId: id, is_completed: newCompletionStatus });
       return {
-        data: updatedItem,
+        data: shoppingItem,
         error: null,
         status: 200
       };
@@ -475,7 +458,7 @@ export class ShoppingItemsController {
       logError('Unexpected error toggling item completion', error);
       return {
         data: null,
-        error: 'Failed to toggle item completion',
+        error: 'Internal server error',
         status: 500
       };
     }
@@ -503,12 +486,7 @@ export class ShoppingItemsController {
         };
       }
       
-      logDebug('Successfully searched items in Supabase', { 
-        listId, 
-        query,
-        count: data?.length || 0 
-      });
-      
+      logInfo('Successfully searched items in Supabase', { count: data?.length || 0 });
       return {
         data: data || [],
         error: null,
@@ -518,20 +496,363 @@ export class ShoppingItemsController {
       logError('Unexpected error searching items', error);
       return {
         data: null,
-        error: 'Failed to search items',
+        error: 'Internal server error',
         status: 500
       };
     }
   }
 }
 
+// Lists API Controller
+export class ListsController {
+  // Get all lists for current user
+  async getLists(): Promise<ApiResponse<List[]>> {
+    try {
+      logDebug('Fetching lists from Supabase');
+      
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        logError('User not authenticated', userError);
+        return {
+          data: null,
+          error: 'User not authenticated',
+          status: 401
+        };
+      }
+      
+      // Get lists where user is a member
+      const { data, error } = await supabase
+        .from('lists')
+        .select(`
+          *
+        `)
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        logError('Failed to fetch lists from Supabase', error);
+        return {
+          data: null,
+          error: error.message,
+          status: 500
+        };
+      }
+      
+      logInfo('Successfully fetched lists from Supabase', { count: data?.length || 0 });
+      return {
+        data: data || [],
+        error: null,
+        status: 200
+      };
+    } catch (error) {
+      logError('Unexpected error fetching lists', error);
+      return {
+        data: null,
+        error: 'Internal server error',
+        status: 500
+      };
+    }
+  }
+
+  // Get single list by ID
+  async getList(id: string): Promise<ApiResponse<List>> {
+    try {
+      logDebug('Fetching list by ID from Supabase', { listId: id });
+      
+      const { data, error } = await supabase
+        .from('lists')
+        .select('*')
+        .eq('id', id)
+        .eq('is_deleted', false)
+        .single();
+      
+      if (error) {
+        logError('Failed to fetch list from Supabase', error);
+        return {
+          data: null,
+          error: error.message,
+          status: 500
+        };
+      }
+      
+      logInfo('Successfully fetched list from Supabase', { listId: id });
+      return {
+        data,
+        error: null,
+        status: 200
+      };
+    } catch (error) {
+      logError('Unexpected error fetching list', error);
+      return {
+        data: null,
+        error: 'Internal server error',
+        status: 500
+      };
+    }
+  }
+
+  // Create new list
+  async createList(listData: CreateListRequest): Promise<ApiResponse<List>> {
+    try {
+      logDebug('Creating new list in Supabase', { name: listData.name });
+      
+      // Create the list
+      const { data: list, error: listError } = await supabase
+        .from('lists')
+        .insert([{
+          name: listData.name,
+          description: listData.description,
+          created_by: listData.created_by,
+          is_deleted: false,
+        }])
+        .select()
+        .single();
+      
+      if (listError) {
+        logError('Failed to create list in Supabase', listError);
+        return {
+          data: null,
+          error: listError.message,
+          status: 500
+        };
+      }
+      
+      // Add creator as owner member
+      const { error: memberError } = await supabase
+        .from('list_members')
+        .insert([{
+          list_id: list.id,
+          user_id: listData.created_by,
+          role: 'owner',
+        }]);
+      
+      if (memberError) {
+        logError('Failed to add creator as member', memberError);
+        // List was created but member wasn't added - this is a partial failure
+        return {
+          data: null,
+          error: 'List created but failed to add creator as member',
+          status: 500
+        };
+      }
+      
+      logInfo('Successfully created list in Supabase', { listId: list.id });
+      return {
+        data: list,
+        error: null,
+        status: 201
+      };
+    } catch (error) {
+      logError('Unexpected error creating list', error);
+      return {
+        data: null,
+        error: 'Internal server error',
+        status: 500
+      };
+    }
+  }
+
+  // Update list
+  async updateList(id: string, updates: UpdateListRequest): Promise<ApiResponse<List>> {
+    try {
+      logDebug('Updating list in Supabase', { listId: id });
+      
+      const updateData: any = { ...updates };
+      updateData.updated_at = new Date().toISOString();
+      
+      const { data, error } = await supabase
+        .from('lists')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) {
+        logError('Failed to update list in Supabase', error);
+        return {
+          data: null,
+          error: error.message,
+          status: 500
+        };
+      }
+      
+      logInfo('Successfully updated list in Supabase', { listId: id });
+      return {
+        data,
+        error: null,
+        status: 200
+      };
+    } catch (error) {
+      logError('Unexpected error updating list', error);
+      return {
+        data: null,
+        error: 'Internal server error',
+        status: 500
+      };
+    }
+  }
+
+  // Delete list (soft delete)
+  async deleteList(id: string): Promise<ApiResponse<null>> {
+    try {
+      logDebug('Deleting list in Supabase', { listId: id });
+      
+      const { error } = await supabase
+        .from('lists')
+        .update({ 
+          is_deleted: true, 
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', id);
+      
+      if (error) {
+        logError('Failed to delete list in Supabase', error);
+        return {
+          data: null,
+          error: error.message,
+          status: 500
+        };
+      }
+      
+      logInfo('Successfully deleted list in Supabase', { listId: id });
+      return {
+        data: null,
+        error: null,
+        status: 200
+      };
+    } catch (error) {
+      logError('Unexpected error deleting list', error);
+      return {
+        data: null,
+        error: 'Internal server error',
+        status: 500
+      };
+    }
+  }
+
+  // Get list members
+  async getListMembers(listId: string): Promise<ApiResponse<ListMember[]>> {
+    try {
+      logDebug('Fetching list members from Supabase', { listId });
+      
+      const { data, error } = await supabase
+        .from('list_members')
+        .select('*')
+        .eq('list_id', listId)
+        .order('created_at', { ascending: true });
+      
+      if (error) {
+        logError('Failed to fetch list members from Supabase', error);
+        return {
+          data: null,
+          error: error.message,
+          status: 500
+        };
+      }
+      
+      logInfo('Successfully fetched list members from Supabase', { count: data?.length || 0 });
+      return {
+        data: data || [],
+        error: null,
+        status: 200
+      };
+    } catch (error) {
+      logError('Unexpected error fetching list members', error);
+      return {
+        data: null,
+        error: 'Internal server error',
+        status: 500
+      };
+    }
+  }
+
+  // Add member to list
+  async addListMember(listId: string, userId: string, role: 'owner' | 'member' = 'member'): Promise<ApiResponse<ListMember>> {
+    try {
+      logDebug('Adding member to list in Supabase', { listId, userId, role });
+      
+      const { data, error } = await supabase
+        .from('list_members')
+        .insert([{
+          list_id: listId,
+          user_id: userId,
+          role: role,
+        }])
+        .select()
+        .single();
+      
+      if (error) {
+        logError('Failed to add member to list in Supabase', error);
+        return {
+          data: null,
+          error: error.message,
+          status: 500
+        };
+      }
+      
+      logInfo('Successfully added member to list in Supabase', { listId, userId });
+      return {
+        data,
+        error: null,
+        status: 201
+      };
+    } catch (error) {
+      logError('Unexpected error adding member to list', error);
+      return {
+        data: null,
+        error: 'Internal server error',
+        status: 500
+      };
+    }
+  }
+
+  // Remove member from list
+  async removeListMember(listId: string, userId: string): Promise<ApiResponse<null>> {
+    try {
+      logDebug('Removing member from list in Supabase', { listId, userId });
+      
+      const { error } = await supabase
+        .from('list_members')
+        .delete()
+        .eq('list_id', listId)
+        .eq('user_id', userId);
+      
+      if (error) {
+        logError('Failed to remove member from list in Supabase', error);
+        return {
+          data: null,
+          error: error.message,
+          status: 500
+        };
+      }
+      
+      logInfo('Successfully removed member from list in Supabase', { listId, userId });
+      return {
+        data: null,
+        error: null,
+        status: 200
+      };
+    } catch (error) {
+      logError('Unexpected error removing member from list', error);
+      return {
+        data: null,
+        error: 'Internal server error',
+        status: 500
+      };
+    }
+  }
+}
+
+// Database Service Functions
+export const shoppingItemsApi = new ShoppingItemsController();
+export const listsApi = new ListsController();
+
 // Auth Service Functions
 export const authService = {
-  // Register user
-  async register(email: string, password: string, userData: { firstName: string; lastName: string }): Promise<AuthResponse> {
+  register: async (email: string, password: string, userData: { firstName: string; lastName: string }) => {
     try {
-      logDebug('Registering user', { email, firstName: userData.firstName });
-      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -539,124 +860,42 @@ export const authService = {
           data: {
             first_name: userData.firstName,
             last_name: userData.lastName,
-          }
-        }
+          },
+        },
       });
-      
-      if (error) {
-        logError('Registration failed', error);
-        return { error };
-      }
-      
-      if (data.user) {
-        const authUser: AuthUser = {
-          id: data.user.id,
-          email: data.user.email!,
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          emailVerified: data.user.email_confirmed_at !== null,
-          created_at: data.user.created_at,
-          updatedAt: data.user.updated_at,
-        };
-        
-        logInfo('User registered successfully', { userId: authUser.id });
-        return { user: authUser };
-      }
-      
-      return { error: { message: 'Registration failed' } as AuthError };
+      if (error) throw error;
+      return { user: data.user, error: null };
     } catch (error) {
-      logError('Unexpected registration error', error);
-      return { error: { message: 'Registration failed' } as AuthError };
+      return { user: null, error };
     }
   },
 
-  // Login user
-  async login(email: string, password: string): Promise<AuthResponse> {
+  login: async (email: string, password: string) => {
     try {
-      logDebug('Logging in user', { email });
-      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      
-      if (error) {
-        logError('Login failed', error);
-        return { error };
-      }
-      
-      if (data.user) {
-        const authUser: AuthUser = {
-          id: data.user.id,
-          email: data.user.email!,
-          firstName: data.user.user_metadata?.first_name,
-          lastName: data.user.user_metadata?.last_name,
-          emailVerified: data.user.email_confirmed_at !== null,
-          created_at: data.user.created_at,
-          updatedAt: data.user.updated_at,
-        };
-        
-        logInfo('User logged in successfully', { userId: authUser.id });
-        return { user: authUser };
-      }
-      
-      return { error: { message: 'Login failed' } as AuthError };
+      if (error) throw error;
+      return { user: data.user, error: null };
     } catch (error) {
-      logError('Unexpected login error', error);
-      return { error: { message: 'Login failed' } as AuthError };
+      return { user: null, error };
     }
   },
 
-  // Reset password
-  async resetPassword(email: string): Promise<AuthResponse> {
+  logout: async () => {
     try {
-      logDebug('Resetting password', { email });
-      
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-      
-      if (error) {
-        logError('Password reset failed', error);
-        return { error };
-      }
-      
-      logInfo('Password reset email sent', { email });
-      return {};
-    } catch (error) {
-      logError('Unexpected password reset error', error);
-      return { error: { message: 'Password reset failed' } as AuthError };
-    }
-  },
-
-  // Logout user
-  async logout(): Promise<void> {
-    try {
-      logDebug('Logging out user');
-      
       const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        logError('Logout failed', error);
-        throw error;
-      }
-      
-      logInfo('User logged out successfully');
+      if (error) throw error;
     } catch (error) {
-      logError('Unexpected logout error', error);
-      throw error;
+      console.error('Logout error:', error);
     }
   },
 
-  // Get current user
-  async getCurrentUser(): Promise<AuthUser | null> {
+  getCurrentUser: async () => {
     try {
       const { data: { user }, error } = await supabase.auth.getUser();
-      
-      if (error) {
-        logError('Failed to get current user', error);
-        return null;
-      }
+      if (error) throw error;
       
       if (user) {
         const authUser: AuthUser = {
@@ -668,7 +907,6 @@ export const authService = {
           created_at: user.created_at,
           updatedAt: user.updated_at,
         };
-        
         return authUser;
       }
       
@@ -679,14 +917,17 @@ export const authService = {
     }
   },
 
-  // Check if user is authenticated
-  async isAuthenticated(): Promise<boolean> {
-    const user = await this.getCurrentUser();
-    return user !== null;
+  isAuthenticated: async () => {
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      return !error && !!user;
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      return false;
+    }
   },
 
-  // Listen to auth state changes
-  onAuthStateChange(callback: (user: AuthUser | null) => void) {
+  onAuthStateChange: (callback: (user: AuthUser | null) => void) => {
     return supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         const authUser: AuthUser = {
@@ -703,11 +944,8 @@ export const authService = {
         callback(null);
       }
     });
-  }
+  },
 };
-
-// Database Service Functions
-export const shoppingItemsApi = new ShoppingItemsController();
 
 // Helper function to group items by category
 export const groupItemsByCategory = (items: ShoppingItem[]) => {

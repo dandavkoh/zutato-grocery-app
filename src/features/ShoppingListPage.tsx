@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setHeader, resetHeader, resetFilterClick } from '../stores/store';
 import type { RootState } from '../stores/store';
@@ -12,11 +12,26 @@ const ShoppingListPage: React.FC = () => {
   const [sortSheetOpen, setSortSheetOpen] = useState(false);
   const [showCompleted, setShowCompleted] = useState(true);
   const navigate = useNavigate();
+  const { listId } = useParams<{ listId: string }>();
   const inputRef = useRef<HTMLInputElement>(null);
   const dispatch = useDispatch();
   
+  // Redirect if no listId is provided
+  useEffect(() => {
+    if (!listId) {
+      console.log('ShoppingListPage - No listId found, redirecting to /lists');
+      navigate('/lists');
+    }
+  }, [listId, navigate]);
+  
+  // Don't render if no listId
+  if (!listId) {
+    console.log('ShoppingListPage - Rendering null because no listId');
+    return null;
+  }
+  
   // Use the RTK Query shopping items hook
-  const { items, loading, error, toggleItemCompletion, deleteItem } = useShoppingItemsRTK('cdfb31e4-420e-41bd-b672-af72ff92b783');
+  const { items, loading, error, toggleItemCompletion, deleteItem } = useShoppingItemsRTK(listId);
   
   // Group items by category and separate completed items
   const { completed, incomplete } = separateCompletedItems(items);

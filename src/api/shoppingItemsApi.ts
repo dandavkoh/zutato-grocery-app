@@ -197,8 +197,19 @@ export const shoppingItemsApi = createApi({
       async onQueryStarted({ id, updates }, { dispatch, queryFulfilled, getState }) {
         console.log(`✏️ [RTK Query] Updating item ID: ${id} (Optimistic Update)`);
         
+        // Find the current listId from the state
+        const state = getState() as any;
+        const currentListId = Object.keys(state.shoppingItemsApi.queries).find(key =>
+          key.startsWith('getItems("') && key.endsWith('")')
+        )?.match(/getItems\("([^"]+)"\)/)?.[1];
+
+        if (!currentListId) {
+          console.warn('No current listId found for optimistic update');
+          return;
+        }
+
         const patchResult = dispatch(
-          shoppingItemsApi.util.updateQueryData('getItems', 'list-1', (draft) => {
+          shoppingItemsApi.util.updateQueryData('getItems', currentListId, (draft) => {
             const item = draft.find(item => item.id === id);
             if (item) {
               Object.assign(item, updates, { updatedAt: new Date().toISOString() });
@@ -231,8 +242,19 @@ export const shoppingItemsApi = createApi({
       async onQueryStarted(id, { dispatch, queryFulfilled, getState }) {
         console.log(`🗑️ [RTK Query] Soft deleting item ID: ${id} (Optimistic Update)`);
         
+        // Find the current listId from the state
+        const state = getState() as any;
+        const currentListId = Object.keys(state.shoppingItemsApi.queries).find(key =>
+          key.startsWith('getItems("') && key.endsWith('")')
+        )?.match(/getItems\("([^"]+)"\)/)?.[1];
+
+        if (!currentListId) {
+          console.warn('No current listId found for optimistic update');
+          return;
+        }
+
         const patchResult = dispatch(
-          shoppingItemsApi.util.updateQueryData('getItems', 'list-1', (draft) => {
+          shoppingItemsApi.util.updateQueryData('getItems', currentListId, (draft) => {
             const item = draft.find(item => item.id === id);
             if (item) {
               item.is_deleted = true;
@@ -266,8 +288,19 @@ export const shoppingItemsApi = createApi({
       async onQueryStarted(id, { dispatch, queryFulfilled, getState }) {
         console.log(`🔄 [RTK Query] Toggling completion for item ID: ${id} (Optimistic Update)`);
         
+        // Find the current listId from the state
+        const state = getState() as any;
+        const currentListId = Object.keys(state.shoppingItemsApi.queries).find(key =>
+          key.startsWith('getItems("') && key.endsWith('")')
+        )?.match(/getItems\("([^"]+)"\)/)?.[1];
+
+        if (!currentListId) {
+          console.warn('No current listId found for optimistic update');
+          return;
+        }
+
         const patchResult = dispatch(
-          shoppingItemsApi.util.updateQueryData('getItems', 'list-1', (draft) => {
+          shoppingItemsApi.util.updateQueryData('getItems', currentListId, (draft) => {
             const item = draft.find(item => item.id === id);
             if (item) {
               item.is_completed = !item.is_completed;

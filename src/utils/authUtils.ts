@@ -137,10 +137,10 @@ export const validateLoginForm = (formData: {
 };
 
 // Import Supabase auth service
-import { authService as supabaseAuthService } from '../api/supabaseApi';
+import { authService } from '../api/supabaseApi';
 
 // Re-export Supabase auth service
-export const authService = supabaseAuthService;
+export { authService };
 
 // Local storage helpers for authentication state
 export const authStorage = {

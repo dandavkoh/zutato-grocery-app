@@ -20,6 +20,7 @@ export interface AuthResponse {
 
 // Supabase API Types - Compatible with Supabase
 export interface Unit {
+  id: string;
   name: string; // Langer Name, z.B. "Packungen"
   short: string; // Kurze Abkürzung, z.B. "Pkg"
 }
@@ -29,7 +30,7 @@ export interface ShoppingItem {
   name: string;
   category: string;
   icon?: string; // Font Awesome icon name (e.g., "fa-apple", "fa-bread-slice")
-  unit?: Unit;
+  unit_id?: string;
   quantity?: number;
   is_completed: boolean;
   is_deleted?: boolean;
@@ -46,7 +47,7 @@ export interface CreateShoppingItemRequest {
   name: string;
   category: string;
   icon?: string;
-  unit?: Unit;
+  unit_id?: string;
   quantity?: number;
   listId: string;
   addedBy: string;
@@ -59,7 +60,7 @@ export interface UpdateShoppingItemRequest {
   name?: string;
   category?: string;
   icon?: string;
-  unit?: Unit;
+  unit_id?: string;
   quantity?: number;
   is_completed?: boolean;
   is_deleted?: boolean;
@@ -215,8 +216,7 @@ export class ShoppingItemsController {
           name: itemData.name,
           category: itemData.category,
           icon: itemData.icon,
-          unit_name: itemData.unit?.name,
-          unit_short: itemData.unit?.short,
+          unit_id: itemData.unit_id,
           quantity: itemData.quantity,
           list_id: itemData.listId,
           added_by: itemData.addedBy,
@@ -244,7 +244,7 @@ export class ShoppingItemsController {
         name: data.name,
         category: data.category,
         icon: data.icon,
-        unit: data.unit_name ? { name: data.unit_name, short: data.unit_short } : undefined,
+        unit_id: data.unit_id,
         quantity: data.quantity,
         is_completed: data.is_completed,
         is_deleted: data.is_deleted,
@@ -284,10 +284,7 @@ export class ShoppingItemsController {
       if (updates.name !== undefined) updateData.name = updates.name;
       if (updates.category !== undefined) updateData.category = updates.category;
       if (updates.icon !== undefined) updateData.icon = updates.icon;
-      if (updates.unit !== undefined) {
-        updateData.unit_name = updates.unit.name;
-        updateData.unit_short = updates.unit.short;
-      }
+      if (updates.unit_id !== undefined) updateData.unit_id = updates.unit_id;
       if (updates.quantity !== undefined) updateData.quantity = updates.quantity;
       if (updates.is_completed !== undefined) updateData.is_completed = updates.is_completed;
       if (updates.is_deleted !== undefined) updateData.is_deleted = updates.is_deleted;
@@ -327,7 +324,7 @@ export class ShoppingItemsController {
         name: data.name,
         category: data.category,
         icon: data.icon,
-        unit: data.unit_name ? { name: data.unit_name, short: data.unit_short } : undefined,
+        unit_id: data.unit_id,
         quantity: data.quantity,
         is_completed: data.is_completed,
         is_deleted: data.is_deleted,
@@ -451,7 +448,7 @@ export class ShoppingItemsController {
         name: data.name,
         category: data.category,
         icon: data.icon,
-        unit: data.unit_name ? { name: data.unit_name, short: data.unit_short } : undefined,
+        unit_id: data.unit_id,
         quantity: data.quantity,
         is_completed: data.is_completed,
         is_deleted: data.is_deleted,
@@ -736,4 +733,25 @@ export const separateCompletedItems = (items: ShoppingItem[]) => {
   const incomplete = activeItems.filter(item => !item.is_completed);
   
   return { completed, incomplete };
+};
+
+// Helper function to get unit details by ID
+export const getUnitById = async (unitId: string): Promise<Unit | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('units')
+      .select('*')
+      .eq('id', unitId)
+      .single();
+    
+    if (error) {
+      logError('Failed to fetch unit', error);
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    logError('Unexpected error fetching unit', error);
+    return null;
+  }
 }; 

@@ -103,7 +103,7 @@ const ProductDetailPage: React.FC = () => {
             <div>
               <div className="text-xs text-gray-400 mb-1">EINHEIT</div>
               <div className="text-gray-300">
-                {item.unit ? `${item.unit.name} (${item.unit.short})` : 'Stücke (Stk)'}
+                {item.unit_id ? item.unit_id : 'Stücke (Stk)'}
               </div>
             </div>
             <FontAwesomeIcon className="w-5 h-5 text-gray-500 ml-2" icon="fa-chevron-right" size="base" style="regular"/>

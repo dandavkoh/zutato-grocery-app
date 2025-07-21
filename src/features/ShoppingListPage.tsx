@@ -166,9 +166,9 @@ const ShoppingListPage: React.FC = () => {
                         )}
                       </span>
                       <span className="flex-1" />
-                      {item.quantity && item.unit && (
+                      {item.quantity && item.unit_id && (
                         <span className="text-gray-400 text-base">
-                          {item.quantity} {item.unit.short}
+                          {item.quantity} {item.unit_id}
                         </span>
                       )}
                     </button>
@@ -232,9 +232,9 @@ const ShoppingListPage: React.FC = () => {
                       )}
                     </span>
                     <span className="flex-1" />
-                    {item.quantity && item.unit && (
+                    {item.quantity && item.unit_id && (
                       <span className="text-gray-400 text-base">
-                        {item.quantity} {item.unit.short}
+                        {item.quantity} {item.unit_id}
                       </span>
                     )}
                   </div>

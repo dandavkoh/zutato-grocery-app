@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setHeader, resetHeader, resetFilterClick } from '../stores/store';
 import type { RootState } from '../stores/store';
 import { useShoppingItemsRTK } from '../hooks/useShoppingItemsRTK';
+import { useListRTK } from '../hooks/useListsRTK';
 import { groupItemsByCategory, separateCompletedItems } from '../api/supabaseApi';
 import SwipeAction from '../components/SwipeAction';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
@@ -33,6 +34,9 @@ const ShoppingListPage: React.FC = () => {
   // Use the RTK Query shopping items hook
   const { items, loading, error, toggleItemCompletion, deleteItem } = useShoppingItemsRTK(listId);
   
+  // Use the RTK Query list hook to get the list name
+  const { list, loading: listLoading } = useListRTK(listId);
+  
   // Group items by category and separate completed items
   const { completed, incomplete } = separateCompletedItems(items);
   const groupedIncompleteItems = groupItemsByCategory(incomplete);
@@ -42,14 +46,14 @@ const ShoppingListPage: React.FC = () => {
 
   useEffect(() => {
     dispatch(setHeader({
-      title: 'Wocheneinkauf',
+      title: list?.name || 'Lade...',
       showBack: false,
       background: 'bg-yellow-400',
       showSearchBar: true,
       showFilterIcon: true,
     }));
     return () => { dispatch(resetHeader()); };
-  }, [dispatch]);
+  }, [dispatch, list?.name]);
 
   // Handle filter click events
   useEffect(() => {

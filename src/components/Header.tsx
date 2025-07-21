@@ -44,7 +44,7 @@ const Header: React.FC = () => {
         </button>
       )}
       {/* Title Row: Different layouts for ShoppingListPage vs other pages */}
-      {title === 'Wocheneinkauf' && !showBack ? (
+      {!showBack && showFilterIcon ? (
         // ShoppingListPage: Home icon + Title + Filter icon
         <div className="w-full flex items-center justify-between mt-6 mb-2 drop-shadow-lg">
           <div className="flex items-center">

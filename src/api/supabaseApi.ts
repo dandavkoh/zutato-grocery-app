@@ -28,7 +28,7 @@ export interface Unit {
 export interface ShoppingItem {
   id: string;
   name: string;
-  category: string;
+  category_id: string;
   icon?: string; // Font Awesome icon name (e.g., "fa-apple", "fa-bread-slice")
   unit_id?: string;
   quantity?: number;
@@ -45,7 +45,7 @@ export interface ShoppingItem {
 
 export interface CreateShoppingItemRequest {
   name: string;
-  category: string;
+  category_id: string;
   icon?: string;
   unit_id?: string;
   quantity?: number;
@@ -58,7 +58,7 @@ export interface CreateShoppingItemRequest {
 
 export interface UpdateShoppingItemRequest {
   name?: string;
-  category?: string;
+  category_id?: string;
   icon?: string;
   unit_id?: string;
   quantity?: number;
@@ -147,15 +147,15 @@ export class ShoppingItemsController {
   }
 
   // Get items by category
-  async getItemsByCategory(listId: string, category: string): Promise<ApiResponse<ShoppingItem[]>> {
+  async getItemsByCategory(listId: string, category_id: string): Promise<ApiResponse<ShoppingItem[]>> {
     try {
-      logDebug('Fetching items by category from Supabase', { listId, category });
+      logDebug('Fetching items by category from Supabase', { listId, category_id });
       
       const { data, error } = await supabase
         .from('shopping_items')
         .select('*')
         .eq('list_id', listId)
-        .eq('category', category)
+        .eq('category_id', category_id)
         .eq('is_deleted', false)
         .order('created_at', { ascending: false });
       
@@ -231,7 +231,7 @@ export class ShoppingItemsController {
         .from('shopping_items')
         .insert([{
           name: itemData.name,
-          category: itemData.category,
+          category_id: itemData.category_id,
           icon: itemData.icon,
           unit_id: itemData.unit_id,
           quantity: itemData.quantity,
@@ -259,7 +259,7 @@ export class ShoppingItemsController {
       const shoppingItem: ShoppingItem = {
         id: data.id,
         name: data.name,
-        category: data.category,
+        category_id: data.category_id,
         icon: data.icon,
         unit_id: data.unit_id,
         quantity: data.quantity,
@@ -318,7 +318,7 @@ export class ShoppingItemsController {
       const shoppingItem: ShoppingItem = {
         id: data.id,
         name: data.name,
-        category: data.category,
+        category_id: data.category_id,
         icon: data.icon,
         unit_id: data.unit_id,
         quantity: data.quantity,
@@ -433,7 +433,7 @@ export class ShoppingItemsController {
       const shoppingItem: ShoppingItem = {
         id: data.id,
         name: data.name,
-        category: data.category,
+        category_id: data.category_id,
         icon: data.icon,
         unit_id: data.unit_id,
         quantity: data.quantity,
@@ -949,15 +949,15 @@ export const authService = {
 
 // Helper function to group items by category
 export const groupItemsByCategory = (items: ShoppingItem[]) => {
-  const grouped: { [category: string]: ShoppingItem[] } = {};
+  const grouped: { [category_id: string]: ShoppingItem[] } = {};
   
   const activeItems = items.filter(item => !item.is_deleted);
   
   activeItems.forEach(item => {
-    if (!grouped[item.category]) {
-      grouped[item.category] = [];
+    if (!grouped[item.category_id]) {
+      grouped[item.category_id] = [];
     }
-    grouped[item.category].push(item);
+    grouped[item.category_id].push(item);
   });
   
   return grouped;

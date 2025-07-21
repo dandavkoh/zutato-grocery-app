@@ -75,7 +75,7 @@ const MyComponent = () => {
   const handleCreate = async () => {
     await createItem({
       name: 'Neues Item',
-      category: 'Obst',
+              category_id: 'obst-category-id',
       listId: 'list-1',
       addedBy: 'user-1'
     });

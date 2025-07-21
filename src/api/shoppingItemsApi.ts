@@ -67,37 +67,37 @@ export const shoppingItemsApi = createApi({
     }),
 
     // Items nach Kategorie abrufen
-    getItemsByCategory: builder.query<ShoppingItem[], { listId: string; category: string }>({
-      query: ({ listId, category }) => ({
-        url: `/api/shopping-items/${listId}/category/${encodeURIComponent(category)}`,
+    getItemsByCategory: builder.query<ShoppingItem[], { listId: string; category_id: string }>({
+      query: ({ listId, category_id }) => ({
+        url: `/api/shopping-items/${listId}/category/${encodeURIComponent(category_id)}`,
         method: 'GET',
       }),
       keepUnusedDataFor: 180,
-      providesTags: (result, error, { listId, category }) =>
+      providesTags: (result, error, { listId, category_id }) =>
         result
           ? [
               ...result.map(({ id }) => ({ type: 'ShoppingItem' as const, id })),
-              { type: 'ShoppingItem', id: `CATEGORY-${category}` }
+              { type: 'ShoppingItem', id: `CATEGORY-${category_id}` }
             ]
-          : [{ type: 'ShoppingItem', id: `CATEGORY-${category}` }],
-      async onQueryStarted({ listId, category }, { queryFulfilled, getState }) {
+          : [{ type: 'ShoppingItem', id: `CATEGORY-${category_id}` }],
+      async onQueryStarted({ listId, category_id }, { queryFulfilled, getState }) {
         // Prüfen ob Daten bereits im Cache sind
         const state = getState() as any;
-        const queryKey = `getItemsByCategory({"listId":"${listId}","category":"${category}"})`;
+        const queryKey = `getItemsByCategory({"listId":"${listId}","category_id":"${category_id}"})`;
         const queryState = state.shoppingItemsApi.queries[queryKey];
         
         if (queryState && queryState.data && !queryState.isLoading) {
-          console.log(`⚡ [RTK Query] Using CACHED data for category: ${category} (${queryState.data.length} items)`);
+          console.log(`⚡ [RTK Query] Using CACHED data for category_id: ${category_id} (${queryState.data.length} items)`);
           return;
         }
         
-        console.log(`🔄 [RTK Query] Starting DATABASE query for category: ${category} in list: ${listId}`);
+        console.log(`🔄 [RTK Query] Starting DATABASE query for category_id: ${category_id} in list: ${listId}`);
         
         try {
           const { data } = await queryFulfilled;
-          console.log(`✅ [RTK Query] Successfully loaded ${data.length} items for category "${category}" from DATABASE`);
+          console.log(`✅ [RTK Query] Successfully loaded ${data.length} items for category_id "${category_id}" from DATABASE`);
         } catch (error) {
-          console.error(`❌ [RTK Query] Failed to load items for category "${category}" from DATABASE`, error);
+          console.error(`❌ [RTK Query] Failed to load items for category_id "${category_id}" from DATABASE`, error);
         }
       },
     }),

@@ -117,7 +117,7 @@ const ProductDetailPage: React.FC = () => {
           <div className="text-xs text-gray-400 mb-1">KATEGORIE WECHSELN</div>
           <div className="flex items-center gap-2">
             <FontAwesomeIcon icon="fa-apple-whole" size="2xl" style="regular"/>
-            <span className="text-gray-300">{item.category}</span>
+                            <span className="text-gray-300">{item.category_id}</span>
           </div>
         </button>
       </div>

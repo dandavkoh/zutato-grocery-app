@@ -25,8 +25,8 @@ export const supabaseApiAdapter = {
   },
 
   // GET /api/shopping-items/:listId/category/:category
-  async getItemsByCategory(listId: string, category: string): Promise<ApiResponse<ShoppingItem[]>> {
-    return await supabaseApi.getItemsByCategory(listId, category);
+  async getItemsByCategory(listId: string, category_id: string): Promise<ApiResponse<ShoppingItem[]>> {
+    return await supabaseApi.getItemsByCategory(listId, category_id);
   },
 
   // GET /api/shopping-items/:listId/completed

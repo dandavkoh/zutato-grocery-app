@@ -122,6 +122,27 @@ export const useListRTK = (listId: string) => {
     refetch: loadList,
   } = useGetListQuery(listId);
 
+  const errorMessage = error ? 
+    ('data' in error ? String(error.data) : 'Unknown error') : 
+    null;
+
+  return {
+    list,
+    loading,
+    error: errorMessage,
+    loadList,
+  };
+};
+
+// Hook für einzelne List mit Mitgliedern
+export const useListWithMembersRTK = (listId: string) => {
+  const {
+    data: list,
+    isLoading: loading,
+    error,
+    refetch: loadList,
+  } = useGetListQuery(listId);
+
   const {
     data: members = [],
     isLoading: membersLoading,

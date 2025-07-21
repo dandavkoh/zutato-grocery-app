@@ -96,7 +96,7 @@ export interface ListMember {
   list_id: string;
   user_id: string;
   role: 'owner' | 'member';
-  created_at: string;
+  accepted_at: string;
 }
 
 export interface ApiResponse<T> {
@@ -741,7 +741,7 @@ export class ListsController {
         .from('list_members')
         .select('*')
         .eq('list_id', listId)
-        .order('created_at', { ascending: true });
+        .order('accepted_at', { ascending: true });
       
       if (error) {
         logError('Failed to fetch list members from Supabase', error);

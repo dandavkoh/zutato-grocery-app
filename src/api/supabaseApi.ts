@@ -517,18 +517,6 @@ export class ListsController {
     try {
       logDebug('Fetching lists from Supabase');
       
-      // Get current user
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
-      if (userError || !user) {
-        logError('User not authenticated', userError);
-        return {
-          data: null,
-          error: 'User not authenticated',
-          status: 401
-        };
-      }
-      
       // Get lists where user is a member
       const { data, error } = await supabase
         .from('lists')

@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ListsController } from '../api/supabaseApi';
 import type { List, CreateListRequest, UpdateListRequest, ListMember } from '../api/supabaseApi';
-import { pwaService } from '../services/pwaService';
 
 const listsController = new ListsController();
 
@@ -32,8 +31,6 @@ export const useLists = () => {
 
   // Load lists on mount
   useEffect(() => {
-    // Ensure PWA fetch interceptor is active
-    //pwaService.ensureFetchInterceptor();
     loadLists();
   }, [loadLists]);
 
@@ -129,8 +126,6 @@ export const useList = (listId: string) => {
 
   // Load list on mount and when listId changes
   useEffect(() => {
-    // Ensure PWA fetch interceptor is active
-    //pwaService.ensureFetchInterceptor();
     loadList();
   }, [loadList]);
 
@@ -171,8 +166,6 @@ export const useListMembers = (listId: string) => {
 
   // Load members on mount and when listId changes
   useEffect(() => {
-    // Ensure PWA fetch interceptor is active
-    //pwaService.ensureFetchInterceptor();
     loadMembers();
   }, [loadMembers]);
 

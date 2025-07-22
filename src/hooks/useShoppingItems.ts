@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ShoppingItemsController } from '../api/supabaseApi';
 import type { ShoppingItem, CreateShoppingItemRequest, UpdateShoppingItemRequest } from '../api/supabaseApi';
-import { pwaService } from '../services/pwaService';
 
 const shoppingItemsController = new ShoppingItemsController();
 
@@ -34,8 +33,6 @@ export const useShoppingItems = (listId: string) => {
 
   // Load items on mount and when listId changes
   useEffect(() => {
-    // Ensure PWA fetch interceptor is active
-    //pwaService.ensureFetchInterceptor();
     loadItems();
   }, [loadItems]);
 

@@ -7,6 +7,7 @@ import UnitSelectPage from './features/UnitSelectPage'
 import SearchPage from './features/SearchPage'
 import LoginPage from './features/LoginPage'
 import RegisterPage from './features/RegisterPage'
+import CreateListPage from './features/CreateListPage'
 import Header from './components/Header'
 import PWAUpdateBanner from './components/PWAUpdateBanner'
 import OfflineIndicator from './components/OfflineIndicator'
@@ -45,6 +46,11 @@ function App() {
         <Route path="/lists" element={
           <ProtectedRoute>
             <ListsPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/create-list" element={
+          <ProtectedRoute>
+            <CreateListPage />
           </ProtectedRoute>
         } />
         <Route path="/shopping-list/:listId" element={

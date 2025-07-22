@@ -11,11 +11,6 @@ const ListsPage: React.FC = () => {
   
   // Use the lists hook
   const { lists, loading, error } = useLists();
-  
-  // Debug logging
-  console.log('ListsPage - Lists data:', lists);
-  console.log('ListsPage - Loading:', loading);
-  console.log('ListsPage - Error:', error);
 
   useEffect(() => {
     dispatch(setHeader({
@@ -41,7 +36,10 @@ const ListsPage: React.FC = () => {
             <FontAwesomeIcon icon="fa-plus" size="xl" style="regular"/>
           </button>
         </div>
-        <button className="w-full bg-yellow-400 text-white font-semibold py-3 rounded-xl mb-4 flex items-center justify-center text-lg gap-2">
+        <button 
+          onClick={() => navigate('/create-list')}
+          className="w-full bg-yellow-400 text-white font-semibold py-3 rounded-xl mb-4 flex items-center justify-center text-lg gap-2"
+        >
           <FontAwesomeIcon icon="fa-plus" size="xl" style="regular"/>
           Neue Einkaufsliste
         </button>

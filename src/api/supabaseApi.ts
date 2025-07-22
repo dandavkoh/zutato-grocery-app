@@ -593,23 +593,39 @@ export class ListsController {
     try {
       logDebug('Creating new list in Supabase', { name: listData.name });
       
-      // Create the list
-      const { data: list, error: listError } = await supabase
+      // Create the list without selecting the result first
+      const { data: insertResult, error: listError } = await supabase
         .from('lists')
-        .insert([{
+        .insert({
           name: listData.name,
           description: listData.description,
-          created_by: listData.created_by,
-          is_deleted: false,
-        }])
-        .select()
-        .single();
+          created_by: listData.created_by
+        });
       
       if (listError) {
         logError('Failed to create list in Supabase', listError);
         return {
           data: null,
           error: listError.message,
+          status: 500
+        };
+      }
+
+      // Get the created list by querying it
+      const { data: list, error: fetchError } = await supabase
+        .from('lists')
+        .select('*')
+        .eq('name', listData.name)
+        .eq('created_by', listData.created_by)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (fetchError) {
+        logError('Failed to fetch created list', fetchError);
+        return {
+          data: null,
+          error: 'List created but failed to fetch it',
           status: 500
         };
       }

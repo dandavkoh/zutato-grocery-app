@@ -39,7 +39,11 @@ const Header: React.FC = () => {
   return (
     <div className={`relative ${background} rounded-b-3xl px-6 pt-8 pb-6 flex flex-col items-center ${className}`}>
       {showBack && (
-        <button className="absolute left-4 top-14 bg-yellow-400/60 rounded-full p-2" onClick={handleBackClick}>
+        <button 
+          className="absolute left-4 top-14 bg-yellow-400/60 rounded-full p-2 z-50" 
+          onClick={handleBackClick}
+          style={{zIndex: 1000}}
+        >
           <FontAwesomeIcon icon="fa-chevron-left" size="xl" style="regular"/>
         </button>
       )}

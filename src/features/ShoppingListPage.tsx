@@ -3,8 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setHeader, resetHeader, resetFilterClick } from '../stores/store';
 import type { RootState } from '../stores/store';
-import { useShoppingItemsRTK } from '../hooks/useShoppingItemsRTK';
-import { useListRTK } from '../hooks/useListsRTK';
+import { useShoppingItems } from '../hooks/useShoppingItems';
+import { useList } from '../hooks/useLists';
 import { groupItemsByCategory, separateCompletedItems } from '../api/supabaseApi';
 import SwipeAction from '../components/SwipeAction';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
@@ -31,11 +31,11 @@ const ShoppingListPage: React.FC = () => {
     return null;
   }
   
-  // Use the RTK Query shopping items hook
-  const { items, loading, error, toggleItemCompletion, deleteItem } = useShoppingItemsRTK(listId);
+  // Use the shopping items hook
+  const { items, loading, error, toggleItemCompletion, deleteItem } = useShoppingItems(listId);
   
-  // Use the RTK Query list hook to get the list name
-  const { list, loading: listLoading } = useListRTK(listId);
+  // Use the list hook to get the list name
+  const { list, loading: listLoading } = useList(listId);
   
   // Group items by category and separate completed items
   const { completed, incomplete } = separateCompletedItems(items);

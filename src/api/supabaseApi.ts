@@ -2,6 +2,13 @@ import { supabase } from '../config/supabase';
 import { logDebug, logError, logInfo } from '../config/environment';
 import type { AuthError } from '@supabase/supabase-js';
 
+// Initialize PWA service when Supabase API is imported
+if (typeof window !== 'undefined') {
+  import('../services/pwaService').then(({ pwaService }) => {
+    pwaService.ensureFetchInterceptor();
+  });
+}
+
 // Auth Types
 export interface AuthUser {
   id: string;

@@ -128,7 +128,20 @@ class PWAService {
   }
 
   private setupFetchInterceptor() {
-    const originalFetch = window.fetch;
+    // Store original fetch if not already stored
+    if (!(window as any)._originalFetch) {
+      (window as any)._originalFetch = window.fetch;
+    }
+    
+    const originalFetch = (window as any)._originalFetch;
+    
+    // Only set up interceptor if not already set up
+    if ((window as any)._fetchInterceptorSet) {
+      console.log('🔍 [PWA] Fetch interceptor already set up');
+      return;
+    }
+    
+    (window as any)._fetchInterceptorSet = true;
     
     window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
       const request = new Request(input, init);
@@ -525,42 +538,49 @@ class PWAService {
   }
 
   private setupSupabaseInterceptor() {
-    // Intercept Supabase client requests by monkey-patching the fetch method
-    // This will catch requests made by the Supabase client directly
-    const originalSupabaseFetch = (window as any).supabase?.rest?.fetch;
-    
-    if (originalSupabaseFetch) {
-      (window as any).supabase.rest.fetch = async (...args: any[]) => {
-        const [url, options] = args;
-        console.log(`🔍 [PWA] Intercepting Supabase client request: ${options?.method || 'GET'} ${url}`);
+    // Wait for Supabase client to be available
+    const checkSupabase = () => {
+      const supabaseClient = (window as any).supabase;
+      if (supabaseClient?.rest?.fetch) {
+        const originalSupabaseFetch = supabaseClient.rest.fetch;
         
-        // Check if this is a request we want to cache
-        const isCacheableRequest = url.includes('/rest/v1/') && 
-          (url.includes('shopping_items') || url.includes('lists') || url.includes('list_members'));
-        
-        if (isCacheableRequest && options?.method === 'GET') {
-          // Try cache first for GET requests
-          const cachedResponse = await this.getCachedResponse(new Request(url, options));
-          if (cachedResponse) {
-            console.log(`⚡ [PWA] Serving Supabase request from cache: ${url}`);
-            return cachedResponse;
+        supabaseClient.rest.fetch = async (...args: any[]) => {
+          const [url, options] = args;
+          console.log(`🔍 [PWA] Intercepting Supabase client request: ${options?.method || 'GET'} ${url}`);
+          
+          const isCacheableRequest = url.includes('/rest/v1/') && 
+            (url.includes('shopping_items') || url.includes('lists') || url.includes('list_members'));
+          
+          if (isCacheableRequest && options?.method === 'GET') {
+            const cachedResponse = await this.getCachedResponse(new Request(url, options));
+            if (cachedResponse) {
+              console.log(`⚡ [PWA] Serving Supabase request from cache: ${url}`);
+              return cachedResponse;
+            }
           }
+          
+          const response = await originalSupabaseFetch(...args);
+          if (response.ok && isCacheableRequest) {
+            await this.cacheResponse(new Request(url, options), response.clone());
+            console.log(`✅ [PWA] Cached Supabase client response: ${url}`);
+          }
+          return response;
+        };
+        
+        console.log('✅ [PWA] Supabase client interceptor installed');
+        return true;
+      }
+      return false;
+    };
+
+    // Try immediately
+    if (!checkSupabase()) {
+      // If not available, retry after a delay
+      setTimeout(() => {
+        if (!checkSupabase()) {
+          console.log('⚠️ [PWA] Supabase client not found after retry, skipping interceptor');
         }
-        
-        // Make the original request
-        const response = await originalSupabaseFetch(...args);
-        
-        // Cache successful responses
-        if (response.ok && isCacheableRequest) {
-          await this.cacheResponse(new Request(url, options), response.clone());
-          console.log(`✅ [PWA] Cached Supabase client response: ${url}`);
-        }
-        
-        return response;
-      };
-      console.log('✅ [PWA] Supabase client interceptor installed');
-    } else {
-      console.log('⚠️ [PWA] Supabase client not found, skipping interceptor');
+      }, 1000);
     }
   }
 
@@ -682,6 +702,13 @@ class PWAService {
     // This would be used for custom install prompts
     // For now, we rely on the browser's native install prompt
     console.log('📱 PWA: Install prompt requested');
+  }
+
+  // Ensure fetch interceptor is active (called when navigating between views)
+  public ensureFetchInterceptor(): void {
+    console.log('🔍 [PWA] Ensuring fetch interceptor is active');
+    this.setupFetchInterceptor();
+    this.setupSupabaseInterceptor();
   }
 }
 

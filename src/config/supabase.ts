@@ -25,4 +25,9 @@ export const supabase = createClient(
 // Supabase client is automatically initialized when created
 // No need for explicit initialization - the client handles connection management
 
+// Make Supabase client available globally for PWA interceptor
+if (typeof window !== 'undefined') {
+  (window as any).supabase = supabase;
+}
+
 // No types exported from config - moved to API 

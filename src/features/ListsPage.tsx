@@ -3,14 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { setHeader, resetHeader } from '../stores/store';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
-import { useListsRTK } from '../hooks/useListsRTK';
+import { useLists } from '../hooks/useLists';
 
 const ListsPage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   
-  // Use the RTK Query lists hook
-  const { lists, loading, error } = useListsRTK();
+  // Use the lists hook
+  const { lists, loading, error } = useLists();
   
   // Debug logging
   console.log('ListsPage - Lists data:', lists);

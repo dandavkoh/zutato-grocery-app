@@ -194,20 +194,25 @@ class PWAService {
   }
 
   private async handleGetRequest(request: Request, originalFetch: typeof fetch): Promise<Response> {
-    try {
-      // Try network first
-      const response = await originalFetch(request);
-      if (response.ok) {
-        // Cache successful responses
-        await this.cacheResponse(request, response.clone());
-        console.log(`✅ [PWA] Network response cached: ${request.method} ${request.url}`);
-        return response;
+    // Check if we're online
+    if (navigator.onLine) {
+      try {
+        // Try network first when online
+        const response = await originalFetch(request);
+        if (response.ok) {
+          // Cache successful responses
+          await this.cacheResponse(request, response.clone());
+          console.log(`✅ [PWA] Network response cached: ${request.method} ${request.url}`);
+          return response;
+        }
+      } catch (error) {
+        console.log(`📴 [PWA] Network failed, trying cache: ${request.method} ${request.url}`);
       }
-    } catch (error) {
-      console.log(`📴 [PWA] Network failed, trying cache: ${request.method} ${request.url}`);
+    } else {
+      console.log(`📴 [PWA] Offline, trying cache: ${request.method} ${request.url}`);
     }
 
-    // Try cache
+    // Try cache (only when offline or network failed)
     const cachedResponse = await this.getCachedResponse(request);
     if (cachedResponse) {
       console.log(`⚡ [PWA] Serving from cache: ${request.method} ${request.url}`);
@@ -552,6 +557,24 @@ class PWAService {
             (url.includes('shopping_items') || url.includes('lists') || url.includes('list_members'));
           
           if (isCacheableRequest && options?.method === 'GET') {
+            // Check if we're online
+            if (navigator.onLine) {
+              // Try network first when online
+              try {
+                const response = await originalSupabaseFetch(...args);
+                if (response.ok) {
+                  await this.cacheResponse(new Request(url, options), response.clone());
+                  console.log(`✅ [PWA] Cached Supabase client response: ${url}`);
+                  return response;
+                }
+              } catch (error) {
+                console.log(`📴 [PWA] Network failed, trying cache: ${url}`);
+              }
+            } else {
+              console.log(`📴 [PWA] Offline, trying cache: ${url}`);
+            }
+            
+            // Try cache (only when offline or network failed)
             const cachedResponse = await this.getCachedResponse(new Request(url, options));
             if (cachedResponse) {
               console.log(`⚡ [PWA] Serving Supabase request from cache: ${url}`);
@@ -559,8 +582,9 @@ class PWAService {
             }
           }
           
+          // For non-GET requests or non-cacheable requests, just make the original request
           const response = await originalSupabaseFetch(...args);
-          if (response.ok && isCacheableRequest) {
+          if (response.ok && isCacheableRequest && options?.method === 'GET') {
             await this.cacheResponse(new Request(url, options), response.clone());
             console.log(`✅ [PWA] Cached Supabase client response: ${url}`);
           }

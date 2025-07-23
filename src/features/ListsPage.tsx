@@ -66,35 +66,49 @@ const ListsPage: React.FC = () => {
         {!loading && !error && lists && lists.length > 0 && (
           <div className="space-y-4">
             {lists.map((list) => (
-              <button
-                key={list.id}
-                className="bg-yellow-400 rounded-2xl p-6 relative overflow-hidden w-full text-left hover:shadow-lg transition-shadow"
-                onClick={() => {
-                  console.log('ListsPage - Clicking list:', list);
-                  console.log('ListsPage - Navigating to listId:', list.id);
-                  navigate(`/shopping-list/${list.id}`);
-                }}
-              >
-                <div className="absolute left-0 bottom-0 w-full h-20 bg-yellow-500/30 rounded-b-2xl" style={{zIndex:0}}></div>
-                <div className="flex justify-between items-start relative z-10">
-                  <div>
-                    <div className="text-white text-xl font-semibold mb-2">{list.name}</div>
-                                          <div className="flex items-center gap-4 text-white/80 text-base">
+              <div key={list.id} className="bg-[#5a470a] rounded-2xl relative overflow-hidden w-full hover:shadow-lg transition-shadow">
+                <div className="flex justify-between items-stretch relative z-10 h-full">
+                  {/* Linker klickbarer Bereich - Navigiert zur ShoppingListPage */}
+                  <div
+                    className="flex-1 cursor-pointer p-6"
+                    onClick={() => {
+                      console.log('ListsPage - Clicking list:', list);
+                      console.log('ListsPage - Navigating to listId:', list.id);
+                      navigate(`/shopping-list/${list.id}`);
+                    }}
+                  >
+                    <div>
+                      <div className="text-white text-xl font-semibold mb-2">{list.name}</div>
+                      <div className="flex items-center gap-4 text-white/80 text-base">
                         <span className="flex items-center gap-1">
-                          <FontAwesomeIcon icon="fa-calendar" size="base" style="regular"/>
-                          {new Date(list.created_at).toLocaleDateString('de-DE')}
+                          <FontAwesomeIcon icon="fa-clipboard-list-check" size="base" style="regular"/>
+                          {/* {new Date(list.created_at).toLocaleDateString('de-DE')} */}
+                          TODO 123
                         </span>
                         <span className="flex items-center gap-1">
                           <FontAwesomeIcon icon="fa-user" size="base" style="regular"/>
-                          {list.created_by}
+                          {/* {list.created_by} */}
+                          TODO 123
                         </span>
                       </div>
+                    </div>
                   </div>
-                  <span className="bg-white/30 rounded-full p-2 text-white">
+                  
+                  {/* Senkrechte Trennlinie */}
+                  <div className="w-px bg-white/20 mx-4 my-6"></div>
+                  
+                  {/* Rechter klickbarer Bereich - Navigiert zur EditListPage */}
+                  <div 
+                    className="flex items-center justify-center w-16 cursor-pointer"
+                    onClick={() => {
+                      console.log('Edit button clicked for list:', list.id);
+                      navigate('/edit-list', { state: { list } });
+                    }}
+                  >
                     <FontAwesomeIcon icon="fa-pen" size="base" style="regular"/>
-                  </span>
+                  </div>
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         )}

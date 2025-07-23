@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setHeader, resetHeader, resetBackClick } from '../stores/store';
 import type { RootState } from '../stores/store';
+import { ListsController } from '../api/supabaseApi';
 import type { List } from '../api/supabaseApi';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
 
@@ -21,6 +22,7 @@ const EditListPage: React.FC = () => {
   
   // Get list data from navigation state
   const list = location.state?.list as List | undefined;
+  const listsController = new ListsController();
   
   // Local state
   const [listName, setListName] = useState(list?.name || '');
@@ -80,12 +82,22 @@ const EditListPage: React.FC = () => {
     alert('Neues Mitglied hinzufügen - TODO');
   };
 
-  const handleDeleteList = () => {
+  const handleDeleteList = async () => {
     if (showDeleteConfirm) {
-      console.log('Deleting list:', list.id);
-      // TODO: Implement delete logic
-      alert('Liste gelöscht!');
-      navigate('/lists');
+      try {
+        console.log('Deleting list:', list.id);
+        const response = await listsController.deleteList(list.id);
+        
+        if (response.error) {
+          console.error('Failed to delete list:', response.error);
+          alert('Fehler beim Löschen der Liste: ' + response.error);
+        } else {
+          navigate('/lists');
+        }
+      } catch (error) {
+        console.error('Unexpected error deleting list:', error);
+        alert('Unerwarteter Fehler beim Löschen der Liste');
+      }
     } else {
       setShowDeleteConfirm(true);
     }

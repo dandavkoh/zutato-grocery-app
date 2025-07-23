@@ -26,8 +26,7 @@ const EditListPage: React.FC = () => {
   const [listName, setListName] = useState(list?.name || '');
   const [members, setMembers] = useState<ListMember[]>([
     { id: '1', name: 'Ich', email: 'ich@example.com', isOwner: true },
-    { id: '2', name: 'Alina Kohsyk', email: 'alina.f00@gmx.de', isOwner: false },
-    { id: '3', name: 'Max Mustermann', email: 'max@example.com', isOwner: false },
+    { id: '2', name: 'Max Mustermann', email: 'max@example.com', isOwner: false },
   ]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 

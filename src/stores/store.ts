@@ -1,5 +1,6 @@
 import { configureStore, createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
+import type { ShoppingItem } from '../api/supabaseApi';
 
 // Beispiel: Suchtext global speichern
 const searchSlice = createSlice({
@@ -77,6 +78,27 @@ const headerSlice = createSlice({
   },
 });
 
+// Selected Item Slice für das aktuell ausgewählte Shopping Item
+const selectedItemSlice = createSlice({
+  name: 'selectedItem',
+  initialState: { 
+    item: null as ShoppingItem | null,
+  },
+  reducers: {
+    setSelectedItem: (state, action: PayloadAction<ShoppingItem | null>) => {
+      state.item = action.payload;
+    },
+    updateSelectedItem: (state, action: PayloadAction<Partial<ShoppingItem>>) => {
+      if (state.item) {
+        state.item = { ...state.item, ...action.payload };
+      }
+    },
+    clearSelectedItem: (state) => {
+      state.item = null;
+    },
+  },
+});
+
 export const { setSearch, clearSearch } = searchSlice.actions;
 export const { 
   triggerFilterClick, 
@@ -87,12 +109,14 @@ export const {
   resetRightButtonClick,
 } = eventSlice.actions;
 export const { setHeader, resetHeader } = headerSlice.actions;
+export const { setSelectedItem, updateSelectedItem, clearSelectedItem } = selectedItemSlice.actions;
 
 export const store = configureStore({
   reducer: {
     search: searchSlice.reducer,
     events: eventSlice.reducer,
     header: headerSlice.reducer,
+    selectedItem: selectedItemSlice.reducer,
   },
 });
 

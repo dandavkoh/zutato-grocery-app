@@ -14,8 +14,8 @@ const ProductDetailPage: React.FC = () => {
   const location = useLocation();
   const dispatch = useDispatch();
   
-  // Get item data from navigation state
-  const item = location.state?.item as ShoppingItem;
+  // Get item from global store only
+  const item = useSelector((state: RootState) => state.selectedItem.item);
   
   // Use the categories hook to get categories
   const { categories } = useCategories();
@@ -23,7 +23,7 @@ const ProductDetailPage: React.FC = () => {
   // Use the units hook to get units
   const { units } = useUnits();
   
-  // Get category name and icon
+  // Get category name and icon from current item
   const categoryName = item ? getCategoryNameById(item.category_id, categories) : '';
   const categoryIcon = item ? getCategoryIconById(item.category_id, categories) : 'basket-shopping';
 
@@ -111,7 +111,7 @@ const ProductDetailPage: React.FC = () => {
           </div>
           <button
             className="flex-1 bg-neutral-900 border-b border-neutral-800 py-4 px-5 flex items-center justify-between text-left rounded-l-lg"
-            onClick={() => navigate('/product/unit', { state: { item } })}
+            onClick={() => navigate('/product/unit', { state: { item: item } })}
           >
             <div>
               <div className="text-xs text-gray-400 mb-1">EINHEIT</div>
@@ -125,7 +125,7 @@ const ProductDetailPage: React.FC = () => {
         {/* Kategorie wechseln */}
         <button
           className="bg-neutral-900 border-b border-neutral-800 px-5 py-4 w-full text-left"
-          onClick={() => navigate('/product/category', { state: { item } })}
+          onClick={() => navigate('/product/category', { state: { item: item } })}
         >
           <div className="text-xs text-gray-400 mb-1">KATEGORIE WECHSELN</div>
           <div className="flex items-center gap-2">

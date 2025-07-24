@@ -1,10 +1,11 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { setHeader, resetHeader, resetBackClick } from '../stores/store';
+import { setHeader, resetHeader, resetBackClick, updateSelectedItem } from '../stores/store';
 import type { RootState } from '../stores/store';
 import { useUnits } from '../hooks/useUnits';
 import { getUnitNameById } from '../api/supabaseApi';
+import { shoppingItemsApi } from '../api/supabaseApi';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
 import type { ShoppingItem, Unit } from '../api/supabaseApi';
 
@@ -13,8 +14,8 @@ const UnitSelectPage: React.FC = () => {
   const location = useLocation();
   const dispatch = useDispatch();
   
-  // Get item data from navigation state
-  const item = location.state?.item as ShoppingItem;
+  // Get item from global store only
+  const item = useSelector((state: RootState) => state.selectedItem.item);
   
   // Use the units hook to get units
   const { units, loading } = useUnits();
@@ -42,6 +43,35 @@ const UnitSelectPage: React.FC = () => {
     }
   }, [backClicked, navigate, dispatch]);
 
+  // Handle unit selection
+  const handleUnitSelect = async (unitId: string) => {
+    if (!item) return;
+    
+    try {
+      // Update the item's unit
+      const response = await shoppingItemsApi.updateItem(item.id, {
+        unit_id: unitId
+      });
+      
+      if (response.error) {
+        console.error('Failed to update unit:', response.error);
+        // Optionally show an error message to the user
+        return;
+      }
+      
+      // Update the item in global store
+      dispatch(updateSelectedItem({
+        unit_id: unitId
+      }));
+      
+      // Navigate back to the previous page
+      navigate(-1);
+    } catch (error) {
+      console.error('Error updating unit:', error);
+      // Optionally show an error message to the user
+    }
+  };
+
   const formatUnitDisplay = (unit: Unit | null) => {
     if (!unit) return 'Keine';
     return `${unit.name} (${unit.short_name})`;
@@ -60,14 +90,18 @@ const UnitSelectPage: React.FC = () => {
         <div className="text-center py-8">Keine Einheiten gefunden.</div>
       ) : (
         units.map((unit, index) => (
-          <div key={index} className="flex items-center px-5 py-3 border-b border-neutral-800 bg-neutral-900">
+          <button
+            key={index}
+            className="flex items-center px-5 py-3 border-b border-neutral-800 bg-neutral-900 w-full text-left hover:bg-neutral-800 transition-colors"
+            onClick={() => handleUnitSelect(unit.id)}
+          >
             <span className="text-lg text-gray-300 flex-1">{formatUnitDisplay(unit)}</span>
             {isSelected(unit) && (
               <span className="text-yellow-400">
                 <FontAwesomeIcon icon="fa-circle-check" size="xl" style="regular"/>
               </span>
             )}
-          </div>
+          </button>
         ))
       )}
     </div>

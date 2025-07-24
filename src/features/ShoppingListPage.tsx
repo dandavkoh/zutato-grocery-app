@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { setHeader, resetHeader, resetFilterClick } from '../stores/store';
+import { setHeader, resetHeader, resetFilterClick, setSelectedItem } from '../stores/store';
 import type { RootState } from '../stores/store';
 import { useShoppingItems } from '../hooks/useShoppingItems';
 import { useList } from '../hooks/useLists';
@@ -84,6 +84,7 @@ const ShoppingListPage: React.FC = () => {
     // Navigate to product detail page with item data
     const item = items.find(i => i.id === itemId);
     if (item) {
+      dispatch(setSelectedItem(item)); // Set the selected item in the global store
       navigate('/product', { 
         state: { item } 
       });

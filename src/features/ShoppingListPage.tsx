@@ -5,7 +5,9 @@ import { setHeader, resetHeader, resetFilterClick } from '../stores/store';
 import type { RootState } from '../stores/store';
 import { useShoppingItems } from '../hooks/useShoppingItems';
 import { useList } from '../hooks/useLists';
-import { groupItemsByCategory, separateCompletedItems } from '../api/supabaseApi';
+import { useCategories } from '../hooks/useCategories';
+import { useUnits } from '../hooks/useUnits';
+import { groupItemsByCategory, separateCompletedItems, getUnitShortNameById } from '../api/supabaseApi';
 import SwipeAction from '../components/SwipeAction';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
 
@@ -37,9 +39,15 @@ const ShoppingListPage: React.FC = () => {
   // Use the list hook to get the list name
   const { list, loading: listLoading } = useList(listId);
   
+  // Use the categories hook to get categories
+  const { categories, loading: categoriesLoading } = useCategories();
+  
+  // Use the units hook to get units
+  const { units, loading: unitsLoading } = useUnits();
+  
   // Group items by category and separate completed items
   const { completed, incomplete } = separateCompletedItems(items);
-  const groupedIncompleteItems = groupItemsByCategory(incomplete);
+  const groupedIncompleteItems = groupItemsByCategory(incomplete, categories);
 
   // Watch for filter click events
   const filterClicked = useSelector((state: RootState) => state.events.filterClicked);
@@ -113,7 +121,7 @@ const ShoppingListPage: React.FC = () => {
   };
 
   // Loading state
-  if (loading && items.length === 0) {
+  if (loading && items.length === 0 || categoriesLoading || unitsLoading) {
     return (
       <div className="min-h-screen bg-black flex flex-col">
         <div className="flex-1 flex items-center justify-center">
@@ -147,10 +155,10 @@ const ShoppingListPage: React.FC = () => {
       <div className="flex-1 overflow-y-auto pb-32">
         <div className="divide-y divide-neutral-800">
           {/* Render items grouped by category */}
-          {Object.entries(groupedIncompleteItems).map(([category, categoryItems]) => (
-            <div key={category}>
-              <div className="px-4 pt-4 pb-1 text-gray-300 text-sm">{category}</div>
-              {categoryItems.map((item) => (
+          {Object.entries(groupedIncompleteItems).map(([categoryName, categoryData]) => (
+            <div key={categoryName}>
+              <div className="px-4 pt-4 pb-1 text-gray-300 text-sm">{categoryName}</div>
+              {categoryData.items.map((item) => (
                 <SwipeAction
                   key={item.id}
                   onDelete={() => handleDeleteItem(item.id)}
@@ -161,22 +169,13 @@ const ShoppingListPage: React.FC = () => {
                       className="flex items-center pl-4 py-3 flex-1 text-left"
                       onClick={(e) => handleToggleCompletion(item.id, e)}
                     >
-                      {/* Font Awesome icon from API with fixed width container */}
+                      {/* Category icon with fixed width container */}
                       <div className="w-8 flex justify-center mr-4">
-                        {item.icon ? (
-                          <FontAwesomeIcon 
-                            icon={item.icon} 
-                            className="text-gray-300" 
-                            size="2xl"
-                          />
-                        ) : (
-                          // Fallback icon if no icon is specified
-                          <FontAwesomeIcon 
-                            icon="fa-cart-shopping" 
-                            className="text-gray-300" 
-                            size="2xl"
-                          />
-                        )}
+                        <FontAwesomeIcon 
+                          icon={categoryData.category.icon} 
+                          className="text-gray-300" 
+                          size="2xl"
+                        />
                       </div>
                       <span className="text-lg text-gray-200">
                         {item.name}
@@ -187,7 +186,7 @@ const ShoppingListPage: React.FC = () => {
                       <span className="flex-1" />
                       {item.quantity && item.unit_id && (
                         <span className="text-gray-400 text-base">
-                          {item.quantity} {item.unit_id}
+                          {item.quantity} {getUnitShortNameById(item.unit_id, units)}
                         </span>
                       )}
                     </button>
@@ -226,38 +225,35 @@ const ShoppingListPage: React.FC = () => {
               className={`overflow-hidden transition-all duration-300 ${showCompleted ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}
             >
               <div className="divide-y divide-neutral-800">
-                {completed.map((item) => (
-                  <div key={item.id} className="flex items-center px-4 py-3">
-                    {/* Font Awesome icon from API for completed items with fixed width container */}
-                    <div className="w-8 flex justify-center mr-4">
-                      {item.icon ? (
+                {completed.map((item) => {
+                  // Get category for this item
+                  const category = categories.find(cat => cat.id === item.category_id);
+                  const categoryIcon = category ? category.icon : 'fa-basket-shopping';
+                  
+                  return (
+                    <div key={item.id} className="flex items-center px-4 py-3">
+                      {/* Category icon for completed items with fixed width container */}
+                      <div className="w-8 flex justify-center mr-4">
                         <FontAwesomeIcon 
-                          icon={item.icon} 
+                          icon={categoryIcon} 
                           className="text-gray-300" 
                           size="2xl"
                         />
-                      ) : (
-                        // Fallback icon if no icon is specified
-                        <FontAwesomeIcon 
-                          icon="fa-cart-shopping" 
-                          className="text-gray-300" 
-                          size="2xl"
-                        />
+                      </div>
+                      <span className={`text-lg ${item.is_completed ? 'text-gray-400 line-through' : 'text-gray-200'}`}> {item.name}
+                        {item.notes && (
+                          <span className="text-gray-400 text-sm ml-1">{item.notes}</span>
+                        )}
+                      </span>
+                      <span className="flex-1" />
+                      {item.quantity && item.unit_id && (
+                        <span className="text-gray-400 text-base">
+                          {item.quantity} {getUnitShortNameById(item.unit_id, units)}
+                        </span>
                       )}
                     </div>
-                    <span className={`text-lg ${item.is_completed ? 'text-gray-400 line-through' : 'text-gray-200'}`}> {item.name}
-                      {item.notes && (
-                        <span className="text-gray-400 text-sm ml-1">{item.notes}</span>
-                      )}
-                    </span>
-                    <span className="flex-1" />
-                    {item.quantity && item.unit_id && (
-                      <span className="text-gray-400 text-base">
-                        {item.quantity} {item.unit_id}
-                      </span>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>

@@ -29,7 +29,13 @@ export interface AuthResponse {
 export interface Unit {
   id: string;
   name: string; // Langer Name, z.B. "Packungen"
-  short: string; // Kurze Abkürzung, z.B. "Pkg"
+  short_name: string; // Kurze Abkürzung, z.B. "Pkg"
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  icon: string;
 }
 
 export interface ShoppingItem {
@@ -856,9 +862,159 @@ export class ListsController {
   }
 }
 
+// Category API Controller
+export class CategoryController {
+  // Get all categories
+  async getCategories(): Promise<ApiResponse<Category[]>> {
+    try {
+      logDebug('Fetching categories from Supabase');
+      
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name', { ascending: true });
+      
+      if (error) {
+        logError('Failed to fetch categories from Supabase', error);
+        return {
+          data: null,
+          error: error.message,
+          status: 500
+        };
+      }
+      
+      logInfo('Successfully fetched categories from Supabase', { count: data?.length || 0 });
+      return {
+        data: data || [],
+        error: null,
+        status: 200
+      };
+    } catch (error) {
+      logError('Unexpected error fetching categories', error);
+      return {
+        data: null,
+        error: 'Internal server error',
+        status: 500
+      };
+    }
+  }
+
+  // Get category by ID
+  async getCategoryById(id: string): Promise<ApiResponse<Category>> {
+    try {
+      logDebug('Fetching category by ID from Supabase', { categoryId: id });
+      
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error) {
+        logError('Failed to fetch category by ID from Supabase', error);
+        return {
+          data: null,
+          error: error.message,
+          status: 500
+        };
+      }
+      
+      logInfo('Successfully fetched category by ID from Supabase', { categoryId: id });
+      return {
+        data: data,
+        error: null,
+        status: 200
+      };
+    } catch (error) {
+      logError('Unexpected error fetching category by ID', error);
+      return {
+        data: null,
+        error: 'Internal server error',
+        status: 500
+      };
+    }
+  }
+}
+
+// Unit API Controller
+export class UnitController {
+  // Get all units
+  async getUnits(): Promise<ApiResponse<Unit[]>> {
+    try {
+      logDebug('Fetching units from Supabase');
+      
+      const { data, error } = await supabase
+        .from('units')
+        .select('*')
+        .order('name', { ascending: true });
+      
+      if (error) {
+        logError('Failed to fetch units from Supabase', error);
+        return {
+          data: null,
+          error: error.message,
+          status: 500
+        };
+      }
+      
+      logInfo('Successfully fetched units from Supabase', { count: data?.length || 0 });
+      return {
+        data: data || [],
+        error: null,
+        status: 200
+      };
+    } catch (error) {
+      logError('Unexpected error fetching units', error);
+      return {
+        data: null,
+        error: 'Internal server error',
+        status: 500
+      };
+    }
+  }
+
+  // Get unit by ID
+  async getUnitById(id: string): Promise<ApiResponse<Unit>> {
+    try {
+      logDebug('Fetching unit by ID from Supabase', { unitId: id });
+      
+      const { data, error } = await supabase
+        .from('units')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error) {
+        logError('Failed to fetch unit by ID from Supabase', error);
+        return {
+          data: null,
+          error: error.message,
+          status: 500
+        };
+      }
+      
+      logInfo('Successfully fetched unit by ID from Supabase', { unitId: id });
+      return {
+        data: data,
+        error: null,
+        status: 200
+      };
+    } catch (error) {
+      logError('Unexpected error fetching unit by ID', error);
+      return {
+        data: null,
+        error: 'Internal server error',
+        status: 500
+      };
+    }
+  }
+}
+
 // Database Service Functions
 export const shoppingItemsApi = new ShoppingItemsController();
 export const listsApi = new ListsController();
+export const categoriesApi = new CategoryController();
+export const unitsApi = new UnitController();
 
 // Auth Service Functions
 export const authService = {
@@ -969,19 +1125,60 @@ export const authService = {
 };
 
 // Helper function to group items by category
-export const groupItemsByCategory = (items: ShoppingItem[]) => {
-  const grouped: { [category_id: string]: ShoppingItem[] } = {};
+export const groupItemsByCategory = (items: ShoppingItem[], categories: Category[]) => {
+  const grouped: { [categoryName: string]: { items: ShoppingItem[], category: Category } } = {};
   
   const activeItems = items.filter(item => !item.is_deleted);
   
+  // Create a map of category IDs to categories
+  const categoryMap = new Map<string, Category>();
+  categories.forEach(category => {
+    categoryMap.set(category.id, category);
+  });
+  
   activeItems.forEach(item => {
-    if (!grouped[item.category_id]) {
-      grouped[item.category_id] = [];
+    const category = categoryMap.get(item.category_id);
+    const categoryName = category ? category.name : 'Unbekannte Kategorie';
+    const fallbackCategory: Category = {
+      id: 'unknown',
+      name: 'Unbekannte Kategorie',
+      icon: 'fa-basket-shopping'
+    };
+    
+    if (!grouped[categoryName]) {
+      grouped[categoryName] = {
+        items: [],
+        category: category || fallbackCategory
+      };
     }
-    grouped[item.category_id].push(item);
+    grouped[categoryName].items.push(item);
   });
   
   return grouped;
+};
+
+// Helper function to get category name by ID
+export const getCategoryNameById = (categoryId: string, categories: Category[]): string => {
+  const category = categories.find(cat => cat.id === categoryId);
+  return category ? category.name : 'Unbekannte Kategorie';
+};
+
+// Helper function to get category icon by ID
+export const getCategoryIconById = (categoryId: string, categories: Category[]): string => {
+  const category = categories.find(cat => cat.id === categoryId);
+  return category ? category.icon : 'fa-basket-shopping';
+};
+
+// Helper function to get unit short name by ID
+export const getUnitShortNameById = (unitId: string, units: Unit[]): string => {
+  const unit = units.find(u => u.id === unitId);
+  return unit ? unit.short_name : 'Stk';
+};
+
+// Helper function to get unit full name by ID
+export const getUnitNameById = (unitId: string, units: Unit[]): string => {
+  const unit = units.find(u => u.id === unitId);
+  return unit ? unit.name : 'Stücke';
 };
 
 // Helper function to get completed and incomplete items

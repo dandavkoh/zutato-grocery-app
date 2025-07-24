@@ -3,8 +3,11 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setHeader, resetHeader, resetBackClick, resetRightButtonClick } from '../stores/store';
 import type { RootState } from '../stores/store';
-import type { ShoppingItem } from '../api/supabaseApi';
+import { useCategories } from '../hooks/useCategories';
+import { useUnits } from '../hooks/useUnits';
+import { getCategoryNameById, getCategoryIconById, getUnitNameById } from '../api/supabaseApi';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
+import type { ShoppingItem } from '../api/supabaseApi';
 
 const ProductDetailPage: React.FC = () => {
   const navigate = useNavigate();
@@ -12,7 +15,17 @@ const ProductDetailPage: React.FC = () => {
   const dispatch = useDispatch();
   
   // Get item data from navigation state
-  const item = location.state?.item as ShoppingItem | undefined;
+  const item = location.state?.item as ShoppingItem;
+  
+  // Use the categories hook to get categories
+  const { categories } = useCategories();
+  
+  // Use the units hook to get units
+  const { units } = useUnits();
+  
+  // Get category name and icon
+  const categoryName = item ? getCategoryNameById(item.category_id, categories) : '';
+  const categoryIcon = item ? getCategoryIconById(item.category_id, categories) : 'basket-shopping';
 
   // Watch for events
   const backClicked = useSelector((state: RootState) => state.events.backClicked);
@@ -103,7 +116,7 @@ const ProductDetailPage: React.FC = () => {
             <div>
               <div className="text-xs text-gray-400 mb-1">EINHEIT</div>
               <div className="text-gray-300">
-                {item.unit_id ? item.unit_id : 'Stücke (Stk)'}
+                {item.unit_id ? getUnitNameById(item.unit_id, units) : 'Stücke (Stk)'}
               </div>
             </div>
             <FontAwesomeIcon className="w-5 h-5 text-gray-500 ml-2" icon="fa-chevron-right" size="base" style="regular"/>
@@ -116,8 +129,8 @@ const ProductDetailPage: React.FC = () => {
         >
           <div className="text-xs text-gray-400 mb-1">KATEGORIE WECHSELN</div>
           <div className="flex items-center gap-2">
-            <FontAwesomeIcon icon="fa-apple-whole" size="2xl" style="regular"/>
-                            <span className="text-gray-300">{item.category_id}</span>
+            <FontAwesomeIcon icon={categoryIcon} size="2xl" style="regular"/>
+            <span className="text-gray-300">{categoryName}</span>
           </div>
         </button>
       </div>

@@ -38,6 +38,13 @@ export interface Category {
   icon: string;
 }
 
+export interface ProductGroup {
+  id: string;
+  title: string;
+  rank: number;
+  src: 'fts' | 'fuzzy';
+}
+
 export interface ShoppingItem {
   id: string;
   name: string;
@@ -938,7 +945,6 @@ export class CategoryController {
 
 // Unit API Controller
 export class UnitController {
-  // Get all units
   async getUnits(): Promise<ApiResponse<Unit[]>> {
     try {
       logDebug('Fetching units from Supabase');
@@ -946,10 +952,10 @@ export class UnitController {
       const { data, error } = await supabase
         .from('units')
         .select('*')
-        .order('name', { ascending: true });
+        .order('name');
       
       if (error) {
-        logError('Failed to fetch units from Supabase', error);
+        logError('Error fetching units:', error);
         return {
           data: null,
           error: error.message,
@@ -957,26 +963,25 @@ export class UnitController {
         };
       }
       
-      logInfo('Successfully fetched units from Supabase', { count: data?.length || 0 });
+      logDebug('Units fetched successfully:', data);
       return {
         data: data || [],
         error: null,
         status: 200
       };
     } catch (error) {
-      logError('Unexpected error fetching units', error);
+      logError('Unexpected error fetching units:', error);
       return {
         data: null,
-        error: 'Internal server error',
+        error: 'Unexpected error occurred',
         status: 500
       };
     }
   }
 
-  // Get unit by ID
   async getUnitById(id: string): Promise<ApiResponse<Unit>> {
     try {
-      logDebug('Fetching unit by ID from Supabase', { unitId: id });
+      logDebug('Fetching unit by ID:', id);
       
       const { data, error } = await supabase
         .from('units')
@@ -985,7 +990,7 @@ export class UnitController {
         .single();
       
       if (error) {
-        logError('Failed to fetch unit by ID from Supabase', error);
+        logError('Error fetching unit by ID:', error);
         return {
           data: null,
           error: error.message,
@@ -993,17 +998,59 @@ export class UnitController {
         };
       }
       
-      logInfo('Successfully fetched unit by ID from Supabase', { unitId: id });
+      logDebug('Unit fetched successfully:', data);
       return {
         data: data,
         error: null,
         status: 200
       };
     } catch (error) {
-      logError('Unexpected error fetching unit by ID', error);
+      logError('Unexpected error fetching unit by ID:', error);
       return {
         data: null,
-        error: 'Internal server error',
+        error: 'Unexpected error occurred',
+        status: 500
+      };
+    }
+  }
+}
+
+export class ProductGroupController {
+  async searchProductGroups(
+    term: string, 
+    limitFts: number = 10, 
+    limitFuzzy: number = 10
+  ): Promise<ApiResponse<ProductGroup[]>> {
+    try {
+      logDebug('Searching product groups with term:', term);
+      
+      const { data, error } = await supabase
+        .rpc('search_product_groups', {
+          term: term,
+          limit_fts: limitFts,
+          limit_fuzzy: limitFuzzy
+        });
+      
+      if (error) {
+        logError('Error searching product groups:', error);
+        return {
+          data: null,
+          error: error.message,
+          status: 500
+        };
+      }
+      
+      logDebug('Product groups search successful:', data);
+      return {
+        data: data || [],
+        error: null,
+        status: 200
+      };
+    } catch (error) {
+      logError('Unexpected error searching product groups:', error);
+      return {
+        data: null,
+        error: 'Unexpected error occurred',
         status: 500
       };
     }
@@ -1015,6 +1062,7 @@ export const shoppingItemsApi = new ShoppingItemsController();
 export const listsApi = new ListsController();
 export const categoriesApi = new CategoryController();
 export const unitsApi = new UnitController();
+export const productGroupsApi = new ProductGroupController();
 
 // Auth Service Functions
 export const authService = {

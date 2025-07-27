@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { setHeader, resetHeader } from '../stores/store';
 import type { RootState } from '../stores/store';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
+import { useProductSearch } from '../hooks/useProductSearch';
 
 const recommendations = [
   { icon: <FontAwesomeIcon icon="sack" className="text-gray-300" size="2xl"/>, name: 'Zucker', sub: 'Brauner' },
@@ -22,20 +23,13 @@ const seasonal = [
   { icon: <FontAwesomeIcon icon="leafy-green" className="text-gray-300" size="2xl"/>, name: 'Weißkohl' },
 ];
 
-const searchResults = [
-  { icon: <FontAwesomeIcon icon="jar-wheat" className="text-gray-300" size="2xl"/>, name: 'Mehl Roggen' },
-          { icon: <FontAwesomeIcon icon="jar-wheat" className="text-gray-300" size="2xl"/>, name: 'Mehl Roggen 500', quantity: '500' },
-        { icon: <FontAwesomeIcon icon="jar-wheat" className="text-gray-300" size="2xl"/>, name: 'Mehl', sub: 'Roggen', quantity: '500 g' },
-        { icon: <FontAwesomeIcon icon="jar-wheat" className="text-gray-300" size="2xl"/>, name: 'Roggenmehl', sub: 'Mehl', quantity: '500 g' },
-        { icon: <FontAwesomeIcon icon="jar-wheat" className="text-gray-300" size="2xl"/>, name: 'Weizenmehl', sub: 'Roggen', quantity: '500 kg' },
-        { icon: <FontAwesomeIcon icon="jar-wheat" className="text-gray-300" size="2xl"/>, name: 'Dinkelmehl', sub: 'Roggen', quantity: '500 g' },
-        { icon: <FontAwesomeIcon icon="jar-wheat" className="text-gray-300" size="2xl"/>, name: 'Paniermehl', sub: 'Roggen', quantity: '500 g' },
-];
-
 const SearchPage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const search = useSelector((state: RootState) => state.search.value);
+  
+  // Use the product search hook
+  const { searchResults, loading, error, searchProducts, clearSearch } = useProductSearch(300);
 
   useEffect(() => {
     dispatch(setHeader({
@@ -46,6 +40,15 @@ const SearchPage: React.FC = () => {
     }));
     return () => { dispatch(resetHeader()); };
   }, [dispatch, navigate]);
+
+  // Trigger search when search value changes
+  useEffect(() => {
+    if (search) {
+      searchProducts(search);
+    } else {
+      clearSearch();
+    }
+  }, [search]); // Remove searchProducts and clearSearch from dependencies
 
   const showResults = search.length > 0;
 
@@ -58,14 +61,37 @@ const SearchPage: React.FC = () => {
            <FontAwesomeIcon icon="fa-clipboard-list-check" size="base" style="regular"/>
             Einkaufsvorschläge
           </div>
+          
+          {loading && (
+            <div className="px-4 py-3 text-gray-400 text-center">
+              Suche läuft...
+            </div>
+          )}
+          
+          {error && (
+            <div className="px-4 py-3 text-red-400 text-center">
+              Fehler: {error}
+            </div>
+          )}
+          
+          {!loading && !error && searchResults.length === 0 && search.length >= 3 && (
+            <div className="px-4 py-3 text-gray-400 text-center">
+              Keine Ergebnisse gefunden
+            </div>
+          )}
+          
           <div className="divide-y divide-neutral-800">
-            {searchResults.map((item, i) => (
-              <div key={i} className="flex items-center px-4 py-3 bg-neutral-900">
-                <span className="mr-4 text-gray-300">{item.icon}</span>
-                <span className="text-base text-gray-200 flex-1">
-                  {item.name} {item.sub && <span className="text-gray-400 text-sm ml-1">{item.sub}</span>}
+            {searchResults.map((item) => (
+              <div key={item.id} className="flex items-center px-4 py-3 bg-neutral-900">
+                <span className="mr-4 text-gray-300">
+                  <FontAwesomeIcon icon="fa-box" size="2xl" style="regular"/>
                 </span>
-                {item.quantity && <span className="text-gray-400 text-sm mr-2">{item.quantity}</span>}
+                <span className="text-base text-gray-200 flex-1">
+                  {item.title}
+                  <span className="text-gray-400 text-sm ml-2">
+                    ({item.src === 'fts' ? 'Exakte Suche' : 'Ähnliche Suche'})
+                  </span>
+                </span>
                 <button className="rounded-full border-2 border-yellow-400 text-yellow-400 w-8 h-8 flex items-center justify-center ml-2">
                   <FontAwesomeIcon icon="fa-circle-plus" size="2xl" style="regular"/>
                 </button>

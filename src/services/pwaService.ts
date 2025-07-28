@@ -1,5 +1,6 @@
 // @ts-ignore - virtual:pwa-register is provided by vite-plugin-pwa
 import { registerSW } from 'virtual:pwa-register';
+import { dexieService, type ShoppingItem } from './dexieService';
 
 export interface PWAUpdateEvent {
   type: 'update' | 'offline' | 'online' | 'queue_processed' | 'error';
@@ -29,7 +30,6 @@ class PWAService {
   private requestQueue: QueuedRequest[] = [];
   private isProcessingQueue = false;
   private readonly MAX_QUEUE_SIZE = 100;
-  private readonly CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
   constructor() {
     this.initialize();
@@ -113,10 +113,10 @@ class PWAService {
     // Intercept Supabase client requests
     this.setupSupabaseInterceptor();
     
-    // Regular cache cleanup
+    // Regular database stats logging
     setInterval(() => {
-      this.cleanupOldCache().catch(error => {
-        console.error('❌ [PWA] Cache cleanup failed:', error);
+      this.logDatabaseStats().catch(error => {
+        console.error('❌ [PWA] Database stats logging failed:', error);
       });
     }, 60 * 60 * 1000); // Every hour
 
@@ -194,33 +194,52 @@ class PWAService {
   }
 
   private async handleGetRequest(request: Request, originalFetch: typeof fetch): Promise<Response> {
+    const url = new URL(request.url);
+    
+    // Only handle shopping_items requests
+    if (!url.pathname.includes('shopping_items')) {
+      return originalFetch(request);
+    }
+
+    console.log(`🛒 [PWA] Handling shopping items request: ${request.method} ${request.url}`);
+
     // Check if we're online
     if (navigator.onLine) {
       try {
         // Try network first when online
         const response = await originalFetch(request);
         if (response.ok) {
-          // Cache successful responses
-          await this.cacheResponse(request, response.clone());
-          console.log(`✅ [PWA] Network response cached: ${request.method} ${request.url}`);
+          // Parse and sync response to Dexie
+          const items: ShoppingItem[] = await response.clone().json();
+          await dexieService.syncShoppingItems(items);
+          console.log(`✅ [PWA] Network response synced to Dexie: ${request.method} ${request.url}`);
           return response;
         }
       } catch (error) {
-        console.log(`📴 [PWA] Network failed, trying cache: ${request.method} ${request.url}`);
+        console.log(`📴 [PWA] Network failed, trying Dexie: ${request.method} ${request.url}`);
       }
     } else {
-      console.log(`📴 [PWA] Offline, trying cache: ${request.method} ${request.url}`);
+      console.log(`📴 [PWA] Offline, trying Dexie: ${request.method} ${request.url}`);
     }
 
-    // Try cache (only when offline or network failed)
-    const cachedResponse = await this.getCachedResponse(request);
-    if (cachedResponse) {
-      console.log(`⚡ [PWA] Serving from cache: ${request.method} ${request.url}`);
-      return cachedResponse;
+    // Try Dexie (when offline or network failed)
+    try {
+      // Extract list_id from URL parameters
+      const listId = this.extractListIdFromUrl(url);
+      if (listId) {
+        const items = await dexieService.getShoppingItemsByListId(listId);
+        console.log(`⚡ [PWA] Serving from Dexie: ${items.length} items for list ${listId}`);
+        return new Response(JSON.stringify(items), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    } catch (error) {
+      console.error('❌ [PWA] Error getting items from Dexie:', error);
     }
 
-    // No cache available
-    console.log(`❌ [PWA] No cache available: ${request.method} ${request.url}`);
+    // No data available
+    console.log(`❌ [PWA] No data available: ${request.method} ${request.url}`);
     return new Response(JSON.stringify({ 
       error: 'Offline - Keine Daten verfügbar',
       offline: true 
@@ -230,13 +249,20 @@ class PWAService {
     });
   }
 
+  private extractListIdFromUrl(url: URL): string | null {
+    const listIdParam = url.searchParams.get('list_id');
+    if (listIdParam && listIdParam.startsWith('eq.')) {
+      return listIdParam.substring(3); // Remove 'eq.' prefix
+    }
+    return listIdParam;
+  }
+
   private async handleMutationRequest(request: Request, originalFetch: typeof fetch): Promise<Response> {
     try {
       // Try network first
       const response = await originalFetch(request);
       if (response.ok) {
         console.log(`✅ [PWA] Mutation successful: ${request.method} ${request.url}`);
-        await this.invalidateRelatedCaches(request);
         return response;
       }
     } catch (error) {
@@ -335,130 +361,12 @@ class PWAService {
     });
   }
 
-  private async cacheResponse(request: Request, response: Response): Promise<void> {
+  private async logDatabaseStats(): Promise<void> {
     try {
-      const url = new URL(request.url);
-      let cacheName = 'api-cache';
-      
-      // Handle both direct Supabase requests and RTK Query requests
-      if (url.pathname.includes('shopping_items') || url.pathname.includes('shopping-items')) {
-        cacheName = 'shopping-items-api-cache';
-      } else if (url.pathname.includes('lists')) {
-        cacheName = 'lists-api-cache';
-      } else if (url.pathname.includes('list_members') || url.pathname.includes('members')) {
-        cacheName = 'list-members-api-cache';
-      }
-      
-      console.log(`💾 [PWA] Caching response in ${cacheName}: ${request.method} ${request.url}`);
-      const cache = await caches.open(cacheName);
-      await cache.put(request, response);
-      console.log(`✅ [PWA] Successfully cached response in ${cacheName}`);
+      const stats = await dexieService.getStats();
+      console.log(`📊 [PWA] Database stats: ${stats.total} total, ${stats.active} active, ${stats.deleted} deleted items`);
     } catch (error) {
-      console.error('❌ [PWA] Failed to cache response:', error);
-      this.notifyUpdate({
-        type: 'error',
-        message: 'Cache-Fehler aufgetreten'
-      });
-    }
-  }
-
-  private async getCachedResponse(request: Request): Promise<Response | null> {
-    try {
-      const url = new URL(request.url);
-      let cacheName = 'api-cache';
-      
-      // Handle both direct Supabase requests and RTK Query requests
-      if (url.pathname.includes('shopping_items') || url.pathname.includes('shopping-items')) {
-        cacheName = 'shopping-items-api-cache';
-      } else if (url.pathname.includes('lists')) {
-        cacheName = 'lists-api-cache';
-      } else if (url.pathname.includes('list_members') || url.pathname.includes('members')) {
-        cacheName = 'list-members-api-cache';
-      }
-      
-      console.log(`🔍 [PWA] Looking for cached response in ${cacheName}: ${request.method} ${request.url}`);
-      const cache = await caches.open(cacheName);
-      const response = await cache.match(request);
-      
-      if (response) {
-        console.log(`⚡ [PWA] Found cached response in ${cacheName}`);
-      } else {
-        console.log(`❌ [PWA] No cached response found in ${cacheName}`);
-      }
-      
-      return response || null;
-    } catch (error) {
-      console.error('❌ [PWA] Failed to get cached response:', error);
-      return null;
-    }
-  }
-
-  private async invalidateRelatedCaches(request: Request): Promise<void> {
-    try {
-      const url = new URL(request.url);
-      let cacheName = 'api-cache';
-      
-      // Handle both direct Supabase requests and RTK Query requests
-      if (url.pathname.includes('shopping_items') || url.pathname.includes('shopping-items')) {
-        cacheName = 'shopping-items-api-cache';
-      } else if (url.pathname.includes('lists')) {
-        cacheName = 'lists-api-cache';
-      } else if (url.pathname.includes('list_members') || url.pathname.includes('members')) {
-        cacheName = 'list-members-api-cache';
-      }
-      
-      const cache = await caches.open(cacheName);
-      const keys = await cache.keys();
-      const relatedKeys = keys.filter(key => {
-        const keyUrl = new URL(key.url);
-        return (keyUrl.pathname.includes('/rest/v1/') || keyUrl.pathname.includes('/api/')) && 
-               (keyUrl.pathname.includes('shopping_items') || 
-                keyUrl.pathname.includes('shopping-items') ||
-                keyUrl.pathname.includes('lists') || 
-                keyUrl.pathname.includes('list_members') ||
-                keyUrl.pathname.includes('members'));
-      });
-      
-      await Promise.all(relatedKeys.map(key => cache.delete(key)));
-      console.log(`🗑️ [PWA] Invalidated ${relatedKeys.length} cache entries in ${cacheName}`);
-    } catch (error) {
-      console.error('❌ [PWA] Failed to invalidate caches:', error);
-    }
-  }
-
-  private async cleanupOldCache(): Promise<void> {
-    try {
-      const cacheNames = ['shopping-items-api-cache', 'lists-api-cache', 'list-members-api-cache'];
-      let totalCleanedCount = 0;
-      
-      for (const cacheName of cacheNames) {
-        const cache = await caches.open(cacheName);
-        const keys = await cache.keys();
-        const now = Date.now();
-        let cleanedCount = 0;
-        
-        for (const key of keys) {
-          const response = await cache.match(key);
-          if (response) {
-            const date = response.headers.get('date');
-            if (date && (now - new Date(date).getTime()) > this.CACHE_DURATION) {
-              await cache.delete(key);
-              cleanedCount++;
-            }
-          }
-        }
-        
-        if (cleanedCount > 0) {
-          console.log(`🧹 [PWA] Cleaned ${cleanedCount} old cache entries from ${cacheName}`);
-          totalCleanedCount += cleanedCount;
-        }
-      }
-      
-      if (totalCleanedCount > 0) {
-        console.log(`🧹 [PWA] Total cleaned: ${totalCleanedCount} old cache entries`);
-      }
-    } catch (error) {
-      console.error('❌ [PWA] Cache cleanup failed:', error);
+      console.error('❌ [PWA] Failed to get database stats:', error);
     }
   }
 
@@ -515,30 +423,19 @@ class PWAService {
 
     console.log('✅ PWA: Service Worker is active and ready');
     
-    // Check available caches
-    this.checkAvailableCaches();
+    // Check database stats
+    this.checkDatabaseStats();
 
     // Initial queue status check
     this.updateQueueStatus();
   }
 
-  private async checkAvailableCaches() {
+  private async checkDatabaseStats() {
     try {
-      const cacheNames = await caches.keys();
-      console.log('📋 [PWA] Available caches:', cacheNames);
-      
-      // Check specific cache contents
-      for (const cacheName of ['shopping-items-api-cache', 'lists-api-cache', 'list-members-api-cache']) {
-        if (cacheNames.includes(cacheName)) {
-          const cache = await caches.open(cacheName);
-          const keys = await cache.keys();
-          console.log(`📋 [PWA] Cache ${cacheName} has ${keys.length} entries`);
-        } else {
-          console.log(`📋 [PWA] Cache ${cacheName} not found`);
-        }
-      }
+      const stats = await dexieService.getStats();
+      console.log('📋 [PWA] Database stats:', stats);
     } catch (error) {
-      console.error('❌ [PWA] Failed to check caches:', error);
+      console.error('❌ [PWA] Failed to check database stats:', error);
     }
   }
 
@@ -553,40 +450,52 @@ class PWAService {
           const [url, options] = args;
           console.log(`🔍 [PWA] Intercepting Supabase client request: ${options?.method || 'GET'} ${url}`);
           
-          const isCacheableRequest = url.includes('/rest/v1/') && 
-            (url.includes('shopping_items') || url.includes('lists') || url.includes('list_members'));
+          const isShoppingItemsRequest = url.includes('/rest/v1/') && url.includes('shopping_items');
           
-          if (isCacheableRequest && options?.method === 'GET') {
+          if (isShoppingItemsRequest && options?.method === 'GET') {
             // Check if we're online
             if (navigator.onLine) {
               // Try network first when online
               try {
                 const response = await originalSupabaseFetch(...args);
                 if (response.ok) {
-                  await this.cacheResponse(new Request(url, options), response.clone());
-                  console.log(`✅ [PWA] Cached Supabase client response: ${url}`);
+                  // Parse and sync response to Dexie
+                  const items: ShoppingItem[] = await response.clone().json();
+                  await dexieService.syncShoppingItems(items);
+                  console.log(`✅ [PWA] Synced Supabase response to Dexie: ${url}`);
                   return response;
                 }
               } catch (error) {
-                console.log(`📴 [PWA] Network failed, trying cache: ${url}`);
+                console.log(`📴 [PWA] Network failed, trying Dexie: ${url}`);
               }
             } else {
-              console.log(`📴 [PWA] Offline, trying cache: ${url}`);
+              console.log(`📴 [PWA] Offline, trying Dexie: ${url}`);
             }
             
-            // Try cache (only when offline or network failed)
-            const cachedResponse = await this.getCachedResponse(new Request(url, options));
-            if (cachedResponse) {
-              console.log(`⚡ [PWA] Serving Supabase request from cache: ${url}`);
-              return cachedResponse;
+            // Try Dexie (when offline or network failed)
+            try {
+              const urlObj = new URL(url);
+              const listId = this.extractListIdFromUrl(urlObj);
+              if (listId) {
+                const items = await dexieService.getShoppingItemsByListId(listId);
+                console.log(`⚡ [PWA] Serving Supabase request from Dexie: ${items.length} items for list ${listId}`);
+                return new Response(JSON.stringify(items), {
+                  status: 200,
+                  headers: { 'Content-Type': 'application/json' }
+                });
+              }
+            } catch (error) {
+              console.error('❌ [PWA] Error getting items from Dexie:', error);
             }
           }
           
-          // For non-GET requests or non-cacheable requests, just make the original request
+          // For non-GET requests or non-shopping-items requests, just make the original request
           const response = await originalSupabaseFetch(...args);
-          if (response.ok && isCacheableRequest && options?.method === 'GET') {
-            await this.cacheResponse(new Request(url, options), response.clone());
-            console.log(`✅ [PWA] Cached Supabase client response: ${url}`);
+          if (response.ok && isShoppingItemsRequest && options?.method === 'GET') {
+            // Parse and sync response to Dexie
+            const items: ShoppingItem[] = await response.clone().json();
+            await dexieService.syncShoppingItems(items);
+            console.log(`✅ [PWA] Synced Supabase response to Dexie: ${url}`);
           }
           return response;
         };
@@ -667,23 +576,23 @@ class PWAService {
   public async getServiceWorkerStatus(): Promise<{
     registered: boolean;
     active: boolean;
-    cacheNames: string[];
+    databaseStats: { total: number; active: number; deleted: number };
   }> {
     try {
       const registration = await navigator.serviceWorker.getRegistration();
-      const cacheNames = await caches.keys();
+      const databaseStats = await dexieService.getStats();
       
       return {
         registered: !!registration,
         active: !!registration?.active,
-        cacheNames
+        databaseStats
       };
     } catch (error) {
       console.error('❌ [PWA] Failed to get service worker status:', error);
       return {
         registered: false,
         active: false,
-        cacheNames: []
+        databaseStats: { total: 0, active: 0, deleted: 0 }
       };
     }
   }

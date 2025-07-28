@@ -66,6 +66,7 @@ export interface ShoppingItem {
 }
 
 export interface CreateShoppingItemRequest {
+  id: string; // Required GUID - must be provided
   name: string;
   category_id: string | null;
   icon?: string;
@@ -247,24 +248,27 @@ export class ShoppingItemsController {
   // Create new item
   async createItem(itemData: CreateShoppingItemRequest): Promise<ApiResponse<ShoppingItem>> {
     try {
-      logDebug('Creating new item in Supabase', { name: itemData.name });
+      logDebug('Creating new item in Supabase', { name: itemData.name, id: itemData.id });
+      
+      const insertData: any = {
+        id: itemData.id, // GUID is always required
+        name: itemData.name,
+        category_id: itemData.category_id,
+        icon: itemData.icon,
+        unit_id: itemData.unit_id,
+        quantity: itemData.quantity,
+        list_id: itemData.listId,
+        created_by: itemData.createdBy,
+        notes: itemData.notes,
+        store: itemData.store,
+        assigned_to: itemData.assignedTo,
+        is_completed: false,
+        is_deleted: false,
+      };
       
       const { data, error } = await supabase
         .from('shopping_items')
-        .insert([{
-          name: itemData.name,
-          category_id: itemData.category_id,
-          icon: itemData.icon,
-          unit_id: itemData.unit_id,
-          quantity: itemData.quantity,
-          list_id: itemData.listId,
-          created_by: itemData.createdBy,
-          notes: itemData.notes,
-          store: itemData.store,
-          assigned_to: itemData.assignedTo,
-          is_completed: false,
-          is_deleted: false,
-        }])
+        .insert([insertData])
         .select()
         .single();
       

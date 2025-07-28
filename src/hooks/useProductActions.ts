@@ -5,6 +5,7 @@ import { setSelectedItem } from '../stores/store';
 import type { RootState } from '../stores/store';
 import { useAuth } from '../contexts/AuthContext';
 import { shoppingItemsApi } from '../api/supabaseApi';
+import { generateGuid } from '../utils/guidUtils';
 import type { ProductGroup, ShoppingItem } from '../api/supabaseApi';
 
 export const useProductActions = (refreshItems?: () => void) => {
@@ -42,12 +43,12 @@ export const useProductActions = (refreshItems?: () => void) => {
       } else {
         // Product doesn't exist - create new item (no navigation)
         const newItemData = {
+          id: generateGuid(), // Generate standard GUID (with hyphens)
           name: product.title,
           category_id: product.default_category_id || null, // Convert empty string to null
           icon: product.default_icon,
           listId: currentListId,
           createdBy: user.id,
-          is_completed: false,
         };
 
         const createResponse = await shoppingItemsApi.createItem(newItemData);

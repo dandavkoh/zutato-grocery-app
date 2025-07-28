@@ -93,8 +93,21 @@ const Header: React.FC = () => {
               placeholder={searchPlaceholder}
               value={searchValue}
               {...(isSearchPage
-                ? { autoFocus: true, readOnly: false, onChange: (e: React.ChangeEvent<HTMLInputElement>) => dispatch(setSearch(e.target.value)) }
-                : { readOnly: true, onClick: () => navigate('/shopping-list/search') }
+                ? { 
+                    autoFocus: true, 
+                    readOnly: false, 
+                    onChange: (e: React.ChangeEvent<HTMLInputElement>) => dispatch(setSearch(e.target.value)),
+                    onClick: (e: React.MouseEvent<HTMLInputElement>) => {
+                      e.currentTarget.select();
+                    },
+                    onContextMenu: (e: React.MouseEvent<HTMLInputElement>) => {
+                      e.preventDefault();
+                    }
+                  }
+                : { 
+                    readOnly: true, 
+                    onClick: () => navigate('/shopping-list/search') 
+                  }
               )}
             />
             {isSearchPage && (

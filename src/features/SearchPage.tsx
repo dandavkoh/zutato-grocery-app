@@ -84,7 +84,7 @@ const SearchPage: React.FC = () => {
             {searchResults.map((item) => (
               <div key={item.id} className="flex items-center px-4 py-3 bg-neutral-900">
                 <span className="mr-4 text-gray-300">
-                  <FontAwesomeIcon icon="fa-box" size="2xl" style="regular"/>
+                  <FontAwesomeIcon icon={item.default_icon} size="2xl" style="regular"/>
                 </span>
                 <span className="text-base text-gray-200 flex-1">
                   {item.title}

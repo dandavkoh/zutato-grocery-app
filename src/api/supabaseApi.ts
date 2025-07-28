@@ -43,6 +43,7 @@ export interface ProductGroup {
   title: string;
   rank: number;
   src: 'fts' | 'fuzzy';
+  default_icon: string;
 }
 
 export interface ShoppingItem {

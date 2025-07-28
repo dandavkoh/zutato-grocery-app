@@ -5,6 +5,8 @@ import { setHeader, resetHeader } from '../stores/store';
 import type { RootState } from '../stores/store';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
 import { useProductSearch } from '../hooks/useProductSearch';
+import { useProductInList } from '../hooks/useProductInList';
+import { useProductActions } from '../hooks/useProductActions';
 
 const recommendations = [
   { icon: <FontAwesomeIcon icon="sack" className="text-gray-300" size="2xl"/>, name: 'Zucker', sub: 'Brauner' },
@@ -30,6 +32,12 @@ const SearchPage: React.FC = () => {
   
   // Use the product search hook
   const { searchResults, loading, error, searchProducts, clearSearch } = useProductSearch(300);
+  
+  // Use the product in list hook to check if products are already in the current list
+  const { isProductInList, refreshItems } = useProductInList();
+  
+  // Use the product actions hook to handle product clicks
+  const { handleProductAction, currentListId, user } = useProductActions(refreshItems);
 
   useEffect(() => {
     dispatch(setHeader({
@@ -51,6 +59,16 @@ const SearchPage: React.FC = () => {
   }, [search]); // Remove searchProducts and clearSearch from dependencies
 
   const showResults = search.length > 0;
+
+  // Handle product button click
+  const handleProductClick = async (product: any) => {
+    if (!currentListId || !user) {
+      console.error('No current list or user found');
+      return;
+    }
+    
+    await handleProductAction(product);
+  };
 
   return (
     <div className="min-h-screen bg-black flex flex-col">
@@ -81,22 +99,33 @@ const SearchPage: React.FC = () => {
           )}
           
           <div className="divide-y divide-neutral-800">
-            {searchResults.map((item) => (
-              <div key={item.id} className="flex items-center px-4 py-3 bg-neutral-900">
-                <span className="mr-4 text-gray-300">
-                  <FontAwesomeIcon icon={item.default_icon} size="2xl" style="regular"/>
-                </span>
-                <span className="text-base text-gray-200 flex-1">
-                  {item.title}
-                  <span className="text-gray-400 text-sm ml-2">
-                    ({item.src === 'fts' ? 'Exakte Suche' : 'Ähnliche Suche'})
+            {searchResults.map((item) => {
+              const isInList = isProductInList(item.title);
+              
+              return (
+                <div key={item.id} className="flex items-center px-4 py-3 bg-neutral-900">
+                  <span className="mr-4 text-gray-300">
+                    <FontAwesomeIcon icon={item.default_icon} size="2xl" style="regular"/>
                   </span>
-                </span>
-                <button className="rounded-full border-2 border-yellow-400 text-yellow-400 w-8 h-8 flex items-center justify-center ml-2">
-                  <FontAwesomeIcon icon="fa-circle-plus" size="2xl" style="regular"/>
-                </button>
-              </div>
-            ))}
+                  <span className="text-base text-gray-200 flex-1">
+                    {item.title}
+                    <span className="text-gray-400 text-sm ml-2">
+                      ({item.src === 'fts' ? 'Exakte Suche' : 'Ähnliche Suche'})
+                    </span>
+                  </span>
+                  <button 
+                    onClick={() => handleProductClick(item)}
+                    className="rounded-full border-2 border-yellow-400 text-yellow-400 w-8 h-8 flex items-center justify-center ml-2 hover:bg-yellow-400 hover:text-black transition-colors"
+                  >
+                    <FontAwesomeIcon 
+                      icon={isInList ? "fa-pen-circle" : "fa-circle-plus"} 
+                      size="2xl" 
+                      style="regular"
+                    />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
       ) : (

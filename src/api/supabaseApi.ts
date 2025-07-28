@@ -44,6 +44,7 @@ export interface ProductGroup {
   rank: number;
   src: 'fts' | 'fuzzy';
   default_icon: string;
+  default_category_id: string;
 }
 
 export interface ShoppingItem {
@@ -58,10 +59,10 @@ export interface ShoppingItem {
   created_at: string;
   updatedAt: string;
   listId: string;
-  addedBy: string;
+  createdBy: string;
   notes?: string;
-  stores?: string[];
-  assignedTo?: string[];
+  store?: string;
+  assignedTo?: string;
 }
 
 export interface CreateShoppingItemRequest {
@@ -71,10 +72,10 @@ export interface CreateShoppingItemRequest {
   unit_id?: string;
   quantity?: number;
   listId: string;
-  addedBy: string;
+  createdBy: string;
   notes?: string;
-  stores?: string[];
-  assignedTo?: string[];
+  store?: string;
+  assignedTo?: string;
 }
 
 export interface UpdateShoppingItemRequest {
@@ -86,8 +87,8 @@ export interface UpdateShoppingItemRequest {
   is_completed?: boolean;
   is_deleted?: boolean;
   notes?: string;
-  stores?: string[];
-  assignedTo?: string[];
+  store?: string;
+  assignedTo?: string;
 }
 
 // Lists API Types
@@ -257,9 +258,9 @@ export class ShoppingItemsController {
           unit_id: itemData.unit_id,
           quantity: itemData.quantity,
           list_id: itemData.listId,
-          added_by: itemData.addedBy,
+          created_by: itemData.createdBy,
           notes: itemData.notes,
-          stores: itemData.stores,
+          store: itemData.store,
           assigned_to: itemData.assignedTo,
           is_completed: false,
           is_deleted: false,
@@ -289,9 +290,9 @@ export class ShoppingItemsController {
         created_at: data.created_at,
         updatedAt: data.updated_at,
         listId: data.list_id,
-        addedBy: data.added_by,
+        createdBy: data.created_by,
         notes: data.notes,
-        stores: data.stores,
+        store: data.store,
         assignedTo: data.assigned_to,
       };
       
@@ -348,9 +349,9 @@ export class ShoppingItemsController {
         created_at: data.created_at,
         updatedAt: data.updated_at,
         listId: data.list_id,
-        addedBy: data.added_by,
+        createdBy: data.created_by,
         notes: data.notes,
-        stores: data.stores,
+        store: data.store,
         assignedTo: data.assigned_to,
       };
       
@@ -463,9 +464,9 @@ export class ShoppingItemsController {
         created_at: data.created_at,
         updatedAt: data.updated_at,
         listId: data.list_id,
-        addedBy: data.added_by,
+        createdBy: data.created_by,
         notes: data.notes,
-        stores: data.stores,
+        store: data.store,
         assignedTo: data.assigned_to,
       };
       
@@ -1221,13 +1222,13 @@ export const getCategoryIconById = (categoryId: string, categories: Category[]):
 // Helper function to get unit short name by ID
 export const getUnitShortNameById = (unitId: string, units: Unit[]): string => {
   const unit = units.find(u => u.id === unitId);
-  return unit ? unit.short_name : 'Stk';
+  return unit ? unit.short_name : '';
 };
 
 // Helper function to get unit full name by ID
 export const getUnitNameById = (unitId: string, units: Unit[]): string => {
   const unit = units.find(u => u.id === unitId);
-  return unit ? unit.name : 'Stücke';
+  return unit ? unit.name : '';
 };
 
 // Helper function to get completed and incomplete items

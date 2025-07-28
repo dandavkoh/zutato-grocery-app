@@ -99,6 +99,22 @@ const selectedItemSlice = createSlice({
   },
 });
 
+// Current List Slice für die aktuell aktive Einkaufsliste
+const currentListSlice = createSlice({
+  name: 'currentList',
+  initialState: { 
+    listId: null as string | null,
+  },
+  reducers: {
+    setCurrentList: (state, action: PayloadAction<string | null>) => {
+      state.listId = action.payload;
+    },
+    clearCurrentList: (state) => {
+      state.listId = null;
+    },
+  },
+});
+
 export const { setSearch, clearSearch } = searchSlice.actions;
 export const { 
   triggerFilterClick, 
@@ -110,6 +126,7 @@ export const {
 } = eventSlice.actions;
 export const { setHeader, resetHeader } = headerSlice.actions;
 export const { setSelectedItem, updateSelectedItem, clearSelectedItem } = selectedItemSlice.actions;
+export const { setCurrentList, clearCurrentList } = currentListSlice.actions;
 
 export const store = configureStore({
   reducer: {
@@ -117,6 +134,7 @@ export const store = configureStore({
     events: eventSlice.reducer,
     header: headerSlice.reducer,
     selectedItem: selectedItemSlice.reducer,
+    currentList: currentListSlice.reducer,
   },
 });
 

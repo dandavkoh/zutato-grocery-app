@@ -73,7 +73,7 @@ const UnitSelectPage: React.FC = () => {
   };
 
   const formatUnitDisplay = (unit: Unit | null) => {
-    if (!unit) return 'Keine';
+    if (!unit) return '';
     return `${unit.name} (${unit.short_name})`;
   };
 

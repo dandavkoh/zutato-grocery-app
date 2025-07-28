@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { setHeader, resetHeader, resetFilterClick, setSelectedItem } from '../stores/store';
+import { setHeader, resetHeader, resetFilterClick, setSelectedItem, setCurrentList } from '../stores/store';
 import type { RootState } from '../stores/store';
 import { useShoppingItems } from '../hooks/useShoppingItems';
 import { useList } from '../hooks/useLists';
@@ -18,6 +18,13 @@ const ShoppingListPage: React.FC = () => {
   const { listId } = useParams<{ listId: string }>();
   const inputRef = useRef<HTMLInputElement>(null);
   const dispatch = useDispatch();
+  
+  // Set current list in global store
+  useEffect(() => {
+    if (listId) {
+      dispatch(setCurrentList(listId));
+    }
+  }, [listId, dispatch]);
   
   // Redirect if no listId is provided
   useEffect(() => {

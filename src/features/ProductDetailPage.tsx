@@ -214,9 +214,9 @@ const ProductDetailPage: React.FC = () => {
           <div className="text-xs text-gray-400 mb-1">LÄDEN</div>
           <div className="flex items-center justify-between">
             <span className="text-gray-300">
-              {item.stores && item.stores.length > 0 
-                ? item.stores.join(', ') 
-                : 'Wähle Läden aus, die diesem Produkt zugeordnet werden sollen.'
+              {item.store
+                ? item.store
+                : 'Wähle den Laden aus, das diesem Produkt zugeordnet werden soll.'
               }
             </span>
             <FontAwesomeIcon className="w-5 h-5 text-gray-500 ml-2" icon="fa-chevron-right" size="base" style="regular"/>
@@ -227,9 +227,9 @@ const ProductDetailPage: React.FC = () => {
           <div className="text-xs text-gray-400 mb-1">PERSONEN</div>
           <div className="flex items-center justify-between">
             <span className="text-gray-300">
-              {item.assignedTo && item.assignedTo.length > 0 
-                ? item.assignedTo.join(', ') 
-                : 'Wähle Personen aus, die diesem Produkt zugeordnet werden sollen.'
+              {item.assignedTo
+                ? item.assignedTo
+                : 'Wähle Person aus, die diesem Produkt zugeordnet werden soll.'
               }
             </span>
             <FontAwesomeIcon className="w-5 h-5 text-gray-500 ml-2" icon="fa-chevron-right" size="base" style="regular"/>
@@ -270,7 +270,7 @@ const ProductDetailPage: React.FC = () => {
               onClick={handleNotesEdit}
               className="w-full text-left hover:bg-neutral-800 -mx-5 px-5 py-2 rounded-lg transition-colors"
             >
-              <div className="text-gray-400">
+              <div className="text-gray-300">
                 {item.notes || 'Notiz hinzufügen'}
               </div>
             </button>
@@ -313,8 +313,8 @@ const ProductDetailPage: React.FC = () => {
                 onClick={handleQuantityEdit}
                 className="w-full text-left hover:bg-neutral-800 -mx-5 px-5 py-2 rounded-lg transition-colors"
               >
-                <div className="text-gray-400">
-                  {item.quantity || 'Menge'}
+                <div className="text-gray-300">
+                  {item.quantity || 'Menge eingeben'}
                 </div>
               </button>
             )}
@@ -326,7 +326,7 @@ const ProductDetailPage: React.FC = () => {
             <div>
               <div className="text-xs text-gray-400 mb-1">EINHEIT</div>
               <div className="text-gray-300">
-                {item.unit_id ? getUnitNameById(item.unit_id, units) : 'Stücke (Stk)'}
+                {item.unit_id ? getUnitNameById(item.unit_id, units) : 'Einheit eingeben'}
               </div>
             </div>
             <FontAwesomeIcon className="w-5 h-5 text-gray-500 ml-2" icon="fa-chevron-right" size="base" style="regular"/>

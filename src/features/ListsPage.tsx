@@ -4,10 +4,12 @@ import { useDispatch } from 'react-redux';
 import { setHeader, resetHeader } from '../stores/store';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
 import { useLists } from '../hooks/useLists';
+import { useAuth } from '../contexts/AuthContext';
 
 const ListsPage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { user } = useAuth();
   
   // Use the lists hook
   const { lists, loading, error } = useLists();
@@ -29,8 +31,13 @@ const ListsPage: React.FC = () => {
         <div className="flex items-center bg-neutral-900 rounded-2xl p-4 mb-6 border border-gray-700">
           <img src="https://randomuser.me/api/portraits/men/1.jpg" alt="Profil" className="w-12 h-12 rounded-full mr-4 border-2 border-yellow-400" />
           <div className="flex-1">
-            <div className="text-white font-semibold">Daniel Kohsyk</div>
-            <div className="text-gray-400 text-sm">daniel.kohsyk@web.de</div>
+            <div className="text-white font-semibold">
+              {user?.firstName && user?.lastName 
+                ? `${user.firstName} ${user.lastName}`
+                : user?.firstName || user?.lastName || 'Benutzer'
+              }
+            </div>
+            <div className="text-gray-400 text-sm">{user?.email || 'E-Mail nicht verfügbar'}</div>
           </div>
           <button className="text-gray-400 hover:text-yellow-400 text-2xl">
             <FontAwesomeIcon icon="fa-plus" size="xl" style="regular"/>

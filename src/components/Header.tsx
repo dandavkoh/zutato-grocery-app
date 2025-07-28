@@ -94,7 +94,7 @@ const Header: React.FC = () => {
               value={searchValue}
               {...(isSearchPage
                 ? { autoFocus: true, readOnly: false, onChange: (e: React.ChangeEvent<HTMLInputElement>) => dispatch(setSearch(e.target.value)) }
-                : { readOnly: true, onFocus: () => navigate('/shopping-list/search'), onClick: () => navigate('/shopping-list/search') }
+                : { readOnly: true, onClick: () => navigate('/shopping-list/search') }
               )}
             />
             {isSearchPage && (

@@ -39,7 +39,7 @@ const LoginPage: React.FC = () => {
     dispatch(setHeader({
       title: 'Anmeldung',
       showBack: true,
-      background: 'bg-gradient-to-br from-green-500 to-blue-600',
+      background: 'bg-yellow-400',
     }));
 
     return () => {
@@ -134,29 +134,25 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-100 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Willkommen zurück</h1>
-          <p className="text-gray-600">Melden Sie sich in Ihrem Konto an</p>
-        </div>
-
+    <div className="min-h-screen bg-black flex flex-col">
+      {/* Content */}
+      <div className="flex-1 px-4 pt-6 pb-10">
         {/* Success Message */}
         {message && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl">
+          <div className="mb-6 p-4 bg-green-900/20 border border-green-500/30 rounded-xl">
             <div className="flex items-center">
-              <FontAwesomeIcon icon="fa-check-circle" size="base" className="text-green-500 mr-2" />
-              <p className="text-green-700 text-sm">{message}</p>
+              <FontAwesomeIcon icon="fa-check-circle" size="base" className="text-green-400 mr-2" />
+              <p className="text-green-300 text-sm">{message}</p>
             </div>
           </div>
         )}
 
         {/* General Error Message */}
         {errors.general && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+          <div className="mb-6 p-4 bg-red-900/20 border border-red-500/30 rounded-xl">
             <div className="flex items-center">
-              <FontAwesomeIcon icon="fa-exclamation-circle" size="base" className="text-red-500 mr-2" />
-              <p className="text-red-700 text-sm">{errors.general}</p>
+              <FontAwesomeIcon icon="fa-exclamation-circle" size="base" className="text-red-400 mr-2" />
+              <p className="text-red-300 text-sm">{errors.general}</p>
             </div>
           </div>
         )}
@@ -164,7 +160,7 @@ const LoginPage: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Email Field */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
               E-Mail-Adresse *
             </label>
             <input
@@ -173,20 +169,20 @@ const LoginPage: React.FC = () => {
               name="email"
               value={formData.email}
               onChange={handleInputChange}
-              className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors ${
-                errors.email ? 'border-red-500' : 'border-gray-300'
+              className={`w-full px-4 py-3 bg-neutral-900 border rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-colors text-white placeholder-gray-400 ${
+                errors.email ? 'border-red-500' : 'border-gray-600'
               }`}
               placeholder="max.mustermann@example.com"
               autoComplete="email"
             />
             {errors.email && (
-              <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+              <p className="text-red-400 text-sm mt-1">{errors.email}</p>
             )}
           </div>
 
           {/* Password Field */}
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
               Passwort *
             </label>
             <div className="relative">
@@ -196,8 +192,8 @@ const LoginPage: React.FC = () => {
                 name="password"
                 value={formData.password}
                 onChange={handleInputChange}
-                className={`w-full px-4 py-3 pr-12 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors ${
-                  errors.password ? 'border-red-500' : 'border-gray-300'
+                className={`w-full px-4 py-3 pr-12 bg-neutral-900 border rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-colors text-white placeholder-gray-400 ${
+                  errors.password ? 'border-red-500' : 'border-gray-600'
                 }`}
                 placeholder="••••••••"
                 autoComplete="current-password"
@@ -205,7 +201,7 @@ const LoginPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
               >
                 <FontAwesomeIcon 
                   icon={showPassword ? 'fa-eye-slash' : 'fa-eye'} 
@@ -215,7 +211,7 @@ const LoginPage: React.FC = () => {
               </button>
             </div>
             {errors.password && (
-              <p className="text-red-500 text-sm mt-1">{errors.password}</p>
+              <p className="text-red-400 text-sm mt-1">{errors.password}</p>
             )}
           </div>
 
@@ -226,15 +222,15 @@ const LoginPage: React.FC = () => {
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                className="h-4 w-4 text-yellow-400 focus:ring-yellow-400 bg-neutral-900 border-gray-600 rounded"
               />
-              <span className="ml-2 text-sm text-gray-700">Angemeldet bleiben</span>
+              <span className="ml-2 text-sm text-gray-300">Angemeldet bleiben</span>
             </label>
             <button
               type="button"
               onClick={handleForgotPassword}
               disabled={isLoading}
-              className="text-sm text-green-600 hover:text-green-700 font-medium transition-colors disabled:opacity-50"
+              className="text-sm text-yellow-400 hover:text-yellow-300 font-medium transition-colors disabled:opacity-50"
             >
               Passwort vergessen?
             </button>
@@ -244,7 +240,7 @@ const LoginPage: React.FC = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-gradient-to-r from-green-500 to-blue-600 text-white font-semibold py-3 rounded-xl hover:from-green-600 hover:to-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            className="w-full bg-yellow-400 text-black font-semibold py-3 rounded-xl hover:bg-yellow-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
           >
             {isLoading ? (
               <>
@@ -259,23 +255,23 @@ const LoginPage: React.FC = () => {
 
         {/* Divider */}
         <div className="my-6 flex items-center">
-          <div className="flex-1 border-t border-gray-300"></div>
-          <span className="px-4 text-sm text-gray-500">oder</span>
-          <div className="flex-1 border-t border-gray-300"></div>
+          <div className="flex-1 border-t border-gray-600"></div>
+          <span className="px-4 text-sm text-gray-400">oder</span>
+          <div className="flex-1 border-t border-gray-600"></div>
         </div>
 
         {/* Social Login Buttons */}
         <div className="space-y-3">
           <button
             type="button"
-            className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+            className="w-full flex items-center justify-center px-4 py-3 bg-neutral-900 border border-gray-600 rounded-xl text-gray-300 font-medium hover:bg-neutral-800 transition-colors"
           >
             <FontAwesomeIcon icon="fa-google" size="base" className="mr-3" />
             Mit Google anmelden
           </button>
           <button
             type="button"
-            className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+            className="w-full flex items-center justify-center px-4 py-3 bg-neutral-900 border border-gray-600 rounded-xl text-gray-300 font-medium hover:bg-neutral-800 transition-colors"
           >
             <FontAwesomeIcon icon="fa-apple" size="base" className="mr-3" />
             Mit Apple anmelden
@@ -284,11 +280,11 @@ const LoginPage: React.FC = () => {
 
         {/* Register Link */}
         <div className="text-center mt-6">
-          <p className="text-gray-600">
+          <p className="text-gray-400">
             Noch kein Konto?{' '}
             <Link 
               to="/register" 
-              className="text-green-600 hover:text-green-700 font-semibold transition-colors"
+              className="text-yellow-400 hover:text-yellow-300 font-semibold transition-colors"
             >
               Registrieren
             </Link>
@@ -299,9 +295,9 @@ const LoginPage: React.FC = () => {
         <div className="text-center mt-6">
           <p className="text-xs text-gray-500">
             Durch die Anmeldung stimmen Sie unseren{' '}
-            <a href="#" className="text-green-600 hover:underline">Nutzungsbedingungen</a>{' '}
+            <a href="#" className="text-yellow-400 hover:underline">Nutzungsbedingungen</a>{' '}
             und{' '}
-            <a href="#" className="text-green-600 hover:underline">Datenschutzrichtlinien</a>{' '}
+            <a href="#" className="text-yellow-400 hover:underline">Datenschutzrichtlinien</a>{' '}
             zu.
           </p>
         </div>

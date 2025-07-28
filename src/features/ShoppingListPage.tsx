@@ -177,10 +177,10 @@ const ShoppingListPage: React.FC = () => {
                       className="flex items-center pl-4 py-3 flex-1 text-left"
                       onClick={(e) => handleToggleCompletion(item.id, e)}
                     >
-                      {/* Category icon with fixed width container */}
+                      {/* Item icon with fixed width container */}
                       <div className="w-8 flex justify-center mr-4">
                         <FontAwesomeIcon 
-                          icon={categoryData.category.icon} 
+                          icon={item.icon || 'basket-shopping'} 
                           className="text-gray-300" 
                           size="2xl"
                         />
@@ -234,16 +234,12 @@ const ShoppingListPage: React.FC = () => {
             >
               <div className="divide-y divide-neutral-800">
                 {completed.map((item) => {
-                  // Get category for this item
-                  const category = categories.find(cat => cat.id === item.category_id);
-                  const categoryIcon = category ? category.icon : 'fa-basket-shopping';
-                  
                   return (
                     <div key={item.id} className="flex items-center px-4 py-3">
-                      {/* Category icon for completed items with fixed width container */}
+                      {/* Item icon for completed items with fixed width container */}
                       <div className="w-8 flex justify-center mr-4">
                         <FontAwesomeIcon 
-                          icon={categoryIcon} 
+                          icon={item.icon || 'basket-shopping'} 
                           className="text-gray-300" 
                           size="2xl"
                         />

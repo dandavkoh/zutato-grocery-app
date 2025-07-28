@@ -7,6 +7,7 @@ import FontAwesomeIcon from '../components/FontAwesomeIcon';
 import { useProductSearch } from '../hooks/useProductSearch';
 import { useProductInList } from '../hooks/useProductInList';
 import { useProductActions } from '../hooks/useProductActions';
+import type { ProductGroup } from '../api/supabaseApi';
 
 const recommendations = [
   { icon: <FontAwesomeIcon icon="sack" className="text-gray-300" size="2xl"/>, name: 'Zucker', sub: 'Brauner' },
@@ -60,6 +61,33 @@ const SearchPage: React.FC = () => {
 
   const showResults = search.length > 0;
 
+  // Check if we should show the exact search term as a suggestion
+  const hasExactMatch = searchResults.some(item => 
+    item.title.toLowerCase().trim() === search.toLowerCase().trim()
+  );
+  
+  const shouldShowExactSuggestion = !loading && !error && search.length >= 3 && 
+    !hasExactMatch &&
+    (searchResults.length === 0 || (
+      searchResults.filter(item => item.src === 'fts').every(item => item.rank <= 0.08) &&
+      searchResults.filter(item => item.src === 'fuzzy').every(item => item.rank <= 0.8)
+    ));
+
+  // Create exact suggestion if needed
+  const exactSuggestion: ProductGroup = {
+    id: 'exact-suggestion',
+    title: search,
+    rank: 1.0,
+    src: 'exact',
+    default_icon: 'basket-shopping',
+    default_category_id: ''
+  };
+
+  // Combine exact suggestion with search results
+  const displayResults = shouldShowExactSuggestion 
+    ? [exactSuggestion, ...searchResults]
+    : searchResults;
+
   // Handle product button click
   const handleProductClick = async (product: any) => {
     if (!currentListId || !user) {
@@ -92,14 +120,14 @@ const SearchPage: React.FC = () => {
             </div>
           )}
           
-          {!loading && !error && searchResults.length === 0 && search.length >= 3 && (
+          {!loading && !error && displayResults.length === 0 && search.length >= 3 && (
             <div className="px-4 py-3 text-gray-400 text-center">
               Keine Ergebnisse gefunden
             </div>
           )}
           
           <div className="divide-y divide-neutral-800">
-            {searchResults.map((item) => {
+            {displayResults.map((item) => {
               const isInList = isProductInList(item.title);
               
               return (
@@ -110,7 +138,7 @@ const SearchPage: React.FC = () => {
                   <span className="text-base text-gray-200 flex-1">
                     {item.title}
                     <span className="text-gray-400 text-sm ml-2">
-                      ({item.src === 'fts' ? 'Exakte Suche' : 'Ähnliche Suche'})
+                      ({item.src === 'exact' ? 'Exakter Vorschlag' : item.src === 'fts' ? 'Exakte Suche' : 'Ähnliche Suche'})
                     </span>
                   </span>
                   <button 

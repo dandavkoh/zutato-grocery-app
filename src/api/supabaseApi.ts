@@ -42,7 +42,7 @@ export interface ProductGroup {
   id: string;
   title: string;
   rank: number;
-  src: 'fts' | 'fuzzy';
+  src: 'fts' | 'fuzzy' | 'exact';
   default_icon: string;
   default_category_id: string;
 }
@@ -67,9 +67,9 @@ export interface ShoppingItem {
 
 export interface CreateShoppingItemRequest {
   name: string;
-  category_id: string;
+  category_id: string | null;
   icon?: string;
-  unit_id?: string;
+  unit_id?: string | null;
   quantity?: number;
   listId: string;
   createdBy: string;

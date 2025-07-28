@@ -43,7 +43,7 @@ export const useProductActions = (refreshItems?: () => void) => {
         // Product doesn't exist - create new item (no navigation)
         const newItemData = {
           name: product.title,
-          category_id: product.default_category_id,
+          category_id: product.default_category_id || null, // Convert empty string to null
           icon: product.default_icon,
           listId: currentListId,
           createdBy: user.id,

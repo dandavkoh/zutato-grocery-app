@@ -44,7 +44,7 @@ const UnitSelectPage: React.FC = () => {
   }, [backClicked, navigate, dispatch]);
 
   // Handle unit selection
-  const handleUnitSelect = async (unitId: string) => {
+  const handleUnitSelect = async (unitId: string | null) => {
     if (!item) return;
     
     try {
@@ -89,20 +89,36 @@ const UnitSelectPage: React.FC = () => {
       ) : units.length === 0 ? (
         <div className="text-center py-8">Keine Einheiten gefunden.</div>
       ) : (
-        units.map((unit, index) => (
+        <>
+          {/* "Keine Einheit" Option */}
           <button
-            key={index}
             className="flex items-center px-5 py-3 border-b border-neutral-800 bg-neutral-900 w-full text-left hover:bg-neutral-800 transition-colors"
-            onClick={() => handleUnitSelect(unit.id)}
+            onClick={() => handleUnitSelect(null)}
           >
-            <span className="text-lg text-gray-300 flex-1">{formatUnitDisplay(unit)}</span>
-            {isSelected(unit) && (
+            <span className="text-lg text-gray-300 flex-1">Keine Einheit</span>
+            {!item?.unit_id && (
               <span className="text-yellow-400">
                 <FontAwesomeIcon icon="fa-circle-check" size="xl" style="regular"/>
               </span>
             )}
           </button>
-        ))
+          
+          {/* Regular units */}
+          {units.map((unit, index) => (
+            <button
+              key={index}
+              className="flex items-center px-5 py-3 border-b border-neutral-800 bg-neutral-900 w-full text-left hover:bg-neutral-800 transition-colors"
+              onClick={() => handleUnitSelect(unit.id)}
+            >
+              <span className="text-lg text-gray-300 flex-1">{formatUnitDisplay(unit)}</span>
+              {unit.id === item?.unit_id && (
+                <span className="text-yellow-400">
+                  <FontAwesomeIcon icon="fa-circle-check" size="xl" style="regular"/>
+                </span>
+              )}
+            </button>
+          ))}
+        </>
       )}
     </div>
   );

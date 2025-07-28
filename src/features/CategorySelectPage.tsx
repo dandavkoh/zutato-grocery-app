@@ -44,7 +44,7 @@ const CategorySelectPage: React.FC = () => {
   }, [backClicked, navigate, dispatch]);
 
   // Handle category selection
-  const handleCategorySelect = async (categoryId: string) => {
+  const handleCategorySelect = async (categoryId: string | null) => {
     if (!item) return;
     
     try {
@@ -79,25 +79,46 @@ const CategorySelectPage: React.FC = () => {
           <div className="text-gray-400">Lade Kategorien...</div>
         </div>
       ) : (
-        categories.map((cat) => (
+        <>
+          {/* "Keine" Option */}
           <button
-            key={cat.id}
             className="flex items-center px-5 py-3 border-b border-neutral-800 bg-neutral-900 w-full text-left hover:bg-neutral-800 transition-colors"
-            onClick={() => handleCategorySelect(cat.id)}
+            onClick={() => handleCategorySelect(null)}
           >
             <div className="w-12 flex justify-center mr-4">
               <span className="text-gray-300">
-                <FontAwesomeIcon icon={cat.icon} size="3xl" style="regular"/>
+                <FontAwesomeIcon icon="basket-shopping" size="3xl" style="regular"/>
               </span>
             </div>
-            <span className="text-lg text-gray-300 flex-1">{cat.name}</span>
-            {cat.name === currentCategoryName && (
+            <span className="text-lg text-gray-300 flex-1">Keine Kategorie</span>
+            {!item?.category_id && (
               <span className="text-yellow-400">
                 <FontAwesomeIcon icon="fa-circle-check" size="xl" style="regular"/>
               </span>
             )}
           </button>
-        ))
+          
+          {/* Regular categories */}
+          {categories.map((cat) => (
+            <button
+              key={cat.id}
+              className="flex items-center px-5 py-3 border-b border-neutral-800 bg-neutral-900 w-full text-left hover:bg-neutral-800 transition-colors"
+              onClick={() => handleCategorySelect(cat.id)}
+            >
+              <div className="w-12 flex justify-center mr-4">
+                <span className="text-gray-300">
+                  <FontAwesomeIcon icon={cat.icon} size="3xl" style="regular"/>
+                </span>
+              </div>
+              <span className="text-lg text-gray-300 flex-1">{cat.name}</span>
+              {cat.id === item?.category_id && (
+                <span className="text-yellow-400">
+                  <FontAwesomeIcon icon="fa-circle-check" size="xl" style="regular"/>
+                </span>
+              )}
+            </button>
+          ))}
+        </>
       )}
     </div>
   );

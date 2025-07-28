@@ -192,9 +192,9 @@ const ShoppingListPage: React.FC = () => {
                         )}
                       </span>
                       <span className="flex-1" />
-                      {item.quantity && item.unit_id && (
+                      {item.quantity && (
                         <span className="text-gray-400 text-base">
-                          {item.quantity} {getUnitShortNameById(item.unit_id, units)}
+                          {item.quantity}{item.unit_id && ` ${getUnitShortNameById(item.unit_id, units)}`}
                         </span>
                       )}
                     </button>
@@ -254,9 +254,9 @@ const ShoppingListPage: React.FC = () => {
                         )}
                       </span>
                       <span className="flex-1" />
-                      {item.quantity && item.unit_id && (
+                      {item.quantity && (
                         <span className="text-gray-400 text-base">
-                          {item.quantity} {getUnitShortNameById(item.unit_id, units)}
+                          {item.quantity}{item.unit_id && ` ${getUnitShortNameById(item.unit_id, units)}`}
                         </span>
                       )}
                     </div>

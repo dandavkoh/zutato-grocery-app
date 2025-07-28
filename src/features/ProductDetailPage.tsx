@@ -34,7 +34,7 @@ const ProductDetailPage: React.FC = () => {
   const { units } = useUnits();
   
   // Get category name and icon from current item
-  const categoryName = item ? getCategoryNameById(item.category_id, categories) : '';
+  const categoryName = item ? (item.category_id ? getCategoryNameById(item.category_id, categories) : 'Keine Kategorie') : '';
   const categoryIcon = item ? getCategoryIconById(item.category_id, categories) : 'basket-shopping';
 
   // Initialize notes value when item changes

@@ -50,9 +50,9 @@ export interface ProductGroup {
 export interface ShoppingItem {
   id: string;
   name: string;
-  category_id: string;
+  category_id: string | null;
   icon?: string; // Font Awesome icon name (e.g., "fa-apple", "fa-bread-slice")
-  unit_id?: string;
+  unit_id?: string | null;
   quantity?: number;
   is_completed: boolean;
   is_deleted?: boolean;
@@ -80,9 +80,9 @@ export interface CreateShoppingItemRequest {
 
 export interface UpdateShoppingItemRequest {
   name?: string;
-  category_id?: string;
+  category_id?: string | null;
   icon?: string;
-  unit_id?: string;
+  unit_id?: string | null;
   quantity?: number;
   is_completed?: boolean;
   is_deleted?: boolean;
@@ -1187,11 +1187,11 @@ export const groupItemsByCategory = (items: ShoppingItem[], categories: Category
   });
   
   activeItems.forEach(item => {
-    const category = categoryMap.get(item.category_id);
-    const categoryName = category ? category.name : 'Unbekannte Kategorie';
+    const category = item.category_id ? categoryMap.get(item.category_id) : null;
+    const categoryName = category ? category.name : 'Keine Kategorie';
     const fallbackCategory: Category = {
-      id: 'unknown',
-      name: 'Unbekannte Kategorie',
+      id: 'none',
+      name: 'Keine Kategorie',
       icon: 'fa-basket-shopping'
     };
     
@@ -1208,25 +1208,29 @@ export const groupItemsByCategory = (items: ShoppingItem[], categories: Category
 };
 
 // Helper function to get category name by ID
-export const getCategoryNameById = (categoryId: string, categories: Category[]): string => {
+export const getCategoryNameById = (categoryId: string | null, categories: Category[]): string => {
+  if (!categoryId) return '';
   const category = categories.find(cat => cat.id === categoryId);
-  return category ? category.name : 'Unbekannte Kategorie';
+  return category ? category.name : '';
 };
 
 // Helper function to get category icon by ID
-export const getCategoryIconById = (categoryId: string, categories: Category[]): string => {
+export const getCategoryIconById = (categoryId: string | null, categories: Category[]): string => {
+  if (!categoryId) return 'fa-basket-shopping';
   const category = categories.find(cat => cat.id === categoryId);
   return category ? category.icon : 'fa-basket-shopping';
 };
 
 // Helper function to get unit short name by ID
-export const getUnitShortNameById = (unitId: string, units: Unit[]): string => {
+export const getUnitShortNameById = (unitId: string | null, units: Unit[]): string => {
+  if (!unitId) return '';
   const unit = units.find(u => u.id === unitId);
   return unit ? unit.short_name : '';
 };
 
 // Helper function to get unit full name by ID
-export const getUnitNameById = (unitId: string, units: Unit[]): string => {
+export const getUnitNameById = (unitId: string | null, units: Unit[]): string => {
+  if (!unitId) return '';
   const unit = units.find(u => u.id === unitId);
   return unit ? unit.name : '';
 };

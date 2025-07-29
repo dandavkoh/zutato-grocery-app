@@ -73,13 +73,36 @@ export class DexieService {
   // Add or update shopping items (for sync from Supabase)
   async syncShoppingItems(items: ShoppingItem[]): Promise<void> {
     try {
+      if (items.length === 0) { // TODO: If we have no items, we should delete the items from the list anyway
+        console.log('📝 [Dexie] No items to sync');
+        return;
+      }
+
+      // Get the list_id from the first item (all items should have the same list_id)
+      const listId = items[0].list_id;
+      
       await db.transaction('rw', db.shoppingItems, async () => {
+        // First, delete all existing items for this list_id
+        const existingItems = await db.shoppingItems
+          .where('list_id')
+          .equals(listId)
+          .toArray();
+        
+        if (existingItems.length > 0) {
+          await db.shoppingItems
+            .where('list_id')
+            .equals(listId)
+            .delete();
+          console.log(`🗑️ [Dexie] Deleted ${existingItems.length} existing items for list ${listId}`);
+        }
+        
+        // Then, add all new items
         for (const item of items) {
-          await db.shoppingItems.put(item);
+          await db.shoppingItems.add(item);
         }
       });
       
-      console.log(`✅ [Dexie] Synced ${items.length} shopping items`);
+      console.log(`✅ [Dexie] Synced ${items.length} shopping items for list ${listId}`);
     } catch (error) {
       console.error('❌ [Dexie] Error syncing shopping items:', error);
       throw error;

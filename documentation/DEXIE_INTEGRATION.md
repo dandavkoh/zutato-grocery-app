@@ -35,7 +35,7 @@ interface ShoppingItem {
 
 **Hauptfunktionen:**
 - `getShoppingItemsByListId(listId)` - Holt Items für eine spezifische Liste
-- `syncShoppingItems(items)` - Synchronisiert Items von Supabase
+- `syncShoppingItems(items)` - **Löscht alle Items der list_id und fügt neue hinzu**
 - `addShoppingItem(item)` - Fügt ein neues Item hinzu
 - `updateShoppingItem(item)` - Aktualisiert ein Item
 - `deleteShoppingItem(id, deletedBy)` - Soft-Delete eines Items
@@ -61,12 +61,13 @@ Der Service Worker interceptet GET-Requests für `shopping_items`:
 
 **Online:**
 1. Request geht an Supabase
-2. Response wird in Dexie synchronisiert
-3. Response wird an Client zurückgegeben
+2. **Alle Items der list_id werden aus Dexie gelöscht**
+3. **Neue Items von Supabase werden in Dexie eingefügt**
+4. Response wird an Client zurückgegeben
 
 **Offline:**
 1. Request wird von Dexie beantwortet
-2. Items werden aus lokaler Datenbank geladen
+2. **Alle Items der list_id werden aus lokaler DB gefiltert**
 3. Response im gleichen Format wie Supabase
 
 ### URL-Parameter Parsing
@@ -150,6 +151,8 @@ Die Integration bietet umfangreiche Logging:
 
 ```
 🛒 [PWA] Handling shopping items request: GET /rest/v1/shopping_items?...
+🗑️ [Dexie] Deleted 3 existing items for list 15b46053-74e6-4582-b1ef-5b49c05fbb7b
+✅ [Dexie] Synced 5 shopping items for list 15b46053-74e6-4582-b1ef-5b49c05fbb7b
 ✅ [PWA] Network response synced to Dexie: /rest/v1/shopping_items?...
 ⚡ [PWA] Serving from Dexie: 5 items for list 15b46053-74e6-4582-b1ef-5b49c05fbb7b
 📊 [Dexie] Retrieved 5 items for list 15b46053-74e6-4582-b1ef-5b49c05fbb7b

@@ -22,13 +22,24 @@ export interface ShoppingItem {
   deleted_by: string | null;
 }
 
+export interface QueuedRequest {
+  id: string;
+  url: string;
+  method: string;
+  headers: Record<string, string>;
+  body: string | null;
+  timestamp: number;
+}
+
 class ShoppingItemsDatabase extends Dexie {
   shoppingItems!: Table<ShoppingItem>;
+  queuedRequests!: Table<QueuedRequest>;
 
   constructor() {
     super('ShoppingItemsDB');
     this.version(1).stores({
-      shoppingItems: 'id, list_id, name, is_completed, is_deleted, created_at, updated_at'
+      shoppingItems: 'id, list_id, name, is_completed, is_deleted, created_at, updated_at',
+      queuedRequests: 'id, url, method, timestamp'
     });
   }
 }
@@ -205,6 +216,82 @@ export class DexieService {
     } catch (error) {
       console.error('❌ [Dexie] Error getting stats:', error);
       return { total: 0, active: 0, deleted: 0 };
+    }
+  }
+
+  // Queue Management Methods
+  async addQueuedRequest(request: QueuedRequest): Promise<void> {
+    try {
+      await db.queuedRequests.add(request);
+      console.log(`📝 [Dexie] Added queued request: ${request.method} ${request.url}`);
+    } catch (error) {
+      console.error('❌ [Dexie] Error adding queued request:', error);
+      throw error;
+    }
+  }
+
+  async getAllQueuedRequests(): Promise<QueuedRequest[]> {
+    try {
+      const requests = await db.queuedRequests
+        .orderBy('timestamp')
+        .toArray();
+      
+      console.log(`📊 [Dexie] Retrieved ${requests.length} queued requests`);
+      return requests;
+    } catch (error) {
+      console.error('❌ [Dexie] Error getting queued requests:', error);
+      return [];
+    }
+  }
+
+  async removeQueuedRequest(id: string): Promise<void> {
+    try {
+      await db.queuedRequests.delete(id);
+      console.log(`🗑️ [Dexie] Removed queued request: ${id}`);
+    } catch (error) {
+      console.error('❌ [Dexie] Error removing queued request:', error);
+      throw error;
+    }
+  }
+
+  async clearQueuedRequests(): Promise<void> {
+    try {
+      await db.queuedRequests.clear();
+      console.log('🗑️ [Dexie] Cleared all queued requests');
+    } catch (error) {
+      console.error('❌ [Dexie] Error clearing queued requests:', error);
+      throw error;
+    }
+  }
+
+  async getQueuedRequestsCount(): Promise<number> {
+    try {
+      return await db.queuedRequests.count();
+    } catch (error) {
+      console.error('❌ [Dexie] Error getting queued requests count:', error);
+      return 0;
+    }
+  }
+
+  // Get comprehensive database statistics including queue
+  async getFullStats(): Promise<{ 
+    total: number; 
+    active: number; 
+    deleted: number; 
+    queuedRequests: number 
+  }> {
+    try {
+      const [total, active, deleted, queuedRequests] = await Promise.all([
+        db.shoppingItems.count(),
+        db.shoppingItems.where('is_deleted').equals(0).count(),
+        db.shoppingItems.where('is_deleted').equals(1).count(),
+        db.queuedRequests.count()
+      ]);
+      
+      return { total, active, deleted, queuedRequests };
+    } catch (error) {
+      console.error('❌ [Dexie] Error getting full stats:', error);
+      return { total: 0, active: 0, deleted: 0, queuedRequests: 0 };
     }
   }
 }

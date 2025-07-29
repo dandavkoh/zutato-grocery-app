@@ -1,6 +1,6 @@
 // @ts-ignore - virtual:pwa-register is provided by vite-plugin-pwa
 import { registerSW } from 'virtual:pwa-register';
-import { dexieService, type ShoppingItem } from './dexieService';
+import { dexieService, type ShoppingItem, type QueuedRequest } from './dexieService';
 
 export interface PWAUpdateEvent {
   type: 'update' | 'offline' | 'online' | 'queue_processed' | 'error';
@@ -13,27 +13,19 @@ export interface QueueStatus {
   isProcessing: boolean;
 }
 
-interface QueuedRequest {
-  id: string;
-  url: string;
-  method: string;
-  headers: Record<string, string>;
-  body: string | null;
-  timestamp: number;
-}
+
 
 class PWAService {
   private updateSW: (() => Promise<void>) | undefined;
   private updateCallback: ((event: PWAUpdateEvent) => void) | undefined;
   private swRegistration: ServiceWorkerRegistration | null = null;
   private queueStatus: QueueStatus = { queueLength: 0, isProcessing: false };
-  private requestQueue: QueuedRequest[] = [];
   private isProcessingQueue = false;
-  private readonly MAX_QUEUE_SIZE = 100;
+  private readonly MAX_QUEUE_SIZE = 1000;
 
   constructor() {
     this.initialize();
-    this.loadQueueFromStorage();
+    this.loadQueueFromDexie();
   }
 
   private initialize() {
@@ -266,9 +258,14 @@ class PWAService {
 
   private async queueRequest(request: Request): Promise<void> {
     // Check queue size limit
-    if (this.requestQueue.length >= this.MAX_QUEUE_SIZE) {
+    const currentCount = await dexieService.getQueuedRequestsCount();
+    if (currentCount >= this.MAX_QUEUE_SIZE) {
       console.warn('⚠️ [PWA] Queue limit reached, dropping oldest request');
-      this.requestQueue.shift();
+      // Get all requests and remove the oldest one
+      const allRequests = await dexieService.getAllQueuedRequests();
+      if (allRequests.length > 0) {
+        await dexieService.removeQueuedRequest(allRequests[0].id);
+      }
     }
 
     const queuedRequest: QueuedRequest = {
@@ -280,9 +277,8 @@ class PWAService {
       timestamp: Date.now()
     };
 
-    this.requestQueue.push(queuedRequest);
-    this.queueStatus.queueLength = this.requestQueue.length;
-    await this.saveQueueToStorage();
+    await dexieService.addQueuedRequest(queuedRequest);
+    this.queueStatus.queueLength = await dexieService.getQueuedRequestsCount();
     
     console.log(`📝 [PWA] Request queued: ${request.method} ${request.url} with body: ${queuedRequest.body}`);
     
@@ -293,18 +289,19 @@ class PWAService {
   }
 
   private async processQueuedRequestsInternal(): Promise<void> {
-    if (this.isProcessingQueue || this.requestQueue.length === 0 || !navigator.onLine) {
+    const queueCount = await dexieService.getQueuedRequestsCount();
+    if (this.isProcessingQueue || queueCount === 0 || !navigator.onLine) {
       return;
     }
 
     this.isProcessingQueue = true;
     this.queueStatus.isProcessing = true;
-    console.log(`🔄 [PWA] Processing ${this.requestQueue.length} queued requests...`);
+    console.log(`🔄 [PWA] Processing ${queueCount} queued requests...`);
 
     // Get current Supabase headers for authentication
     const supabaseHeaders = await this.getSupabaseHeaders();
 
-    const itemsToProcess = [...this.requestQueue];
+    const itemsToProcess = await dexieService.getAllQueuedRequests();
     let successCount = 0;
     let errorCount = 0;
     
@@ -346,7 +343,7 @@ class PWAService {
             }
           }
           
-          this.requestQueue = this.requestQueue.filter(req => req.id !== item.id);
+          await dexieService.removeQueuedRequest(item.id);
           successCount++;
           console.log(`✅ [PWA] Queued request successful: ${item.method} ${item.url}`);
         } else {
@@ -359,10 +356,9 @@ class PWAService {
       }
     }
 
-    this.queueStatus.queueLength = this.requestQueue.length;
+    this.queueStatus.queueLength = await dexieService.getQueuedRequestsCount();
     this.queueStatus.isProcessing = false;
     this.isProcessingQueue = false;
-    await this.saveQueueToStorage();
     
     // Notify about processed queue
     this.notifyUpdate({
@@ -374,8 +370,8 @@ class PWAService {
 
   private async logDatabaseStats(): Promise<void> {
     try {
-      const stats = await dexieService.getStats();
-      console.log(`📊 [PWA] Database stats: ${stats.total} total, ${stats.active} active, ${stats.deleted} deleted items`);
+      const stats = await dexieService.getFullStats();
+      console.log(`📊 [PWA] Database stats: ${stats.total} total, ${stats.active} active, ${stats.deleted} deleted items, ${stats.queuedRequests} queued requests`);
     } catch (error) {
       console.error('❌ [PWA] Failed to get database stats:', error);
     }
@@ -475,31 +471,18 @@ class PWAService {
     }
   }
 
-  private async saveQueueToStorage(): Promise<void> {
+  private async loadQueueFromDexie(): Promise<void> {
     try {
-      localStorage.setItem('offline-request-queue', JSON.stringify(this.requestQueue));
+      const queueCount = await dexieService.getQueuedRequestsCount();
+      this.queueStatus.queueLength = queueCount;
+      console.log(`📊 [PWA] Loaded ${queueCount} queued requests from Dexie`);
     } catch (error) {
-      console.error('❌ [PWA] Failed to save queue to storage:', error);
-      this.notifyUpdate({
-        type: 'error',
-        message: 'Queue-Speicherung fehlgeschlagen'
-      });
+      console.error('❌ [PWA] Failed to load queue from Dexie:', error);
+      this.queueStatus.queueLength = 0;
     }
   }
 
-  private async loadQueueFromStorage(): Promise<void> {
-    try {
-      const stored = localStorage.getItem('offline-request-queue');
-      if (stored) {
-        this.requestQueue = JSON.parse(stored);
-        this.queueStatus.queueLength = this.requestQueue.length;
-        console.log(`📊 [PWA] Loaded ${this.requestQueue.length} queued requests from storage`);
-      }
-    } catch (error) {
-      console.error('❌ [PWA] Failed to load queue from storage:', error);
-      this.requestQueue = [];
-    }
-  }
+
 
   private setupServiceWorkerCommunication() {
     if (!this.swRegistration?.active) {
@@ -518,7 +501,7 @@ class PWAService {
 
   private async checkDatabaseStats() {
     try {
-      const stats = await dexieService.getStats();
+      const stats = await dexieService.getFullStats();
       console.log('📋 [PWA] Database stats:', stats);
     } catch (error) {
       console.error('❌ [PWA] Failed to check database stats:', error);
@@ -656,9 +639,10 @@ class PWAService {
   }
 
   private async updateQueueStatus() {
-    // Queue status is now managed locally
+    // Queue status is now managed by Dexie
+    const queueLength = await dexieService.getQueuedRequestsCount();
     this.queueStatus = {
-      queueLength: this.requestQueue.length,
+      queueLength,
       isProcessing: this.isProcessingQueue
     };
   }
@@ -668,18 +652,19 @@ class PWAService {
   }
 
   public async clearQueuedRequests(): Promise<void> {
-    this.requestQueue = [];
+    await dexieService.clearQueuedRequests();
     this.queueStatus = { queueLength: 0, isProcessing: false };
-    await this.saveQueueToStorage();
     console.log('🗑️ PWA: Queue cleared');
   }
 
-  public getQueueStatus(): QueueStatus {
-    return { ...this.queueStatus };
+  public async getQueueStatus(): Promise<QueueStatus> {
+    const queueLength = await dexieService.getQueuedRequestsCount();
+    return { queueLength, isProcessing: this.queueStatus.isProcessing };
   }
 
-  public hasQueuedRequests(): boolean {
-    return this.queueStatus.queueLength > 0;
+  public async hasQueuedRequests(): Promise<boolean> {
+    const queueLength = await dexieService.getQueuedRequestsCount();
+    return queueLength > 0;
   }
 
   public setUpdateCallback(callback: (event: PWAUpdateEvent) => void) {
@@ -714,11 +699,11 @@ class PWAService {
   public async getServiceWorkerStatus(): Promise<{
     registered: boolean;
     active: boolean;
-    databaseStats: { total: number; active: number; deleted: number };
+    databaseStats: { total: number; active: number; deleted: number; queuedRequests: number };
   }> {
     try {
       const registration = await navigator.serviceWorker.getRegistration();
-      const databaseStats = await dexieService.getStats();
+      const databaseStats = await dexieService.getFullStats();
       
       return {
         registered: !!registration,
@@ -730,7 +715,7 @@ class PWAService {
       return {
         registered: false,
         active: false,
-        databaseStats: { total: 0, active: 0, deleted: 0 }
+        databaseStats: { total: 0, active: 0, deleted: 0, queuedRequests: 0 }
       };
     }
   }

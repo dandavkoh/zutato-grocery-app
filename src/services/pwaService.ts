@@ -1,6 +1,6 @@
 // @ts-ignore - virtual:pwa-register is provided by vite-plugin-pwa
 import { registerSW } from 'virtual:pwa-register';
-import { dexieService, type ShoppingItem, type QueuedRequest } from './dexieService';
+import { dexieService, type ShoppingItem, type QueuedRequest, type List } from './dexieService';
 
 export interface PWAUpdateEvent {
   type: 'update' | 'offline' | 'online' | 'queue_processed' | 'error';
@@ -520,6 +520,7 @@ class PWAService {
           console.log(`🔍 [PWA] Intercepting Supabase client request: ${options?.method || 'GET'} ${url}`);
           
           const isShoppingItemsRequest = url.includes('/rest/v1/') && url.includes('shopping_items');
+          const isListsRequest = url.includes('/rest/v1/') && url.includes('lists');
           
           // Handle GET requests for shopping_items (load all items)
           if (isShoppingItemsRequest && options?.method === 'GET') {
@@ -530,9 +531,15 @@ class PWAService {
                 const response = await originalSupabaseFetch(...args);
                 if (response.ok) {
                   // Parse and sync response to Dexie
-                  const items: ShoppingItem[] = await response.clone().json();
-                  await dexieService.syncShoppingItems(items);
-                  console.log(`✅ [PWA] Synced Supabase response to Dexie: ${url}`);
+                  const responseData = await response.clone().json();
+                  
+                  // Check if response is an array or single object
+                  if (Array.isArray(responseData)) {
+                    await dexieService.syncShoppingItems(responseData);
+                    console.log(`✅ [PWA] Synced Supabase response to Dexie: ${responseData.length} items`);
+                  } else {
+                    console.log(`⚠️ [PWA] Shopping items response is not an array, skipping Dexie sync: ${url}`);
+                  }
                   return response;
                 }
               } catch (error) {
@@ -556,6 +563,49 @@ class PWAService {
               }
             } catch (error) {
               console.error('❌ [PWA] Error getting items from Dexie:', error);
+            }
+          }
+          
+          // Handle GET requests for lists (load all lists)
+          if (isListsRequest && options?.method === 'GET') {
+            // Check if we're online
+            if (navigator.onLine) {
+              // Try network first when online
+              try {
+                const response = await originalSupabaseFetch(...args);
+                if (response.ok) {
+                  // Parse and sync response to Dexie
+                  const responseData = await response.clone().json();
+                  
+                  // Check if response is an array or single object
+                  if (Array.isArray(responseData)) {
+                    await dexieService.syncLists(responseData);
+                    console.log(`✅ [PWA] Synced Supabase lists response to Dexie: ${responseData.length} lists`);
+                  } else {
+                    console.log(`⚠️ [PWA] Lists response is not an array, skipping Dexie sync: ${url}`);
+                  }
+                  return response;
+                }
+              } catch (error) {
+                console.log(`📴 [PWA] Network failed, trying Dexie for lists: ${url}`);
+              }
+            } else {
+              console.log(`📴 [PWA] Offline, trying Dexie for lists: ${url}`);
+            }
+            
+            // Try Dexie (when offline or network failed)
+            try {
+              // Debug: Check what's in the database
+              await dexieService.debugAllLists();
+              
+              const lists = await dexieService.getAllLists();
+              console.log(`⚡ [PWA] Serving Supabase lists request from Dexie: ${lists.length} lists`);
+              return new Response(JSON.stringify(lists), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+              });
+            } catch (error) {
+              console.error('❌ [PWA] Error getting lists from Dexie:', error);
             }
           }
           
@@ -663,6 +713,90 @@ class PWAService {
             });
           }
           
+          // Handle POST requests for lists (create new lists)
+          if (isListsRequest && options?.method === 'POST') {
+            console.log(`🔄 [PWA] Handling Supabase POST request for lists: ${url}`);
+            
+            // Parse the request body to get the new list data
+            let newListData: any = null;
+            try {
+              if (options.body) {
+                newListData = JSON.parse(options.body as string);
+                // Handle array format from Supabase
+                if (Array.isArray(newListData)) {
+                  newListData = newListData[0]; // Take first item
+                }
+              }
+            } catch (error) {
+              console.error('❌ [PWA] Failed to parse POST request body for lists:', error);
+            }
+            
+            // Check if we're online
+            if (navigator.onLine) {
+              try {
+                const response = await originalSupabaseFetch(...args);
+                if (response.ok) {
+                  // Parse the response and add to Dexie
+                  const createdList: List = await response.clone().json();
+                  await dexieService.addList(createdList);
+                  console.log(`✅ [PWA] Supabase POST for lists successful and synced to Dexie: ${url}`);
+                  return response;
+                }
+              } catch (error) {
+                console.log(`📴 [PWA] Network failed, creating list offline: ${url}`);
+              }
+            } else {
+              console.log(`📴 [PWA] Offline, creating list offline: ${url}`);
+            }
+            
+            // Create list offline in Dexie
+            if (newListData) {
+              try {
+                const offlineList: List = {
+                  id: newListData.id,
+                  name: newListData.name,
+                  description: newListData.description,
+                  created_by: newListData.created_by,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                  is_deleted: 0,
+                  deleted_at: null,
+                  deleted_by: null
+                };
+                
+                await dexieService.addList(offlineList);
+                console.log(`⚡ [PWA] Created list offline in Dexie: ${offlineList.id}`);
+              } catch (error) {
+                console.error('❌ [PWA] Error creating list offline:', error);
+              }
+            }
+            
+            // Queue the POST request for later
+            const request = new Request(url, {
+              ...options,
+              headers: new Headers(options?.headers || {})
+            });
+            await this.queueRequest(request);
+            
+            // Return optimistic response with the created list
+            const optimisticResponse = newListData ? {
+              id: newListData.id,
+              name: newListData.name,
+              description: newListData.description,
+              created_by: newListData.created_by,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              is_deleted: 0,
+              deleted_at: null,
+              deleted_by: null
+            } : { success: true, queued: true };
+            
+            return new Response(JSON.stringify(optimisticResponse), {
+              status: 202,
+              headers: { 'Content-Type': 'application/json' }
+            });
+          }
+          
           // Handle PATCH requests for shopping_items (update existing items)
           if (isShoppingItemsRequest && options?.method === 'PATCH') {
             console.log(`🔄 [PWA] Handling Supabase PATCH request: ${url}`);
@@ -715,13 +849,73 @@ class PWAService {
             });
           }
           
+          // Handle PATCH requests for lists (update existing lists)
+          if (isListsRequest && options?.method === 'PATCH') {
+            console.log(`🔄 [PWA] Handling Supabase PATCH request for lists: ${url}`);
+            
+            // Check if we're online
+            if (navigator.onLine) {
+              try {
+                const response = await originalSupabaseFetch(...args);
+                if (response.ok) {
+                  console.log(`✅ [PWA] Supabase PATCH for lists successful: ${url}`);
+                  return response;
+                }
+              } catch (error) {
+                console.log(`📴 [PWA] Network failed, queuing PATCH request for lists: ${url}`);
+              }
+            } else {
+              console.log(`📴 [PWA] Offline, queuing PATCH request for lists: ${url}`);
+            }
+            
+            // Try optimistic update in Dexie
+            try {
+              const urlObj = new URL(url);
+              const listId = this.extractItemIdFromUrl(urlObj);
+              if (listId && options.body) {
+                const updates = JSON.parse(options.body as string);
+                await dexieService.updateList({ 
+                  id: listId, 
+                  ...updates,
+                  updated_at: new Date().toISOString()
+                } as List);
+                console.log(`⚡ [PWA] Optimistically updated list in Dexie: ${listId}`);
+              }
+            } catch (error) {
+              console.error('❌ [PWA] Error optimistically updating list:', error);
+            }
+            
+            // Queue the PATCH request for later
+            const request = new Request(url, {
+              ...options,
+              headers: new Headers(options?.headers || {})
+            });
+            await this.queueRequest(request);
+            
+            // Return optimistic response
+            return new Response(JSON.stringify({ 
+              success: true, 
+              queued: true,
+              message: 'Request wird verarbeitet wenn Online-Verbindung verfügbar ist'
+            }), {
+              status: 202,
+              headers: { 'Content-Type': 'application/json' }
+            });
+          }
+          
           // For other requests, just make the original request
           const response = await originalSupabaseFetch(...args);
           if (response.ok && isShoppingItemsRequest && options?.method === 'GET') {
             // Parse and sync response to Dexie
-            const items: ShoppingItem[] = await response.clone().json();
-            await dexieService.syncShoppingItems(items);
-            console.log(`✅ [PWA] Synced Supabase response to Dexie: ${url}`);
+            const responseData = await response.clone().json();
+            
+            // Check if response is an array or single object
+            if (Array.isArray(responseData)) {
+              await dexieService.syncShoppingItems(responseData);
+              console.log(`✅ [PWA] Synced Supabase response to Dexie: ${responseData.length} items`);
+            } else {
+              console.log(`⚠️ [PWA] Shopping items response is not an array, skipping Dexie sync: ${url}`);
+            }
           }
           return response;
         };

@@ -31,15 +31,29 @@ export interface QueuedRequest {
   timestamp: number;
 }
 
+export interface List {
+  id: string;
+  name: string;
+  description: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string | null;
+  is_deleted: number | boolean; // Support both formats for compatibility
+  deleted_at: string | null;
+  deleted_by: string | null;
+}
+
 class ShoppingItemsDatabase extends Dexie {
   shoppingItems!: Table<ShoppingItem>;
   queuedRequests!: Table<QueuedRequest>;
+  lists!: Table<List>;
 
   constructor() {
     super('ShoppingItemsDB');
     this.version(1).stores({
       shoppingItems: 'id, list_id, name, is_completed, is_deleted, created_at, updated_at',
-      queuedRequests: 'id, url, method, timestamp'
+      queuedRequests: 'id, url, method, timestamp',
+      lists: 'id, name, created_by, is_deleted, created_at, updated_at'
     });
   }
 }
@@ -278,20 +292,114 @@ export class DexieService {
     total: number; 
     active: number; 
     deleted: number; 
-    queuedRequests: number 
+    queuedRequests: number;
+    lists: number;
   }> {
     try {
-      const [total, active, deleted, queuedRequests] = await Promise.all([
+      const [total, active, deleted, queuedRequests, lists] = await Promise.all([
         db.shoppingItems.count(),
         db.shoppingItems.where('is_deleted').equals(0).count(),
         db.shoppingItems.where('is_deleted').equals(1).count(),
-        db.queuedRequests.count()
+        db.queuedRequests.count(),
+        (async () => {
+          const allLists = await db.lists.toArray();
+          return allLists.filter(list => list.is_deleted === false || list.is_deleted === 0).length;
+        })()
       ]);
       
-      return { total, active, deleted, queuedRequests };
+      return { total, active, deleted, queuedRequests, lists };
     } catch (error) {
       console.error('❌ [Dexie] Error getting full stats:', error);
-      return { total: 0, active: 0, deleted: 0, queuedRequests: 0 };
+      return { total: 0, active: 0, deleted: 0, queuedRequests: 0, lists: 0 };
+    }
+  }
+
+  // List methods
+  async getAllLists(): Promise<List[]> {
+    try {
+      // Get all lists and filter manually to handle both boolean and number formats
+      const allLists = await db.lists.toArray();
+      const activeLists = allLists.filter(list => 
+        list.is_deleted === false || list.is_deleted === 0
+      );
+      
+      // Sort by created_at descending
+      activeLists.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      
+      console.log(`📊 [Dexie] Retrieved ${activeLists.length} lists (from ${allLists.length} total)`);
+      return activeLists;
+    } catch (error) {
+      console.error('❌ [Dexie] Error getting lists:', error);
+      return [];
+    }
+  }
+
+  async syncLists(lists: List[]): Promise<void> {
+    try {
+      await db.transaction('rw', db.lists, async () => {
+        // Delete all existing lists
+        await db.lists.clear();
+        console.log(`🗑️ [Dexie] Cleared all existing lists`);
+        
+        // Add all new lists
+        for (const list of lists) {
+          await db.lists.add(list);
+        }
+      });
+      
+      console.log(`✅ [Dexie] Synced ${lists.length} lists`);
+    } catch (error) {
+      console.error('❌ [Dexie] Error syncing lists:', error);
+      throw error;
+    }
+  }
+
+  async addList(list: List): Promise<void> {
+    try {
+      await db.lists.add(list);
+      console.log(`✅ [Dexie] Added list: ${list.name}`);
+    } catch (error) {
+      console.error('❌ [Dexie] Error adding list:', error);
+      throw error;
+    }
+  }
+
+  async updateList(list: List): Promise<void> {
+    try {
+      await db.lists.update(list.id, list);
+      console.log(`✅ [Dexie] Updated list: ${list.name}`);
+    } catch (error) {
+      console.error('❌ [Dexie] Error updating list:', error);
+      throw error;
+    }
+  }
+
+  async deleteList(id: string): Promise<void> {
+    try {
+      await db.lists.update(id, { 
+        is_deleted: 1, 
+        deleted_at: new Date().toISOString() 
+      });
+      console.log(`🗑️ [Dexie] Deleted list: ${id}`);
+    } catch (error) {
+      console.error('❌ [Dexie] Error deleting list:', error);
+      throw error;
+    }
+  }
+
+  // Debug method to check all lists in database
+  async debugAllLists(): Promise<void> {
+    try {
+      const allLists = await db.lists.toArray();
+      console.log(`🔍 [Dexie] All lists in database:`, allLists);
+      
+      const activeLists = await db.lists.where('is_deleted').equals(0).toArray();
+      console.log(`🔍 [Dexie] Active lists (is_deleted=0):`, activeLists);
+      
+      const deletedLists = await db.lists.where('is_deleted').equals(1).toArray();
+      console.log(`🔍 [Dexie] Deleted lists (is_deleted=1):`, deletedLists);
+    } catch (error) {
+      console.error('❌ [Dexie] Error debugging lists:', error);
     }
   }
 }

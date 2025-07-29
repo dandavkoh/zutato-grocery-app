@@ -14,54 +14,6 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
-          // Supabase API Caching für Shopping Items
-          {
-            urlPattern: /^https?:\/\/.*\/rest\/v1\/shopping_items.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'shopping-items-api-cache',
-              networkTimeoutSeconds: 3,
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 // 24 Stunden
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          },
-          // Supabase API Caching für Lists
-          {
-            urlPattern: /^https?:\/\/.*\/rest\/v1\/lists.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'lists-api-cache',
-              networkTimeoutSeconds: 3,
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 // 24 Stunden
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          },
-          // Supabase API Caching für List Members
-          {
-            urlPattern: /^https?:\/\/.*\/rest\/v1\/list_members.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'list-members-api-cache',
-              networkTimeoutSeconds: 3,
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 // 24 Stunden
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          },
           // Fonts
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

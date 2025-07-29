@@ -413,33 +413,15 @@ export class ShoppingItemsController {
     }
   }
 
-  // Toggle item completion
-  async toggleItemCompletion(id: string): Promise<ApiResponse<ShoppingItem>> {
+  // Set item completion status
+  async setItemCompletion(id: string, isCompleted: boolean): Promise<ApiResponse<ShoppingItem>> {
     try {
-      logDebug('Toggling item completion in Supabase', { itemId: id });
-      
-      // First get the current item to toggle its completion status
-      const { data: currentItem, error: fetchError } = await supabase
-        .from('shopping_items')
-        .select('*')
-        .eq('id', id)
-        .single();
-      
-      if (fetchError) {
-        logError('Failed to fetch item for toggle', fetchError);
-        return {
-          data: null,
-          error: fetchError.message,
-          status: 500
-        };
-      }
-      
-      const newCompletionStatus = !currentItem.is_completed;
+      logDebug('Setting item completion status in Supabase', { itemId: id, isCompleted });
       
       const { data, error } = await supabase
         .from('shopping_items')
         .update({ 
-          is_completed: newCompletionStatus,
+          is_completed: isCompleted,
           updated_at: new Date().toISOString() 
         })
         .eq('id', id)
@@ -447,7 +429,7 @@ export class ShoppingItemsController {
         .single();
       
       if (error) {
-        logError('Failed to toggle item completion in Supabase', error);
+        logError('Failed to set item completion status in Supabase', error);
         return {
           data: null,
           error: error.message,
@@ -474,12 +456,47 @@ export class ShoppingItemsController {
         assignedTo: data.assigned_to,
       };
       
-      logInfo('Successfully toggled item completion in Supabase', { itemId: id, is_completed: newCompletionStatus });
+      logInfo('Successfully set item completion status in Supabase', { itemId: id, isCompleted });
       return {
         data: shoppingItem,
         error: null,
         status: 200
       };
+    } catch (error) {
+      logError('Unexpected error setting item completion status', error);
+      return {
+        data: null,
+        error: 'Internal server error',
+        status: 500
+      };
+    }
+  }
+
+  // Toggle item completion (for backward compatibility)
+  async toggleItemCompletion(id: string): Promise<ApiResponse<ShoppingItem>> {
+    try {
+      logDebug('Toggling item completion in Supabase', { itemId: id });
+      
+      // First get the current item to toggle its completion status
+      const { data: currentItem, error: fetchError } = await supabase
+        .from('shopping_items')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (fetchError) {
+        logError('Failed to fetch item for toggle', fetchError);
+        return {
+          data: null,
+          error: fetchError.message,
+          status: 500
+        };
+      }
+      
+      const newCompletionStatus = !currentItem.is_completed;
+      
+      // Use the new setItemCompletion method
+      return await this.setItemCompletion(id, newCompletionStatus);
     } catch (error) {
       logError('Unexpected error toggling item completion', error);
       return {

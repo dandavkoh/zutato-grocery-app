@@ -91,7 +91,17 @@ export const useShoppingItems = (listId: string) => {
   // Toggle item completion
   const toggleItemCompletion = useCallback(async (id: string) => {
     try {
-      const response = await shoppingItemsController.toggleItemCompletion(id);
+      // Find the current item to get its completion status
+      const currentItem = items.find(item => item.id === id);
+      if (!currentItem) {
+        throw new Error('Item not found');
+      }
+      
+      // Calculate new completion status
+      const newCompletionStatus = !currentItem.is_completed;
+      
+      // Use the new setItemCompletion method (more efficient)
+      const response = await shoppingItemsController.setItemCompletion(id, newCompletionStatus);
       if (response.error) {
         throw new Error(response.error);
       }
@@ -105,7 +115,7 @@ export const useShoppingItems = (listId: string) => {
       console.error('Error toggling item completion:', err);
       throw err;
     }
-  }, []);
+  }, [items]);
 
   // Search items
   const searchItems = useCallback(async (query: string) => {

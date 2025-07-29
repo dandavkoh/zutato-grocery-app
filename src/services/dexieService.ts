@@ -131,6 +131,41 @@ export class DexieService {
     }
   }
 
+  // Update a shopping item from PATCH response
+  async updateShoppingItemFromResponse(response: ShoppingItem): Promise<void> {
+    try {
+      await db.shoppingItems.put(response);
+      console.log(`✅ [Dexie] Updated shopping item from response: ${response.name}`);
+    } catch (error) {
+      console.error('❌ [Dexie] Error updating shopping item from response:', error);
+      throw error;
+    }
+  }
+
+  // Update a shopping item optimistically (for offline PATCH requests)
+  async updateShoppingItemOptimistically(itemId: string, updates: Partial<ShoppingItem>): Promise<ShoppingItem | null> {
+    try {
+      const existingItem = await db.shoppingItems.get(itemId);
+      if (!existingItem) {
+        console.warn(`⚠️ [Dexie] Item not found for optimistic update: ${itemId}`);
+        return null;
+      }
+
+      const updatedItem: ShoppingItem = {
+        ...existingItem,
+        ...updates,
+        updated_at: new Date().toISOString()
+      };
+
+      await db.shoppingItems.put(updatedItem);
+      console.log(`✅ [Dexie] Optimistically updated shopping item: ${updatedItem.name}`);
+      return updatedItem;
+    } catch (error) {
+      console.error('❌ [Dexie] Error optimistically updating shopping item:', error);
+      throw error;
+    }
+  }
+
   // Delete a shopping item (soft delete)
   async deleteShoppingItem(id: string, deletedBy: string): Promise<void> {
     try {

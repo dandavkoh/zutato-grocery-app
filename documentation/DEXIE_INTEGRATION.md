@@ -59,16 +59,28 @@ Der Service Worker interceptet GET-Requests für `shopping_items`:
 
 ### Online/Offline Logik
 
-**Online:**
+**GET Requests (Online):**
 1. Request geht an Supabase
 2. **Alle Items der list_id werden aus Dexie gelöscht**
 3. **Neue Items von Supabase werden in Dexie eingefügt**
 4. Response wird an Client zurückgegeben
 
-**Offline:**
+**GET Requests (Offline):**
 1. Request wird von Dexie beantwortet
 2. **Alle Items der list_id werden aus lokaler DB gefiltert**
 3. Response im gleichen Format wie Supabase
+
+**PATCH Requests (Online):**
+1. Request geht an Supabase
+2. Response wird an Client zurückgegeben
+3. **Keine lokale Synchronisation nötig**
+
+**PATCH Requests (Offline):**
+1. **Optimistisches Update in Dexie** (sofortige UI-Aktualisierung)
+2. Request wird in Queue gespeichert
+3. Optimistische Response wird zurückgegeben
+4. **Request wird verarbeitet sobald Online-Verbindung verfügbar ist**
+5. **Erfolgreiche PATCH-Responses werden in Dexie synchronisiert**
 
 ### URL-Parameter Parsing
 
@@ -149,6 +161,7 @@ console.log(`Total: ${stats.total}, Active: ${stats.active}, Deleted: ${stats.de
 
 Die Integration bietet umfangreiche Logging:
 
+**GET Requests:**
 ```
 🛒 [PWA] Handling shopping items request: GET /rest/v1/shopping_items?...
 🗑️ [Dexie] Deleted 3 existing items for list 15b46053-74e6-4582-b1ef-5b49c05fbb7b
@@ -156,6 +169,18 @@ Die Integration bietet umfangreiche Logging:
 ✅ [PWA] Network response synced to Dexie: /rest/v1/shopping_items?...
 ⚡ [PWA] Serving from Dexie: 5 items for list 15b46053-74e6-4582-b1ef-5b49c05fbb7b
 📊 [Dexie] Retrieved 5 items for list 15b46053-74e6-4582-b1ef-5b49c05fbb7b
+```
+
+**PATCH Requests:**
+```
+🔄 [PWA] Handling Supabase PATCH request: /rest/v1/shopping_items?id=eq.ef93e54d-2cf6-4711-98e7-70f35cc4a2c7&select=*
+⚡ [PWA] Optimistically updated item in Dexie: ef93e54d-2cf6-4711-98e7-70f35cc4a2c7
+✅ [Dexie] Optimistically updated shopping item: Zucker
+📝 [PWA] Request queued: PATCH /rest/v1/shopping_items?id=eq.ef93e54d-2cf6-4711-98e7-70f35cc4a2c7&select=*
+🔄 [PWA] Processing 1 queued requests...
+✅ [PWA] Queued request successful: PATCH /rest/v1/shopping_items?id=eq.ef93e54d-2cf6-4711-98e7-70f35cc4a2c7&select=*
+✅ [PWA] Synced PATCH response to Dexie: /rest/v1/shopping_items?id=eq.ef93e54d-2cf6-4711-98e7-70f35cc4a2c7&select=*
+✅ [Dexie] Updated shopping item from response: Zucker
 ```
 
 ### Database Stats
@@ -170,6 +195,32 @@ const stats = await dexieService.getStats();
 1. **Application Tab** → **IndexedDB** → **ShoppingItemsDB**
 2. **Console** → Dexie-Logs anzeigen
 3. **Network Tab** → Intercepted Requests überwachen
+
+## Request Payload Handling
+
+### Body Cloning
+Die App unterstützt verschiedene Body-Typen beim Queueing:
+
+- **String**: Direkt gespeichert
+- **JSON**: Als String gespeichert
+- **FormData**: Zu JSON konvertiert
+- **URLSearchParams**: Als String gespeichert
+- **ArrayBuffer**: Als Text dekodiert
+- **ReadableStream**: Vollständig gelesen und als Text gespeichert
+
+### Headers
+- **Content-Type**: Automatisch für PATCH-Requests gesetzt
+- **Authorization**: Aktuelle Supabase-Session wird beim Replayen verwendet
+- **apikey**: Supabase API Key wird beim Replayen hinzugefügt
+- **Accept**: `application/json` für korrekte Response-Formatierung
+- **Alle anderen Headers**: Serialisiert und wiederhergestellt
+
+### Debug-Logging
+```
+📝 [PWA] Request queued: PATCH /rest/v1/shopping_items?id=eq.ef93e54d-2cf6-4711-98e7-70f35cc4a2c7&select=* with body: {"notes":"Brauner","updated_at":"2025-07-29T08:56:03.778Z"}
+🔑 [PWA] Retrieved Supabase headers: apikey, Authorization, Content-Type, Accept
+🔄 [PWA] Replaying request: PATCH /rest/v1/shopping_items?id=eq.ef93e54d-2cf6-4711-98e7-70f35cc4a2c7&select=* with body: {"notes":"Brauner","updated_at":"2025-07-29T08:56:03.778Z"}
+```
 
 ## Zukünftige Erweiterungen
 

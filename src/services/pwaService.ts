@@ -148,36 +148,14 @@ class PWAService {
       const url = new URL(request.url);
       
       // Debug: Log all requests to see what's happening
-      console.log(`🔍 [PWA] Checking request: ${request.method} ${request.url}`);
+      console.log(`🔍 [PWA] Checking regular request: ${request.method} ${request.url}`);
       console.log(`🔍 [PWA] URL details:`, {
         hostname: url.hostname,
         pathname: url.pathname,
         search: url.search
       });
-      
-      // Intercept Supabase API requests (direct and via RTK Query)
-      const isDirectSupabaseRequest = url.pathname.includes('/rest/v1/') && 
-        (url.pathname.includes('shopping_items') || 
-         url.pathname.includes('lists') || 
-         url.pathname.includes('list_members')) &&
-        (url.hostname === '127.0.0.1' || url.hostname.includes('supabase.co'));
-      
-      // Intercept RTK Query API requests that go through our adapter
-      const isRTKQueryRequest = url.pathname.includes('/api/') && 
-        (url.pathname.includes('shopping-items') || 
-         url.pathname.includes('lists') || 
-         url.pathname.includes('members'));
-      
-      const isSupabaseRequest = isDirectSupabaseRequest || isRTKQueryRequest;
-      
-      console.log(`🔍 [PWA] Is Supabase request: ${isSupabaseRequest}`);
-      
-      if (!isSupabaseRequest) {
-        console.log(`🔍 [PWA] Not intercepting - not a Supabase request`);
-        return originalFetch(request);
-      }
 
-      console.log(`🌐 [PWA] Intercepting Supabase request: ${request.method} ${request.url}`);
+      console.log(`🌐 [PWA] Intercepting regular request: ${request.method} ${request.url}`);
 
       // GET requests: try network first, then cache
       if (request.method === 'GET') {
@@ -196,12 +174,10 @@ class PWAService {
   private async handleGetRequest(request: Request, originalFetch: typeof fetch): Promise<Response> {
     const url = new URL(request.url);
     
-    // Only handle shopping_items requests
-    if (!url.pathname.includes('shopping_items')) {
+    // Only handle test_test requests
+    if (!url.pathname.includes('test_test')) {
       return originalFetch(request);
     }
-
-    console.log(`🛒 [PWA] Handling shopping items request: ${request.method} ${request.url}`);
 
     // Check if we're online
     if (navigator.onLine) {
@@ -209,42 +185,27 @@ class PWAService {
         // Try network first when online
         const response = await originalFetch(request);
         if (response.ok) {
-          // Parse and sync response to Dexie
+          // Parse and do stuff
           const items: ShoppingItem[] = await response.clone().json();
-          await dexieService.syncShoppingItems(items);
-          console.log(`✅ [PWA] Network response synced to Dexie: ${request.method} ${request.url}`);
+          // Do stuff with the itenms
           return response;
         }
       } catch (error) {
-        console.log(`📴 [PWA] Network failed, trying Dexie: ${request.method} ${request.url}`);
+        console.log(`📴 [PWA] Network failed, trying Offline: ${request.method} ${request.url}`);
       }
     } else {
-      console.log(`📴 [PWA] Offline, trying Dexie: ${request.method} ${request.url}`);
+      console.log(`📴 [PWA] Offline, trying Offline: ${request.method} ${request.url}`);
     }
 
-    // Try Dexie (when offline or network failed)
-    try {
-      // Extract list_id from URL parameters
-      const listId = this.extractListIdFromUrl(url);
-      if (listId) {
-        const items = await dexieService.getShoppingItemsByListId(listId);
-        console.log(`⚡ [PWA] Serving from Dexie: ${items.length} items for list ${listId}`);
-        return new Response(JSON.stringify(items), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' }
-        });
-      }
-    } catch (error) {
-      console.error('❌ [PWA] Error getting items from Dexie:', error);
-    }
-
-    // No data available
-    console.log(`❌ [PWA] No data available: ${request.method} ${request.url}`);
-    return new Response(JSON.stringify({ 
-      error: 'Offline - Keine Daten verfügbar',
-      offline: true 
-    }), {
-      status: 503,
+    // Try other solution (when offline or network failed)
+    // Example: Fetch from local cache storage and return it
+    const returnData = {
+      items: [
+        { id: 1, title: 'Item 1' },
+      ]
+    };
+    return new Response(JSON.stringify(returnData), {
+      status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
   }
@@ -257,19 +218,39 @@ class PWAService {
     return listIdParam;
   }
 
+  private extractItemIdFromUrl(url: URL): string | null {
+    const itemIdParam = url.searchParams.get('id');
+    if (itemIdParam && itemIdParam.startsWith('eq.')) {
+      return itemIdParam.substring(3); // Remove 'eq.' prefix
+    }
+    return itemIdParam;
+  }
+
   private async handleMutationRequest(request: Request, originalFetch: typeof fetch): Promise<Response> {
-    try {
-      // Try network first
-      const response = await originalFetch(request);
-      if (response.ok) {
-        console.log(`✅ [PWA] Mutation successful: ${request.method} ${request.url}`);
-        return response;
-      }
-    } catch (error) {
-      console.log(`📴 [PWA] Network failed, queuing request: ${request.method} ${request.url}`);
+    const url = new URL(request.url);
+    
+    // Only handle test_test requests
+    if (!url.pathname.includes('test_test')) {
+      return originalFetch(request);
     }
 
-    // Queue the request for later
+    // Check if we're online
+    if (navigator.onLine) {
+      try {
+        // Try network first when online
+        const response = await originalFetch(request);
+        if (response.ok) {
+          console.log(`✅ [PWA] Mutation successful: ${request.method} ${request.url}`);
+          return response;
+        }
+      } catch (error) {
+        console.log(`📴 [PWA] Network failed, queuing request: ${request.method} ${request.url}`);
+      }
+    } else {
+      console.log(`📴 [PWA] Offline, queuing request: ${request.method} ${request.url}`);
+    }
+
+    // Queue the request for later (when offline or network failed)
     await this.queueRequest(request);
     
     // Return optimistic response
@@ -303,7 +284,7 @@ class PWAService {
     this.queueStatus.queueLength = this.requestQueue.length;
     await this.saveQueueToStorage();
     
-    console.log(`📝 [PWA] Request queued: ${request.method} ${request.url}`);
+    console.log(`📝 [PWA] Request queued: ${request.method} ${request.url} with body: ${queuedRequest.body}`);
     
     // Try to process queue if online
     if (navigator.onLine) {
@@ -320,21 +301,51 @@ class PWAService {
     this.queueStatus.isProcessing = true;
     console.log(`🔄 [PWA] Processing ${this.requestQueue.length} queued requests...`);
 
+    // Get current Supabase headers for authentication
+    const supabaseHeaders = await this.getSupabaseHeaders();
+
     const itemsToProcess = [...this.requestQueue];
     let successCount = 0;
     let errorCount = 0;
     
     for (const item of itemsToProcess) {
       try {
+        // Create headers with proper content-type for PATCH requests and current Supabase auth
+        const headers = new Headers(item.headers);
+        
+        // Add current Supabase authentication headers
+        if (supabaseHeaders) {
+          Object.entries(supabaseHeaders).forEach(([key, value]) => {
+            headers.set(key, value as string);
+          });
+        }
+        
+        if (item.method === 'PATCH' && item.body && !headers.has('Content-Type')) {
+          headers.set('Content-Type', 'application/json');
+        }
+
         const request = new Request(item.url, {
           method: item.method,
-          headers: new Headers(item.headers),
+          headers: headers,
           body: item.body
         });
+
+        console.log(`🔄 [PWA] Replaying request: ${item.method} ${item.url} with body: ${item.body}`);
 
         const response = await fetch(request);
         
         if (response.ok) {
+          // Handle successful PATCH requests by syncing to Dexie
+          if (item.method === 'PATCH' && item.url.includes('shopping_items')) {
+            try {
+              const updatedItem: ShoppingItem = await response.clone().json();
+              await dexieService.updateShoppingItemFromResponse(updatedItem);
+              console.log(`✅ [PWA] Synced PATCH response to Dexie: ${item.url}`);
+            } catch (syncError) {
+              console.error('❌ [PWA] Failed to sync PATCH response to Dexie:', syncError);
+            }
+          }
+          
           this.requestQueue = this.requestQueue.filter(req => req.id !== item.id);
           successCount++;
           console.log(`✅ [PWA] Queued request successful: ${item.method} ${item.url}`);
@@ -370,6 +381,41 @@ class PWAService {
     }
   }
 
+  private async getSupabaseHeaders(): Promise<Record<string, string> | null> {
+    try {
+      const supabaseClient = (window as any).supabase;
+      if (!supabaseClient) {
+        console.warn('⚠️ [PWA] Supabase client not available');
+        return null;
+      }
+
+      // Get current session for authentication
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      
+      const headers: Record<string, string> = {};
+      
+      // Add API key
+      if (supabaseClient.supabaseKey) {
+        headers['apikey'] = supabaseClient.supabaseKey;
+      }
+      
+      // Add authorization header if session exists
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+      
+      // Add other required Supabase headers
+      headers['Content-Type'] = 'application/json';
+      headers['Accept'] = 'application/json';
+      
+      console.log(`🔑 [PWA] Retrieved Supabase headers: ${Object.keys(headers).join(', ')}`);
+      return headers;
+    } catch (error) {
+      console.error('❌ [PWA] Failed to get Supabase headers:', error);
+      return null;
+    }
+  }
+
   private serializeHeaders(headers: Headers): Record<string, string> {
     const serialized: Record<string, string> = {};
     headers.forEach((value, key) => {
@@ -381,8 +427,48 @@ class PWAService {
   private async cloneBody(body: BodyInit): Promise<string | null> {
     if (!body) return null;
     try {
-      const clone = body instanceof ReadableStream ? body : new ReadableStream();
-      return await new Response(clone).text();
+      // Handle different body types
+      if (typeof body === 'string') {
+        return body;
+      } else if (body instanceof FormData) {
+        // Convert FormData to JSON-like structure
+        const formDataObj: Record<string, any> = {};
+        for (const [key, value] of body.entries()) {
+          formDataObj[key] = value;
+        }
+        return JSON.stringify(formDataObj);
+      } else if (body instanceof URLSearchParams) {
+        return body.toString();
+      } else if (body instanceof ArrayBuffer) {
+        return new TextDecoder().decode(body);
+      } else if (body instanceof ReadableStream) {
+        // For ReadableStream, we need to read it
+        const reader = body.getReader();
+        const chunks: Uint8Array[] = [];
+        let done = false;
+        
+        while (!done) {
+          const { value, done: readerDone } = await reader.read();
+          done = readerDone;
+          if (value) {
+            chunks.push(value);
+          }
+        }
+        
+        // Combine chunks and decode
+        const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+        const combined = new Uint8Array(totalLength);
+        let offset = 0;
+        for (const chunk of chunks) {
+          combined.set(chunk, offset);
+          offset += chunk.length;
+        }
+        
+        return new TextDecoder().decode(combined);
+      } else {
+        // For other types, try to convert to string
+        return await new Response(body).text();
+      }
     } catch (error) {
       console.error('❌ [PWA] Failed to clone body:', error);
       return null;
@@ -489,7 +575,59 @@ class PWAService {
             }
           }
           
-          // For non-GET requests or non-shopping-items requests, just make the original request
+          // Handle PATCH requests for shopping_items
+          if (isShoppingItemsRequest && options?.method === 'PATCH') {
+            console.log(`🔄 [PWA] Handling Supabase PATCH request: ${url}`);
+            
+            // Check if we're online
+            if (navigator.onLine) {
+              try {
+                const response = await originalSupabaseFetch(...args);
+                if (response.ok) {
+                  console.log(`✅ [PWA] Supabase PATCH successful: ${url}`);
+                  return response;
+                }
+              } catch (error) {
+                console.log(`📴 [PWA] Network failed, queuing PATCH request: ${url}`);
+              }
+            } else {
+              console.log(`📴 [PWA] Offline, queuing PATCH request: ${url}`);
+            }
+            
+            // Try optimistic update in Dexie
+            try {
+              const urlObj = new URL(url);
+              const itemId = this.extractItemIdFromUrl(urlObj);
+              if (itemId && options.body) {
+                const updates = JSON.parse(options.body as string);
+                const updatedItem = await dexieService.updateShoppingItemOptimistically(itemId, updates);
+                if (updatedItem) {
+                  console.log(`⚡ [PWA] Optimistically updated item in Dexie: ${itemId}`);
+                }
+              }
+            } catch (error) {
+              console.error('❌ [PWA] Error optimistically updating item:', error);
+            }
+            
+            // Queue the PATCH request for later
+            const request = new Request(url, {
+              ...options,
+              headers: new Headers(options?.headers || {})
+            });
+            await this.queueRequest(request);
+            
+            // Return optimistic response
+            return new Response(JSON.stringify({ 
+              success: true, 
+              queued: true,
+              message: 'Request wird verarbeitet wenn Online-Verbindung verfügbar ist'
+            }), {
+              status: 202,
+              headers: { 'Content-Type': 'application/json' }
+            });
+          }
+          
+          // For other requests, just make the original request
           const response = await originalSupabaseFetch(...args);
           if (response.ok && isShoppingItemsRequest && options?.method === 'GET') {
             // Parse and sync response to Dexie

@@ -609,193 +609,195 @@ class PWAService {
             }
           }
           
-          // Handle POST requests for shopping_items (create new items)
-          if (isShoppingItemsRequest && options?.method === 'POST') {
-            console.log(`🔄 [PWA] Handling Supabase POST request: ${url}`);
+          // TODO: Fix this
+          // // Handle POST requests for shopping_items (create new items)
+          // if (isShoppingItemsRequest && options?.method === 'POST') {
+          //   console.log(`🔄 [PWA] Handling Supabase POST request: ${url}`);
             
-            // Parse the request body to get the new item data
-            let newItemData: any = null;
-            try {
-              if (options.body) {
-                newItemData = JSON.parse(options.body as string);
-                // Handle array format from Supabase
-                if (Array.isArray(newItemData)) {
-                  newItemData = newItemData[0]; // Take first item
-                }
-              }
-            } catch (error) {
-              console.error('❌ [PWA] Failed to parse POST request body:', error);
-            }
+          //   // Parse the request body to get the new item data
+          //   let newItemData: any = null;
+          //   try {
+          //     if (options.body) {
+          //       newItemData = JSON.parse(options.body as string);
+          //       // Handle array format from Supabase
+          //       if (Array.isArray(newItemData)) {
+          //         newItemData = newItemData[0]; // Take first item
+          //       }
+          //     }
+          //   } catch (error) {
+          //     console.error('❌ [PWA] Failed to parse POST request body:', error);
+          //   }
             
-            // Check if we're online
-            if (navigator.onLine) {
-              try {
-                const response = await originalSupabaseFetch(...args);
-                if (response.ok) {
-                  // Parse the response and add to Dexie
-                  const createdItem: ShoppingItem = await response.clone().json();
-                  await dexieService.addShoppingItem(createdItem);
-                  console.log(`✅ [PWA] Supabase POST successful and synced to Dexie: ${url}`);
-                  return response;
-                }
-              } catch (error) {
-                console.log(`📴 [PWA] Network failed, creating item offline: ${url}`);
-              }
-            } else {
-              console.log(`📴 [PWA] Offline, creating item offline: ${url}`);
-            }
+          //   // Check if we're online
+          //   if (navigator.onLine) {
+          //     try {
+          //       const response = await originalSupabaseFetch(...args);
+          //       if (response.ok) {
+          //         // Parse the response and add to Dexie
+          //         const createdItem: ShoppingItem = await response.clone().json();
+          //         await dexieService.addShoppingItem(createdItem);
+          //         console.log(`✅ [PWA] Supabase POST successful and synced to Dexie: ${url}`);
+          //         return response;
+          //       }
+          //     } catch (error) {
+          //       console.log(`📴 [PWA] Network failed, creating item offline: ${url}`);
+          //     }
+          //   } else {
+          //     console.log(`📴 [PWA] Offline, creating item offline: ${url}`);
+          //   }
             
-            // Create item offline in Dexie
-            if (newItemData) {
-              try {
-                                 const offlineItem: ShoppingItem = {
-                   id: newItemData.id,
-                   name: newItemData.name,
-                   category_id: newItemData.category_id,
-                   icon: newItemData.icon,
-                   unit_id: newItemData.unit_id,
-                   quantity: newItemData.quantity,
-                   is_completed: newItemData.is_completed || false,
-                   is_deleted: newItemData.is_deleted || false,
-                   created_at: new Date().toISOString(),
-                   updated_at: new Date().toISOString(),
-                   list_id: newItemData.list_id,
-                   created_by: newItemData.created_by,
-                   notes: newItemData.notes,
-                   store: newItemData.store,
-                   assigned_to: newItemData.assigned_to,
-                   completed_at: null,
-                   completed_by: null,
-                   deleted_at: null,
-                   deleted_by: null
-                 };
+          //   // Create item offline in Dexie
+          //   if (newItemData) {
+          //     try {
+          //                        const offlineItem: ShoppingItem = {
+          //          id: newItemData.id,
+          //          name: newItemData.name,
+          //          category_id: newItemData.category_id,
+          //          icon: newItemData.icon,
+          //          unit_id: newItemData.unit_id,
+          //          quantity: newItemData.quantity,
+          //          is_completed: newItemData.is_completed || false,
+          //          is_deleted: newItemData.is_deleted || false,
+          //          created_at: new Date().toISOString(),
+          //          updated_at: new Date().toISOString(),
+          //          list_id: newItemData.list_id,
+          //          created_by: newItemData.created_by,
+          //          notes: newItemData.notes,
+          //          store: newItemData.store,
+          //          assigned_to: newItemData.assigned_to,
+          //          completed_at: null,
+          //          completed_by: null,
+          //          deleted_at: null,
+          //          deleted_by: null
+          //        };
                 
-                await dexieService.addShoppingItem(offlineItem);
-                console.log(`⚡ [PWA] Created item offline in Dexie: ${offlineItem.id}`);
-              } catch (error) {
-                console.error('❌ [PWA] Error creating item offline:', error);
-              }
-            }
+          //       await dexieService.addShoppingItem(offlineItem);
+          //       console.log(`⚡ [PWA] Created item offline in Dexie: ${offlineItem.id}`);
+          //     } catch (error) {
+          //       console.error('❌ [PWA] Error creating item offline:', error);
+          //     }
+          //   }
             
-            // Queue the POST request for later
-            const request = new Request(url, {
-              ...options,
-              headers: new Headers(options?.headers || {})
-            });
-            await this.queueRequest(request);
+          //   // Queue the POST request for later
+          //   const request = new Request(url, {
+          //     ...options,
+          //     headers: new Headers(options?.headers || {})
+          //   });
+          //   await this.queueRequest(request);
             
-            // Return optimistic response with the created item
-            const optimisticResponse = newItemData ? {
-              id: newItemData.id,
-              list_id: newItemData.list_id,
-              name: newItemData.name,
-              quantity: newItemData.quantity,
-              unit_id: newItemData.unit_id,
-              category_id: newItemData.category_id,
-              icon: newItemData.icon,
-              notes: newItemData.notes,
-              store: newItemData.store,
-              assigned_to: newItemData.assigned_to,
-              is_completed: newItemData.is_completed || false,
-              completed_at: null,
-              completed_by: null,
-              created_by: newItemData.created_by,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-              is_deleted: newItemData.is_deleted || false,
-              deleted_at: null,
-              deleted_by: null
-            } : { success: true, queued: true };
+          //   // Return optimistic response with the created item
+          //   const optimisticResponse = newItemData ? {
+          //     id: newItemData.id,
+          //     list_id: newItemData.list_id,
+          //     name: newItemData.name,
+          //     quantity: newItemData.quantity,
+          //     unit_id: newItemData.unit_id,
+          //     category_id: newItemData.category_id,
+          //     icon: newItemData.icon,
+          //     notes: newItemData.notes,
+          //     store: newItemData.store,
+          //     assigned_to: newItemData.assigned_to,
+          //     is_completed: newItemData.is_completed || false,
+          //     completed_at: null,
+          //     completed_by: null,
+          //     created_by: newItemData.created_by,
+          //     created_at: new Date().toISOString(),
+          //     updated_at: new Date().toISOString(),
+          //     is_deleted: newItemData.is_deleted || false,
+          //     deleted_at: null,
+          //     deleted_by: null
+          //   } : { success: true, queued: true };
             
-            return new Response(JSON.stringify(optimisticResponse), {
-              status: 202,
-              headers: { 'Content-Type': 'application/json' }
-            });
-          }
+          //   return new Response(JSON.stringify(optimisticResponse), {
+          //     status: 202,
+          //     headers: { 'Content-Type': 'application/json' }
+          //   });
+          // }
           
-          // Handle POST requests for lists (create new lists)
-          if (isListsRequest && options?.method === 'POST') {
-            console.log(`🔄 [PWA] Handling Supabase POST request for lists: ${url}`);
+          // TODO: Fix this
+          // // Handle POST requests for lists (create new lists)
+          // if (isListsRequest && options?.method === 'POST') {
+          //   console.log(`🔄 [PWA] Handling Supabase POST request for lists: ${url}`);
             
-            // Parse the request body to get the new list data
-            let newListData: any = null;
-            try {
-              if (options.body) {
-                newListData = JSON.parse(options.body as string);
-                // Handle array format from Supabase
-                if (Array.isArray(newListData)) {
-                  newListData = newListData[0]; // Take first item
-                }
-              }
-            } catch (error) {
-              console.error('❌ [PWA] Failed to parse POST request body for lists:', error);
-            }
+          //   // Parse the request body to get the new list data
+          //   let newListData: any = null;
+          //   try {
+          //     if (options.body) {
+          //       newListData = JSON.parse(options.body as string);
+          //       // Handle array format from Supabase
+          //       if (Array.isArray(newListData)) {
+          //         newListData = newListData[0]; // Take first item
+          //       }
+          //     }
+          //   } catch (error) {
+          //     console.error('❌ [PWA] Failed to parse POST request body for lists:', error);
+          //   }
             
-            // Check if we're online
-            if (navigator.onLine) {
-              try {
-                const response = await originalSupabaseFetch(...args);
-                if (response.ok) {
-                  // Parse the response and add to Dexie
-                  const createdList: List = await response.clone().json();
-                  await dexieService.addList(createdList);
-                  console.log(`✅ [PWA] Supabase POST for lists successful and synced to Dexie: ${url}`);
-                  return response;
-                }
-              } catch (error) {
-                console.log(`📴 [PWA] Network failed, creating list offline: ${url}`);
-              }
-            } else {
-              console.log(`📴 [PWA] Offline, creating list offline: ${url}`);
-            }
+          //   // Check if we're online
+          //   if (navigator.onLine) {
+          //     try {
+          //       const response = await originalSupabaseFetch(...args);
+          //       if (response.ok) {
+          //         // Parse the response and add to Dexie
+          //         const createdList: List = await response.clone().json();
+          //         await dexieService.addList(createdList);
+          //         console.log(`✅ [PWA] Supabase POST for lists successful and synced to Dexie: ${url}`);
+          //         return response;
+          //       }
+          //     } catch (error) {
+          //       console.log(`📴 [PWA] Network failed, creating list offline: ${url}`);
+          //     }
+          //   } else {
+          //     console.log(`📴 [PWA] Offline, creating list offline: ${url}`);
+          //   }
             
-            // Create list offline in Dexie
-            if (newListData) {
-              try {
-                const offlineList: List = {
-                  id: newListData.id,
-                  name: newListData.name,
-                  description: newListData.description,
-                  created_by: newListData.created_by,
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString(),
-                  is_deleted: 0,
-                  deleted_at: null,
-                  deleted_by: null
-                };
+          //   // Create list offline in Dexie
+          //   if (newListData) {
+          //     try {
+          //       const offlineList: List = {
+          //         id: newListData.id,
+          //         name: newListData.name,
+          //         description: newListData.description,
+          //         created_by: newListData.created_by,
+          //         created_at: new Date().toISOString(),
+          //         updated_at: new Date().toISOString(),
+          //         is_deleted: 0,
+          //         deleted_at: null,
+          //         deleted_by: null
+          //       };
                 
-                await dexieService.addList(offlineList);
-                console.log(`⚡ [PWA] Created list offline in Dexie: ${offlineList.id}`);
-              } catch (error) {
-                console.error('❌ [PWA] Error creating list offline:', error);
-              }
-            }
+          //       await dexieService.addList(offlineList);
+          //       console.log(`⚡ [PWA] Created list offline in Dexie: ${offlineList.id}`);
+          //     } catch (error) {
+          //       console.error('❌ [PWA] Error creating list offline:', error);
+          //     }
+          //   }
             
-            // Queue the POST request for later
-            const request = new Request(url, {
-              ...options,
-              headers: new Headers(options?.headers || {})
-            });
-            await this.queueRequest(request);
+          //   // Queue the POST request for later
+          //   const request = new Request(url, {
+          //     ...options,
+          //     headers: new Headers(options?.headers || {})
+          //   });
+          //   await this.queueRequest(request);
             
-            // Return optimistic response with the created list
-            const optimisticResponse = newListData ? {
-              id: newListData.id,
-              name: newListData.name,
-              description: newListData.description,
-              created_by: newListData.created_by,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-              is_deleted: 0,
-              deleted_at: null,
-              deleted_by: null
-            } : { success: true, queued: true };
+          //   // Return optimistic response with the created list
+          //   const optimisticResponse = newListData ? {
+          //     id: newListData.id,
+          //     name: newListData.name,
+          //     description: newListData.description,
+          //     created_by: newListData.created_by,
+          //     created_at: new Date().toISOString(),
+          //     updated_at: new Date().toISOString(),
+          //     is_deleted: 0,
+          //     deleted_at: null,
+          //     deleted_by: null
+          //   } : { success: true, queued: true };
             
-            return new Response(JSON.stringify(optimisticResponse), {
-              status: 202,
-              headers: { 'Content-Type': 'application/json' }
-            });
-          }
+          //   return new Response(JSON.stringify(optimisticResponse), {
+          //     status: 202,
+          //     headers: { 'Content-Type': 'application/json' }
+          //   });
+          // }
           
           // Handle PATCH requests for shopping_items (update existing items)
           if (isShoppingItemsRequest && options?.method === 'PATCH') {

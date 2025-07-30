@@ -22,8 +22,20 @@ class PWAService {
   private queueStatus: QueueStatus = { queueLength: 0, isProcessing: false };
   private isProcessingQueue = false;
   private readonly MAX_QUEUE_SIZE = 1000;
+  private static instance: PWAService | null = null;
+  private static isInitialized = false;
 
   constructor() {
+    if (PWAService.instance) {
+      return PWAService.instance;
+    }
+    
+    if (PWAService.isInitialized) {
+      return PWAService.instance!;
+    }
+    
+    PWAService.instance = this;
+    PWAService.isInitialized = true;
     this.initialize();
     this.loadQueueFromDexie();
   }
@@ -102,8 +114,11 @@ class PWAService {
     // Intercept fetch requests for offline functionality
     this.setupFetchInterceptor();
     
-    // Intercept Supabase client requests
-    this.setupSupabaseInterceptor();
+    // Intercept Supabase client requests (only if not already done)
+    if (!globalInterceptorInstalled) {
+      this.setupSupabaseInterceptor();
+      globalInterceptorInstalled = true;
+    }
     
     // Regular database stats logging
     setInterval(() => {
@@ -513,11 +528,30 @@ class PWAService {
     const checkSupabase = () => {
       const supabaseClient = (window as any).supabase;
       if (supabaseClient?.rest?.fetch) {
+        // Check if we've already intercepted this fetch function
+        if ((supabaseClient.rest.fetch as any)._pwaIntercepted) {
+          console.log('🔍 [PWA] Supabase interceptor already installed, skipping');
+          return true; // Already intercepted
+        }
+        
         const originalSupabaseFetch = supabaseClient.rest.fetch;
         
+        // Mark the original function as intercepted BEFORE replacing it
+        (originalSupabaseFetch as any)._pwaIntercepted = true;
+        
         supabaseClient.rest.fetch = async (...args: any[]) => {
+          // Ensure args is properly structured
+          if (!Array.isArray(args) || args.length < 1) {
+            console.error('❌ [PWA] Invalid args structure:', args);
+            return originalSupabaseFetch(...args);
+          }
+          
           const [url, options] = args;
-          console.log(`🔍 [PWA] Intercepting Supabase client request: ${options?.method || 'GET'} ${url}`);
+          
+          // Add request ID to prevent duplicate processing
+          const requestId = `${options?.method || 'GET'}_${url}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          
+          console.log(`🔍 [PWA] Intercepting Supabase client request: ${options?.method || 'GET'} ${url} [ID: ${requestId}]`);
           
           const isShoppingItemsRequest = url.includes('/rest/v1/') && url.includes('shopping_items');
           const isListsRequest = url.includes('/rest/v1/') && url.includes('lists');
@@ -610,41 +644,41 @@ class PWAService {
           }
           
           // TODO: Fix this
-          // // Handle POST requests for shopping_items (create new items)
-          // if (isShoppingItemsRequest && options?.method === 'POST') {
-          //   console.log(`🔄 [PWA] Handling Supabase POST request: ${url}`);
+          // Handle POST requests for shopping_items (create new items)
+          if (isShoppingItemsRequest && options?.method === 'POST') {
+            console.log(`🔄 [PWA] Handling Supabase POST request: ${url}`);
             
-          //   // Parse the request body to get the new item data
-          //   let newItemData: any = null;
-          //   try {
-          //     if (options.body) {
-          //       newItemData = JSON.parse(options.body as string);
-          //       // Handle array format from Supabase
-          //       if (Array.isArray(newItemData)) {
-          //         newItemData = newItemData[0]; // Take first item
-          //       }
-          //     }
-          //   } catch (error) {
-          //     console.error('❌ [PWA] Failed to parse POST request body:', error);
-          //   }
+            // Parse the request body to get the new item data
+            let newItemData: any = null;
+            try {
+              if (options.body) {
+                newItemData = JSON.parse(options.body as string);
+                // Handle array format from Supabase
+                if (Array.isArray(newItemData)) {
+                  newItemData = newItemData[0]; // Take first item
+                }
+              }
+            } catch (error) {
+              console.error('❌ [PWA] Failed to parse POST request body:', error);
+            }
             
-          //   // Check if we're online
-          //   if (navigator.onLine) {
-          //     try {
-          //       const response = await originalSupabaseFetch(...args);
-          //       if (response.ok) {
-          //         // Parse the response and add to Dexie
-          //         const createdItem: ShoppingItem = await response.clone().json();
-          //         await dexieService.addShoppingItem(createdItem);
-          //         console.log(`✅ [PWA] Supabase POST successful and synced to Dexie: ${url}`);
-          //         return response;
-          //       }
-          //     } catch (error) {
-          //       console.log(`📴 [PWA] Network failed, creating item offline: ${url}`);
-          //     }
-          //   } else {
-          //     console.log(`📴 [PWA] Offline, creating item offline: ${url}`);
-          //   }
+            // Check if we're online
+            if (navigator.onLine) {
+              try {
+                const response = await originalSupabaseFetch(...args);
+                if (response.ok) {
+                  // Parse the response and add to Dexie
+                  const createdItem: ShoppingItem = await response.clone().json();
+                  await dexieService.addShoppingItem(createdItem);
+                  console.log(`✅ [PWA] Supabase POST successful and synced to Dexie: ${url}`);
+                  return response;
+                }
+              } catch (error) {
+                console.log(`📴 [PWA] Network failed, creating item offline: ${url}`);
+              }
+            } else {
+              console.log(`📴 [PWA] Offline, creating item offline: ${url}`);
+            }
             
           //   // Create item offline in Dexie
           //   if (newItemData) {
@@ -712,44 +746,44 @@ class PWAService {
           //     status: 202,
           //     headers: { 'Content-Type': 'application/json' }
           //   });
-          // }
+          }
           
           // TODO: Fix this
-          // // Handle POST requests for lists (create new lists)
-          // if (isListsRequest && options?.method === 'POST') {
-          //   console.log(`🔄 [PWA] Handling Supabase POST request for lists: ${url}`);
+          // Handle POST requests for lists (create new lists)
+          if (isListsRequest && options?.method === 'POST') {
+            console.log(`🔄 [PWA] Handling Supabase POST request for lists: ${url}`);
             
-          //   // Parse the request body to get the new list data
-          //   let newListData: any = null;
-          //   try {
-          //     if (options.body) {
-          //       newListData = JSON.parse(options.body as string);
-          //       // Handle array format from Supabase
-          //       if (Array.isArray(newListData)) {
-          //         newListData = newListData[0]; // Take first item
-          //       }
-          //     }
-          //   } catch (error) {
-          //     console.error('❌ [PWA] Failed to parse POST request body for lists:', error);
-          //   }
+            // Parse the request body to get the new list data
+            let newListData: any = null;
+            try {
+              if (options.body) {
+                newListData = JSON.parse(options.body as string);
+                // Handle array format from Supabase
+                if (Array.isArray(newListData)) {
+                  newListData = newListData[0]; // Take first item
+                }
+              }
+            } catch (error) {
+              console.error('❌ [PWA] Failed to parse POST request body for lists:', error);
+            }
             
-          //   // Check if we're online
-          //   if (navigator.onLine) {
-          //     try {
-          //       const response = await originalSupabaseFetch(...args);
-          //       if (response.ok) {
-          //         // Parse the response and add to Dexie
-          //         const createdList: List = await response.clone().json();
-          //         await dexieService.addList(createdList);
-          //         console.log(`✅ [PWA] Supabase POST for lists successful and synced to Dexie: ${url}`);
-          //         return response;
-          //       }
-          //     } catch (error) {
-          //       console.log(`📴 [PWA] Network failed, creating list offline: ${url}`);
-          //     }
-          //   } else {
-          //     console.log(`📴 [PWA] Offline, creating list offline: ${url}`);
-          //   }
+            // Check if we're online
+            if (navigator.onLine) {
+              try {
+                const response = await originalSupabaseFetch(...args);
+                if (response.ok) {
+                  // Parse the response and add to Dexie
+                  const createdList: List = await response.clone().json();
+                  await dexieService.addList(createdList);
+                  console.log(`✅ [PWA] Supabase POST for lists successful and synced to Dexie: ${url}`);
+                  return response;
+                }
+              } catch (error) {
+                console.log(`📴 [PWA] Network failed, creating list offline: ${url}`);
+              }
+            } else {
+              console.log(`📴 [PWA] Offline, creating list offline: ${url}`);
+            }
             
           //   // Create list offline in Dexie
           //   if (newListData) {
@@ -797,7 +831,7 @@ class PWAService {
           //     status: 202,
           //     headers: { 'Content-Type': 'application/json' }
           //   });
-          // }
+          }
           
           // Handle PATCH requests for shopping_items (update existing items)
           if (isShoppingItemsRequest && options?.method === 'PATCH') {
@@ -929,10 +963,12 @@ class PWAService {
     };
 
     // Try immediately
-    if (!checkSupabase()) {
+    const success = checkSupabase();
+    if (!success) {
       // If not available, retry after a delay
       setTimeout(() => {
-        if (!checkSupabase()) {
+        const retrySuccess = checkSupabase();
+        if (!retrySuccess) {
           console.log('⚠️ [PWA] Supabase client not found after retry, skipping interceptor');
         }
       }, 1000);
@@ -1063,11 +1099,23 @@ class PWAService {
 
   // Ensure fetch interceptor is active (called when navigating between views)
   public ensureFetchInterceptor(): void {
+    // Check if already initialized to prevent multiple setups
+    if (globalInterceptorInstalled) {
+      console.log('🔍 [PWA] Fetch interceptors already initialized, skipping');
+      return;
+    }
+    
     console.log('🔍 [PWA] Ensuring fetch interceptor is active');
     this.setupFetchInterceptor();
     this.setupSupabaseInterceptor();
+    
+    // Mark as initialized globally
+    globalInterceptorInstalled = true;
   }
 }
+
+// Global flag to prevent multiple interceptor installations
+let globalInterceptorInstalled = false;
 
 // Export singleton instance
 export const pwaService = new PWAService(); 

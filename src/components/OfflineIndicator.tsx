@@ -14,10 +14,15 @@ const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({ className = '' }) =
   useEffect(() => {
     // Initial status
     setIsOnline(navigator.onLine);
-    setQueueStatus(pwaService.getQueueStatus());
+    
+    const loadInitialQueueStatus = async () => {
+      const status = await pwaService.getQueueStatus();
+      setQueueStatus(status);
+    };
+    loadInitialQueueStatus();
 
     // PWA Service callback
-    const handlePWAEvent = (event: PWAUpdateEvent) => {
+    const handlePWAEvent = async (event: PWAUpdateEvent) => {
       setLastEvent(event);
       
       if (event.type === 'online') {
@@ -25,15 +30,17 @@ const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({ className = '' }) =
       } else if (event.type === 'offline') {
         setIsOnline(false);
       } else if (event.type === 'queue_processed') {
-        setQueueStatus(pwaService.getQueueStatus());
+        const status = await pwaService.getQueueStatus();
+        setQueueStatus(status);
       }
     };
 
     pwaService.setUpdateCallback(handlePWAEvent);
 
     // Update queue status periodically
-    const interval = setInterval(() => {
-      setQueueStatus(pwaService.getQueueStatus());
+    const interval = setInterval(async () => {
+      const status = await pwaService.getQueueStatus();
+      setQueueStatus(status);
     }, 5000);
 
     return () => {

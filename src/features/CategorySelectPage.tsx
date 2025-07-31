@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setHeader, resetHeader, resetBackClick, updateSelectedItem } from '../stores/store';
 import type { RootState } from '../stores/store';
-import { useCategories } from '../hooks/useCategories';
+import { useCategoriesDexie } from '../hooks/useCategoriesDexie';
 import { getCategoryNameById } from '../api/supabaseApi';
 import { shoppingItemsApi } from '../api/supabaseApi';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
@@ -12,13 +12,14 @@ import type { ShoppingItem } from '../api/supabaseApi';
 const CategorySelectPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { listId, productId } = useParams<{ listId: string; productId: string }>();
   const dispatch = useDispatch();
   
   // Get item from global store only
   const item = useSelector((state: RootState) => state.selectedItem.item);
   
   // Use the categories hook to get categories
-  const { categories, loading } = useCategories();
+  const { categories, loading } = useCategoriesDexie();
   
   // Get current category name
   const currentCategoryName = item ? getCategoryNameById(item.category_id, categories) : '';
@@ -38,10 +39,10 @@ const CategorySelectPage: React.FC = () => {
   // Handle back button events
   useEffect(() => {
     if (backClicked) {
-      navigate(-1);
+      navigate(`/shopping-list/${listId}/product/${productId}`);
       dispatch(resetBackClick());
     }
-  }, [backClicked, navigate, dispatch]);
+  }, [backClicked, navigate, dispatch, listId, productId]);
 
   // Handle category selection
   const handleCategorySelect = async (categoryId: string | null) => {
@@ -64,8 +65,8 @@ const CategorySelectPage: React.FC = () => {
         category_id: categoryId
       }));
       
-      // Navigate back to the previous page
-      navigate(-1);
+      // Navigate back to the product detail page
+      navigate(`/shopping-list/${listId}/product/${productId}`);
     } catch (error) {
       console.error('Error updating category:', error);
       // Optionally show an error message to the user

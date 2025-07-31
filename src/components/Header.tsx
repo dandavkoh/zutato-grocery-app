@@ -1,13 +1,15 @@
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState } from '../stores/store';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { setSearch, triggerFilterClick, triggerBackClick, triggerRightButtonClick } from '../stores/store';
 import FontAwesomeIcon from './FontAwesomeIcon';
 
 const Header: React.FC = () => {
   const header = useSelector((state: RootState) => state.header);
   const navigate = useNavigate();
+  const location = useLocation();
+  const { listId } = useParams<{ listId: string }>();
   const dispatch = useDispatch();
   const searchValue = useSelector((state: RootState) => state.search.value);
 
@@ -34,6 +36,30 @@ const Header: React.FC = () => {
 
   const handleRightButtonClick = () => {
     dispatch(triggerRightButtonClick());
+  };
+
+  // Function to navigate to parent route based on current location
+  const navigateToParent = () => {
+    const pathname = location.pathname;
+    
+    // Extract listId and productId from current path
+    const pathParts = pathname.split('/');
+    
+    if (pathname.includes('/search')) {
+      // From search page: go back to shopping list
+      navigate(`/shopping-list/${listId}`);
+    } else if (pathname.includes('/product/') && pathname.includes('/unit')) {
+      // From unit select page: go back to product detail
+      const productId = pathParts[pathParts.length - 2]; // productId is before 'unit'
+      navigate(`/shopping-list/${listId}/product/${productId}`);
+    } else if (pathname.includes('/product/') && pathname.includes('/category')) {
+      // From category select page: go back to product detail
+      const productId = pathParts[pathParts.length - 2]; // productId is before 'category'
+      navigate(`/shopping-list/${listId}/product/${productId}`);
+    } else {
+      // Fallback: go back in history
+      navigate(-1);
+    }
   };
 
   return (
@@ -106,7 +132,7 @@ const Header: React.FC = () => {
                   }
                 : { 
                     readOnly: true, 
-                    onClick: () => navigate('/shopping-list/search') 
+                    onClick: () => navigate(`/shopping-list/${listId}/search`) 
                   }
               )}
             />
@@ -115,7 +141,7 @@ const Header: React.FC = () => {
                 className="ml-3 text-white font-semibold cursor-pointer select-none"
                 onClick={() => {
                   dispatch({ type: 'search/clearSearch' });
-                  navigate(-1);
+                  navigateToParent();
                 }}
               >
                 FERTIG

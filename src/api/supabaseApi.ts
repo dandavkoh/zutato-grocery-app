@@ -66,6 +66,7 @@ export interface ShoppingItem {
 }
 
 export interface CreateShoppingItemRequest {
+  id: string; // Required GUID - must be provided
   name: string;
   category_id: string | null;
   icon?: string;
@@ -103,6 +104,7 @@ export interface List {
 }
 
 export interface CreateListRequest {
+  id: string; // Required GUID - must be provided
   name: string;
   description?: string;
   created_by: string;
@@ -247,24 +249,27 @@ export class ShoppingItemsController {
   // Create new item
   async createItem(itemData: CreateShoppingItemRequest): Promise<ApiResponse<ShoppingItem>> {
     try {
-      logDebug('Creating new item in Supabase', { name: itemData.name });
+      logDebug('Creating new item in Supabase', { name: itemData.name, id: itemData.id });
+      
+      const insertData: any = {
+        id: itemData.id, // GUID is always required
+        name: itemData.name,
+        category_id: itemData.category_id,
+        icon: itemData.icon,
+        unit_id: itemData.unit_id,
+        quantity: itemData.quantity,
+        list_id: itemData.listId,
+        created_by: itemData.createdBy,
+        notes: itemData.notes,
+        store: itemData.store,
+        assigned_to: itemData.assignedTo,
+        is_completed: false,
+        is_deleted: false,
+      };
       
       const { data, error } = await supabase
         .from('shopping_items')
-        .insert([{
-          name: itemData.name,
-          category_id: itemData.category_id,
-          icon: itemData.icon,
-          unit_id: itemData.unit_id,
-          quantity: itemData.quantity,
-          list_id: itemData.listId,
-          created_by: itemData.createdBy,
-          notes: itemData.notes,
-          store: itemData.store,
-          assigned_to: itemData.assignedTo,
-          is_completed: false,
-          is_deleted: false,
-        }])
+        .insert([insertData])
         .select()
         .single();
       
@@ -409,33 +414,15 @@ export class ShoppingItemsController {
     }
   }
 
-  // Toggle item completion
-  async toggleItemCompletion(id: string): Promise<ApiResponse<ShoppingItem>> {
+  // Set item completion status
+  async setItemCompletion(id: string, isCompleted: boolean): Promise<ApiResponse<ShoppingItem>> {
     try {
-      logDebug('Toggling item completion in Supabase', { itemId: id });
-      
-      // First get the current item to toggle its completion status
-      const { data: currentItem, error: fetchError } = await supabase
-        .from('shopping_items')
-        .select('*')
-        .eq('id', id)
-        .single();
-      
-      if (fetchError) {
-        logError('Failed to fetch item for toggle', fetchError);
-        return {
-          data: null,
-          error: fetchError.message,
-          status: 500
-        };
-      }
-      
-      const newCompletionStatus = !currentItem.is_completed;
+      logDebug('Setting item completion status in Supabase', { itemId: id, isCompleted });
       
       const { data, error } = await supabase
         .from('shopping_items')
         .update({ 
-          is_completed: newCompletionStatus,
+          is_completed: isCompleted,
           updated_at: new Date().toISOString() 
         })
         .eq('id', id)
@@ -443,7 +430,7 @@ export class ShoppingItemsController {
         .single();
       
       if (error) {
-        logError('Failed to toggle item completion in Supabase', error);
+        logError('Failed to set item completion status in Supabase', error);
         return {
           data: null,
           error: error.message,
@@ -470,14 +457,14 @@ export class ShoppingItemsController {
         assignedTo: data.assigned_to,
       };
       
-      logInfo('Successfully toggled item completion in Supabase', { itemId: id, is_completed: newCompletionStatus });
+      logInfo('Successfully set item completion status in Supabase', { itemId: id, isCompleted });
       return {
         data: shoppingItem,
         error: null,
         status: 200
       };
     } catch (error) {
-      logError('Unexpected error toggling item completion', error);
+      logError('Unexpected error setting item completion status', error);
       return {
         data: null,
         error: 'Internal server error',
@@ -485,6 +472,8 @@ export class ShoppingItemsController {
       };
     }
   }
+
+
 
   // Search items
   async searchItems(listId: string, query: string): Promise<ApiResponse<ShoppingItem[]>> {
@@ -612,6 +601,7 @@ export class ListsController {
       const { data: insertResult, error: listError } = await supabase
         .from('lists')
         .insert({
+          id: listData.id, // Use the provided ID
           name: listData.name,
           description: listData.description,
           created_by: listData.created_by
@@ -626,14 +616,11 @@ export class ListsController {
         };
       }
 
-      // Get the created list by querying it
+      // Get the created list by ID
       const { data: list, error: fetchError } = await supabase
         .from('lists')
         .select('*')
-        .eq('name', listData.name)
-        .eq('created_by', listData.created_by)
-        .order('created_at', { ascending: false })
-        .limit(1)
+        .eq('id', listData.id)
         .single();
 
       if (fetchError) {

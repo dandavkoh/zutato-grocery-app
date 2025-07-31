@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setHeader, resetHeader, resetBackClick, resetRightButtonClick, updateSelectedItem } from '../stores/store';
 import type { RootState } from '../stores/store';
-import { useCategories } from '../hooks/useCategories';
-import { useUnits } from '../hooks/useUnits';
+import { useCategoriesDexie } from '../hooks/useCategoriesDexie';
+import { useUnitsDexie } from '../hooks/useUnitsDexie';
 import { getCategoryNameById, getCategoryIconById, getUnitNameById, shoppingItemsApi } from '../api/supabaseApi';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
 import type { ShoppingItem } from '../api/supabaseApi';
@@ -12,6 +12,7 @@ import type { ShoppingItem } from '../api/supabaseApi';
 const ProductDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { listId, productId } = useParams<{ listId: string; productId: string }>();
   const dispatch = useDispatch();
   
   // Get item from global store only
@@ -28,10 +29,10 @@ const ProductDetailPage: React.FC = () => {
   const [isSavingQuantity, setIsSavingQuantity] = useState(false);
 
   // Use the categories hook to get categories
-  const { categories } = useCategories();
+  const { categories } = useCategoriesDexie();
   
   // Use the units hook to get units
-  const { units } = useUnits();
+  const { units } = useUnitsDexie();
   
   // Get category name and icon from current item
   const categoryName = item ? (item.category_id ? getCategoryNameById(item.category_id, categories) : 'Keine Kategorie') : '';
@@ -62,10 +63,10 @@ const ProductDetailPage: React.FC = () => {
   // Handle back button events
   useEffect(() => {
     if (backClicked) {
-      navigate(-1);
+      navigate(`/shopping-list/${listId}`);
       dispatch(resetBackClick());
     }
-  }, [backClicked, navigate, dispatch]);
+  }, [backClicked, navigate, dispatch, listId]);
 
   // Handle right button events
   useEffect(() => {
@@ -321,7 +322,7 @@ const ProductDetailPage: React.FC = () => {
           </div>
           <button
             className="flex-1 bg-neutral-900 border-b border-neutral-800 py-4 px-5 flex items-center justify-between text-left rounded-l-lg"
-            onClick={() => navigate('/product/unit', { state: { item: item } })}
+            onClick={() => navigate(`/shopping-list/${listId}/product/${productId}/unit`, { state: { item: item } })}
           >
             <div>
               <div className="text-xs text-gray-400 mb-1">EINHEIT</div>
@@ -335,7 +336,7 @@ const ProductDetailPage: React.FC = () => {
         {/* Kategorie wechseln */}
         <button
           className="bg-neutral-900 border-b border-neutral-800 px-5 py-4 w-full text-left"
-          onClick={() => navigate('/product/category', { state: { item: item } })}
+          onClick={() => navigate(`/shopping-list/${listId}/product/${productId}/category`, { state: { item: item } })}
         >
           <div className="text-xs text-gray-400 mb-1">KATEGORIE WECHSELN</div>
           <div className="flex items-center gap-2">

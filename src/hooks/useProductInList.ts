@@ -1,12 +1,12 @@
 import { useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../stores/store';
-import { useShoppingItems } from './useShoppingItems';
+import { useShoppingItemsDexie } from './useShoppingItemsDexie';
 import type { ProductGroup } from '../api/supabaseApi';
 
 export const useProductInList = () => {
   const currentListId = useSelector((state: RootState) => state.currentList.listId);
-  const { items, loadItems } = useShoppingItems(currentListId || '');
+  const { items } = useShoppingItemsDexie(currentListId || '');
 
   const isProductInList = useMemo(() => {
     return (productTitle: string): boolean => {
@@ -14,7 +14,7 @@ export const useProductInList = () => {
       
       // Check if any active item in the current list has the same name as the product
       // An item is considered active if it's not deleted and not completed
-      return items.some(item => 
+      return items.some((item: any) => 
         item.name.toLowerCase() === productTitle.toLowerCase() &&
         !item.is_deleted &&
         !item.is_completed
@@ -26,6 +26,6 @@ export const useProductInList = () => {
     isProductInList,
     currentListId,
     items,
-    refreshItems: loadItems
+    refreshItems: () => {} // Dexie Live Query updates automatically, no manual refresh needed
   };
 }; 

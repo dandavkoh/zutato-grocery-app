@@ -64,22 +64,22 @@ function App() {
             <ShoppingListPage />
           </ProtectedRoute>
         } />
-        <Route path="/shopping-list/search" element={
+        <Route path="/shopping-list/:listId/search" element={
           <ProtectedRoute>
             <SearchPage />
           </ProtectedRoute>
         } />
-        <Route path="/product" element={
+        <Route path="/shopping-list/:listId/product/:productId" element={
           <ProtectedRoute>
             <ProductDetailPage />
           </ProtectedRoute>
         } />
-        <Route path="/product/category" element={
+        <Route path="/shopping-list/:listId/product/:productId/category" element={
           <ProtectedRoute>
             <CategorySelectPage />
           </ProtectedRoute>
         } />
-        <Route path="/product/unit" element={
+        <Route path="/shopping-list/:listId/product/:productId/unit" element={
           <ProtectedRoute>
             <UnitSelectPage />
           </ProtectedRoute>

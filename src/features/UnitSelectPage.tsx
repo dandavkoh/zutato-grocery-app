@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setHeader, resetHeader, resetBackClick, updateSelectedItem } from '../stores/store';
 import type { RootState } from '../stores/store';
-import { useUnits } from '../hooks/useUnits';
+import { useUnitsDexie } from '../hooks/useUnitsDexie';
 import { getUnitNameById } from '../api/supabaseApi';
 import { shoppingItemsApi } from '../api/supabaseApi';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
@@ -12,13 +12,14 @@ import type { ShoppingItem, Unit } from '../api/supabaseApi';
 const UnitSelectPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { listId, productId } = useParams<{ listId: string; productId: string }>();
   const dispatch = useDispatch();
   
   // Get item from global store only
   const item = useSelector((state: RootState) => state.selectedItem.item);
   
   // Use the units hook to get units
-  const { units, loading } = useUnits();
+  const { units, loading } = useUnitsDexie();
   
   // Get current unit
   const currentUnit = item?.unit_id ? units.find(u => u.id === item.unit_id) : null;
@@ -38,10 +39,10 @@ const UnitSelectPage: React.FC = () => {
   // Handle back button events
   useEffect(() => {
     if (backClicked) {
-      navigate(-1);
+      navigate(`/shopping-list/${listId}/product/${productId}`);
       dispatch(resetBackClick());
     }
-  }, [backClicked, navigate, dispatch]);
+  }, [backClicked, navigate, dispatch, listId, productId]);
 
   // Handle unit selection
   const handleUnitSelect = async (unitId: string | null) => {
@@ -64,8 +65,8 @@ const UnitSelectPage: React.FC = () => {
         unit_id: unitId
       }));
       
-      // Navigate back to the previous page
-      navigate(-1);
+      // Navigate back to the product detail page
+      navigate(`/shopping-list/${listId}/product/${productId}`);
     } catch (error) {
       console.error('Error updating unit:', error);
       // Optionally show an error message to the user

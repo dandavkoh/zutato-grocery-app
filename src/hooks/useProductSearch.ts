@@ -36,17 +36,44 @@ export const useProductSearch = (debounceMs: number = 300): UseProductSearchRetu
     // Create new debounced search
     debounceTimerRef.current = setTimeout(async () => {
       try {
-        const response = await productGroupsApi.searchProductGroups(term);
-        
-        if (response.error) {
-          setError(response.error);
-          setSearchResults([]);
+        // Check if we're online
+        if (navigator.onLine) {
+          const response = await productGroupsApi.searchProductGroups(term);
+          
+          if (response.error) {
+            setError(response.error);
+            setSearchResults([]);
+          } else {
+            setSearchResults(response.data || []);
+          }
         } else {
-          setSearchResults(response.data || []);
+          // Offline: Create exact suggestion
+          console.log('📴 [Search] Offline mode - creating exact suggestion');
+          const exactSuggestion: ProductGroup = {
+            id: 'exact-suggestion',
+            title: term,
+            rank: 1.0,
+            src: 'exact',
+            default_icon: 'basket-shopping',
+            default_category_id: ''
+          };
+          setSearchResults([exactSuggestion]);
+          setError(null);
         }
       } catch (err) {
-        setError('Unexpected error occurred');
-        setSearchResults([]);
+        console.error('❌ [Search] Search error:', err);
+        
+        // Even if there's an error, show exact suggestion
+        const exactSuggestion: ProductGroup = {
+          id: 'exact-suggestion',
+          title: term,
+          rank: 1.0,
+          src: 'exact',
+          default_icon: 'basket-shopping',
+          default_category_id: ''
+        };
+        setSearchResults([exactSuggestion]);
+        setError(null);
       } finally {
         setLoading(false);
       }

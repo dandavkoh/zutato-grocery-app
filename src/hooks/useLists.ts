@@ -10,29 +10,29 @@ export const useLists = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Load lists
-  const loadLists = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  // const loadLists = useCallback(async () => {
+  //   setLoading(true);
+  //   setError(null);
     
-    try {
-      const response = await listsController.getLists();
-      if (response.error) {
-        setError(response.error);
-      } else {
-        setLists(response.data || []);
-      }
-    } catch (err) {
-      setError('Failed to load lists');
-      console.error('Error loading lists:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Load lists on mount
-  useEffect(() => {
-    loadLists();
-  }, [loadLists]);
+  //   try {
+  //     const response = await listsController.getLists();
+  //     if (response.error) {
+  //       setError(response.error);
+  //     } else {
+  //       setLists(response.data || []);
+  //     }
+  //   } catch (err) {
+  //     setError('Failed to load lists');
+  //     console.error('Error loading lists:', err);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }, []);
+  //
+  // // Load lists on mount
+  // useEffect(() => {
+  //   loadLists();
+  // }, [loadLists]);
 
   // Create list
   const createList = useCallback(async (listData: CreateListRequest) => {
@@ -90,7 +90,7 @@ export const useLists = () => {
     lists,
     loading,
     error,
-    loadLists,
+    // loadLists,
     createList,
     updateList,
     deleteList,

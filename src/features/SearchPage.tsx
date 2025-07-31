@@ -38,7 +38,7 @@ const SearchPage: React.FC = () => {
   const { isProductInList, refreshItems } = useProductInList();
   
   // Use the product actions hook to handle product clicks
-  const { handleProductAction, currentListId, user } = useProductActions(refreshItems);
+  const { handleProductAction, currentListId, user } = useProductActions();
 
   useEffect(() => {
     dispatch(setHeader({

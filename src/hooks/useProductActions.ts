@@ -8,7 +8,7 @@ import { shoppingItemsApi } from '../api/supabaseApi';
 import { generateGuid } from '../utils/guidUtils';
 import type { ProductGroup, ShoppingItem } from '../api/supabaseApi';
 
-export const useProductActions = (refreshItems?: () => void) => {
+export const useProductActions = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useAuth();
@@ -41,7 +41,7 @@ export const useProductActions = (refreshItems?: () => void) => {
         dispatch(setSelectedItem(existingItem));
         navigate('/product');
       } else {
-        // Product doesn't exist - create new item (no navigation)
+        // Product doesn't exist - create new item (fire & forget)
         const newItemData = {
           id: generateGuid(), // Generate standard GUID (with hyphens)
           name: product.title,
@@ -51,23 +51,17 @@ export const useProductActions = (refreshItems?: () => void) => {
           createdBy: user.id,
         };
 
-        const createResponse = await shoppingItemsApi.createItem(newItemData);
-        
-        if (createResponse.error) {
-          console.error('Failed to create item:', createResponse.error);
-          return;
-        }
+        // Fire and forget - don't await the result
+        shoppingItemsApi.createItem(newItemData).catch(error => {
+          console.error('Failed to create item (fire & forget):', error);
+        });
 
-        // Item created successfully - refresh the items list to update the UI
-        console.log('Item added successfully:', createResponse.data);
-        if (refreshItems) {
-          refreshItems();
-        }
+        console.log('Item creation initiated (fire & forget):', newItemData.name);
       }
     } catch (error) {
       console.error('Error handling product action:', error);
     }
-  }, [currentListId, user, navigate, dispatch, refreshItems]);
+  }, [currentListId, user, navigate, dispatch]);
 
   return {
     handleProductAction,

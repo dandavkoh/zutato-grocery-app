@@ -104,6 +104,7 @@ export interface List {
 }
 
 export interface CreateListRequest {
+  id: string; // Required GUID - must be provided
   name: string;
   description?: string;
   created_by: string;
@@ -600,6 +601,7 @@ export class ListsController {
       const { data: insertResult, error: listError } = await supabase
         .from('lists')
         .insert({
+          id: listData.id, // Use the provided ID
           name: listData.name,
           description: listData.description,
           created_by: listData.created_by
@@ -614,14 +616,11 @@ export class ListsController {
         };
       }
 
-      // Get the created list by querying it
+      // Get the created list by ID
       const { data: list, error: fetchError } = await supabase
         .from('lists')
         .select('*')
-        .eq('name', listData.name)
-        .eq('created_by', listData.created_by)
-        .order('created_at', { ascending: false })
-        .limit(1)
+        .eq('id', listData.id)
         .single();
 
       if (fetchError) {

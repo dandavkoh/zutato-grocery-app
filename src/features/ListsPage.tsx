@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { setHeader, resetHeader } from '../stores/store';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
-import { useLists } from '../hooks/useLists';
+import { useListsDexie } from '../hooks/useListsDexie';
 import { useAuth } from '../contexts/AuthContext';
 
 const ListsPage: React.FC = () => {
@@ -12,7 +12,7 @@ const ListsPage: React.FC = () => {
   const { user } = useAuth();
   
   // Use the lists hook
-  const { lists, loading, error } = useLists();
+  const { lists, loading, error } = useListsDexie();
 
   useEffect(() => {
     dispatch(setHeader({
@@ -72,7 +72,7 @@ const ListsPage: React.FC = () => {
         {/* Lists */}
         {!loading && !error && lists && lists.length > 0 && (
           <div className="space-y-4">
-            {lists.map((list) => (
+            {lists.map((list: any) => (
               <div key={list.id} className="bg-[#5a470a] rounded-2xl relative overflow-hidden w-full hover:shadow-lg transition-shadow">
                 <div className="flex justify-between items-stretch relative z-10 h-full">
                   {/* Linker klickbarer Bereich - Navigiert zur ShoppingListPage */}

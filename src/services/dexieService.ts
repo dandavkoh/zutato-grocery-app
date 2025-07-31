@@ -43,17 +43,37 @@ export interface List {
   deleted_by: string | null;
 }
 
+export interface Category {
+  id: string;
+  name: string;
+  icon: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Unit {
+  id: string;
+  name: string;
+  short_name: string;
+  created_at: string;
+  updated_at: string;
+}
+
 class ShoppingItemsDatabase extends Dexie {
   shoppingItems!: Table<ShoppingItem>;
   queuedRequests!: Table<QueuedRequest>;
   lists!: Table<List>;
+  categories!: Table<Category>;
+  units!: Table<Unit>;
 
   constructor() {
     super('ShoppingItemsDB');
     this.version(1).stores({
       shoppingItems: 'id, list_id, name, is_completed, is_deleted, created_at, updated_at',
       queuedRequests: 'id, url, method, timestamp',
-      lists: 'id, name, created_by, is_deleted, created_at, updated_at'
+      lists: 'id, name, created_by, is_deleted, created_at, updated_at',
+      categories: 'id, name, created_at, updated_at',
+      units: 'id, name, short_name, created_at, updated_at'
     });
   }
 }
@@ -374,6 +394,17 @@ export class DexieService {
     }
   }
 
+  async updateListFromResponse(response: List): Promise<void> {
+    try {
+      // Update the existing list with server response data
+      await db.lists.update(response.id, response);
+      console.log(`✅ [Dexie] Updated list from response: ${response.name}`);
+    } catch (error) {
+      console.error('❌ [Dexie] Error updating list from response:', error);
+      throw error;
+    }
+  }
+
   async deleteList(id: string): Promise<void> {
     try {
       await db.lists.update(id, { 
@@ -400,6 +431,116 @@ export class DexieService {
       console.log(`🔍 [Dexie] Deleted lists (is_deleted=1):`, deletedLists);
     } catch (error) {
       console.error('❌ [Dexie] Error debugging lists:', error);
+    }
+  }
+
+  // Category methods
+  async getAllCategories(): Promise<Category[]> {
+    try {
+      const categories = await db.categories
+        .orderBy('name')
+        .toArray();
+      
+      console.log(`📊 [Dexie] Retrieved ${categories.length} categories`);
+      return categories;
+    } catch (error) {
+      console.error('❌ [Dexie] Error getting categories:', error);
+      return [];
+    }
+  }
+
+  async syncCategories(categories: Category[]): Promise<void> {
+    try {
+      await db.transaction('rw', db.categories, async () => {
+        // Delete all existing categories
+        await db.categories.clear();
+        console.log(`🗑️ [Dexie] Cleared all existing categories`);
+        
+        // Add all new categories
+        for (const category of categories) {
+          await db.categories.add(category);
+        }
+      });
+      
+      console.log(`✅ [Dexie] Synced ${categories.length} categories`);
+    } catch (error) {
+      console.error('❌ [Dexie] Error syncing categories:', error);
+      throw error;
+    }
+  }
+
+  async addCategory(category: Category): Promise<void> {
+    try {
+      await db.categories.add(category);
+      console.log(`✅ [Dexie] Added category: ${category.name}`);
+    } catch (error) {
+      console.error('❌ [Dexie] Error adding category:', error);
+      throw error;
+    }
+  }
+
+  async updateCategory(category: Category): Promise<void> {
+    try {
+      await db.categories.update(category.id, category);
+      console.log(`✅ [Dexie] Updated category: ${category.name}`);
+    } catch (error) {
+      console.error('❌ [Dexie] Error updating category:', error);
+      throw error;
+    }
+  }
+
+  // Unit methods
+  async getAllUnits(): Promise<Unit[]> {
+    try {
+      const units = await db.units
+        .orderBy('name')
+        .toArray();
+      
+      console.log(`📊 [Dexie] Retrieved ${units.length} units`);
+      return units;
+    } catch (error) {
+      console.error('❌ [Dexie] Error getting units:', error);
+      return [];
+    }
+  }
+
+  async syncUnits(units: Unit[]): Promise<void> {
+    try {
+      await db.transaction('rw', db.units, async () => {
+        // Delete all existing units
+        await db.units.clear();
+        console.log(`🗑️ [Dexie] Cleared all existing units`);
+        
+        // Add all new units
+        for (const unit of units) {
+          await db.units.add(unit);
+        }
+      });
+      
+      console.log(`✅ [Dexie] Synced ${units.length} units`);
+    } catch (error) {
+      console.error('❌ [Dexie] Error syncing units:', error);
+      throw error;
+    }
+  }
+
+  async addUnit(unit: Unit): Promise<void> {
+    try {
+      await db.units.add(unit);
+      console.log(`✅ [Dexie] Added unit: ${unit.name}`);
+    } catch (error) {
+      console.error('❌ [Dexie] Error adding unit:', error);
+      throw error;
+    }
+  }
+
+  async updateUnit(unit: Unit): Promise<void> {
+    try {
+      await db.units.update(unit.id, unit);
+      console.log(`✅ [Dexie] Updated unit: ${unit.name}`);
+    } catch (error) {
+      console.error('❌ [Dexie] Error updating unit:', error);
+      throw error;
     }
   }
 }

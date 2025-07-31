@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setHeader, resetHeader, resetFilterClick, setSelectedItem, setCurrentList } from '../stores/store';
 import type { RootState } from '../stores/store';
-import { useShoppingItems } from '../hooks/useShoppingItems';
+import { useShoppingItemsDexie } from '../hooks/useShoppingItemsDexie';
 import { useList } from '../hooks/useLists';
 import { useCategories } from '../hooks/useCategories';
 import { useUnits } from '../hooks/useUnits';
@@ -41,7 +41,7 @@ const ShoppingListPage: React.FC = () => {
   }
   
   // Use the shopping items hook
-  const { items, loading, error, toggleItemCompletion, deleteItem } = useShoppingItems(listId);
+  const { items, loading, error, setItemCompletion, deleteItem } = useShoppingItemsDexie(listId);
   
   // Use the list hook to get the list name
   const { list, loading: listLoading } = useList(listId);
@@ -53,8 +53,8 @@ const ShoppingListPage: React.FC = () => {
   const { units, loading: unitsLoading } = useUnits();
   
   // Group items by category and separate completed items
-  const { completed, incomplete } = separateCompletedItems(items);
-  const groupedIncompleteItems = groupItemsByCategory(incomplete, categories);
+  const { completed, incomplete } = separateCompletedItems(items as any);
+  const groupedIncompleteItems = groupItemsByCategory(incomplete as any, categories);
 
   // Watch for filter click events
   const filterClicked = useSelector((state: RootState) => state.events.filterClicked);
@@ -91,7 +91,7 @@ const ShoppingListPage: React.FC = () => {
     // Navigate to product detail page with item data
     const item = items.find(i => i.id === itemId);
     if (item) {
-      dispatch(setSelectedItem(item)); // Set the selected item in the global store
+      dispatch(setSelectedItem(item as any)); // Set the selected item in the global store
       navigate('/product', { 
         state: { item } 
       });
@@ -104,6 +104,13 @@ const ShoppingListPage: React.FC = () => {
   const handleToggleCompletion = useCallback((itemId: string, e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent navigation
     
+    // Find the current item to get its completion status
+    const currentItem = items.find(item => item.id === itemId);
+    if (!currentItem) return;
+    
+    // Calculate new completion status
+    const newCompletionStatus = !currentItem.is_completed;
+    
     // Clear existing timeout for this item
     if (toggleDebounceRef.current[itemId]) {
       clearTimeout(toggleDebounceRef.current[itemId]);
@@ -111,14 +118,14 @@ const ShoppingListPage: React.FC = () => {
     // Set a new timeout to prevent rapid clicks
     toggleDebounceRef.current[itemId] = window.setTimeout(() => {
       // Fire and forget - don't await the result for better UX
-      toggleItemCompletion(itemId).catch(error => {
-        console.error('Failed to toggle item completion:', error);
+      setItemCompletion(itemId, newCompletionStatus).catch((error: any) => {
+        console.error('Failed to set item completion:', error);
         // Optionally show a toast notification here
       });
       // Clean up the timeout reference
       delete toggleDebounceRef.current[itemId];
     }, 100); // 100ms debounce
-  }, [toggleItemCompletion]);
+  }, [setItemCompletion, items]);
 
   const handleDeleteItem = (itemId: string) => {
     // Fire and forget - don't await the result for better UX

@@ -39,10 +39,10 @@ const UnitSelectPage: React.FC = () => {
   // Handle back button events
   useEffect(() => {
     if (backClicked) {
-      navigate(-1);
+      navigate(`/shopping-list/${listId}/product/${productId}`);
       dispatch(resetBackClick());
     }
-  }, [backClicked, navigate, dispatch]);
+  }, [backClicked, navigate, dispatch, listId, productId]);
 
   // Handle unit selection
   const handleUnitSelect = async (unitId: string | null) => {
@@ -65,8 +65,8 @@ const UnitSelectPage: React.FC = () => {
         unit_id: unitId
       }));
       
-      // Navigate back to the previous page
-      navigate(-1);
+      // Navigate back to the product detail page
+      navigate(`/shopping-list/${listId}/product/${productId}`);
     } catch (error) {
       console.error('Error updating unit:', error);
       // Optionally show an error message to the user

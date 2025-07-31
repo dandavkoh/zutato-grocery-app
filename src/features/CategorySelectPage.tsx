@@ -39,10 +39,10 @@ const CategorySelectPage: React.FC = () => {
   // Handle back button events
   useEffect(() => {
     if (backClicked) {
-      navigate(-1);
+      navigate(`/shopping-list/${listId}/product/${productId}`);
       dispatch(resetBackClick());
     }
-  }, [backClicked, navigate, dispatch]);
+  }, [backClicked, navigate, dispatch, listId, productId]);
 
   // Handle category selection
   const handleCategorySelect = async (categoryId: string | null) => {
@@ -65,8 +65,8 @@ const CategorySelectPage: React.FC = () => {
         category_id: categoryId
       }));
       
-      // Navigate back to the previous page
-      navigate(-1);
+      // Navigate back to the product detail page
+      navigate(`/shopping-list/${listId}/product/${productId}`);
     } catch (error) {
       console.error('Error updating category:', error);
       // Optionally show an error message to the user

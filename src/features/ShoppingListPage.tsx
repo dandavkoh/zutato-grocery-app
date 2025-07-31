@@ -7,6 +7,7 @@ import { useShoppingItemsDexie } from '../hooks/useShoppingItemsDexie';
 import { useListDexie } from '../hooks/useListsDexie';
 import { useCategoriesDexie } from '../hooks/useCategoriesDexie';
 import { useUnitsDexie } from '../hooks/useUnitsDexie';
+import { useRealtimeSync } from '../hooks/useRealtimeSync';
 import { groupItemsByCategory, separateCompletedItems, getUnitShortNameById } from '../api/supabaseApi';
 import SwipeAction from '../components/SwipeAction';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
@@ -51,6 +52,13 @@ const ShoppingListPage: React.FC = () => {
   
   // Use the units hook to get units
   const { units, loading: unitsLoading } = useUnitsDexie();
+
+  // Set up realtime sync for this list
+  const { isConnected } = useRealtimeSync(listId, () => {
+    // Force a refresh of the shopping items when we receive an update
+    // The useShoppingItemsDexie hook will automatically reload from Supabase
+    console.log('Realtime update received, triggering refresh');
+  });
   
   // Group items by category and separate completed items
   const { completed, incomplete } = separateCompletedItems(items as any);

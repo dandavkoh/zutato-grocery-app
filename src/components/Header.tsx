@@ -1,13 +1,14 @@
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState } from '../stores/store';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { setSearch, triggerFilterClick, triggerBackClick, triggerRightButtonClick } from '../stores/store';
 import FontAwesomeIcon from './FontAwesomeIcon';
 
 const Header: React.FC = () => {
   const header = useSelector((state: RootState) => state.header);
   const navigate = useNavigate();
+  const { listId } = useParams<{ listId: string }>();
   const dispatch = useDispatch();
   const searchValue = useSelector((state: RootState) => state.search.value);
 
@@ -106,7 +107,7 @@ const Header: React.FC = () => {
                   }
                 : { 
                     readOnly: true, 
-                    onClick: () => navigate('/shopping-list/search') 
+                    onClick: () => navigate(`/shopping-list/${listId}/search`) 
                   }
               )}
             />

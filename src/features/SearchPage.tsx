@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { setHeader, resetHeader } from '../stores/store';
 import type { RootState } from '../stores/store';
@@ -28,6 +28,7 @@ const seasonal = [
 
 const SearchPage: React.FC = () => {
   const navigate = useNavigate();
+  const { listId } = useParams<{ listId: string }>();
   const dispatch = useDispatch();
   const search = useSelector((state: RootState) => state.search.value);
   

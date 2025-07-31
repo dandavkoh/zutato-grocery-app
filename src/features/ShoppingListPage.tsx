@@ -92,7 +92,7 @@ const ShoppingListPage: React.FC = () => {
     const item = items.find(i => i.id === itemId);
     if (item) {
       dispatch(setSelectedItem(item as any)); // Set the selected item in the global store
-      navigate('/product', { 
+      navigate(`/shopping-list/${listId}/product/${itemId}`, { 
         state: { item } 
       });
     }

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setHeader, resetHeader, resetBackClick, updateSelectedItem } from '../stores/store';
 import type { RootState } from '../stores/store';
@@ -12,6 +12,7 @@ import type { ShoppingItem } from '../api/supabaseApi';
 const CategorySelectPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { listId, productId } = useParams<{ listId: string; productId: string }>();
   const dispatch = useDispatch();
   
   // Get item from global store only

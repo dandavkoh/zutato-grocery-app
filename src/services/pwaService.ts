@@ -553,6 +553,27 @@ class PWAService {
           
           console.log(`🔍 [PWA] Intercepting Supabase client request: ${options?.method || 'GET'} ${url} [ID: ${requestId}]`);
           
+          // Process queued requests first if we're online and queue is not empty
+          if (navigator.onLine) {
+            const queueCount = await dexieService.getQueuedRequestsCount();
+            if (queueCount > 0) {
+              console.log(`🔄 [PWA] Queue has ${queueCount} items, processing before handling new request`);
+              
+              // If queue is already being processed, wait for it to complete
+              if (this.isProcessingQueue) {
+                console.log(`⏳ [PWA] Queue is already being processed, waiting for completion...`);
+                while (this.isProcessingQueue) {
+                  await new Promise(resolve => setTimeout(resolve, 100)); // Wait 100ms
+                }
+                console.log(`✅ [PWA] Queue processing completed, continuing with new request`);
+              } else {
+                // Start processing the queue
+                console.log(`🔄 [PWA] Starting queue processing for ${queueCount} items`);
+                await this.processQueuedRequestsInternal();
+              }
+            }
+          }
+          
           const isShoppingItemsRequest = url.includes('/rest/v1/') && url.includes('shopping_items');
           const isListsRequest = url.includes('/rest/v1/') && url.includes('lists');
           const isCategoriesRequest = url.includes('/rest/v1/') && url.includes('categories');

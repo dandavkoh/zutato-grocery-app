@@ -4,9 +4,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setHeader, resetHeader, resetFilterClick, setSelectedItem, setCurrentList } from '../stores/store';
 import type { RootState } from '../stores/store';
 import { useShoppingItemsDexie } from '../hooks/useShoppingItemsDexie';
-import { useList } from '../hooks/useLists';
-import { useCategories } from '../hooks/useCategories';
-import { useUnits } from '../hooks/useUnits';
+import { useListDexie } from '../hooks/useListsDexie';
+import { useCategoriesDexie } from '../hooks/useCategoriesDexie';
+import { useUnitsDexie } from '../hooks/useUnitsDexie';
 import { groupItemsByCategory, separateCompletedItems, getUnitShortNameById } from '../api/supabaseApi';
 import SwipeAction from '../components/SwipeAction';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
@@ -44,13 +44,13 @@ const ShoppingListPage: React.FC = () => {
   const { items, loading, error, setItemCompletion, deleteItem } = useShoppingItemsDexie(listId);
   
   // Use the list hook to get the list name
-  const { list, loading: listLoading } = useList(listId);
+  const { list, loading: listLoading } = useListDexie(listId);
   
   // Use the categories hook to get categories
-  const { categories, loading: categoriesLoading } = useCategories();
+  const { categories, loading: categoriesLoading } = useCategoriesDexie();
   
   // Use the units hook to get units
-  const { units, loading: unitsLoading } = useUnits();
+  const { units, loading: unitsLoading } = useUnitsDexie();
   
   // Group items by category and separate completed items
   const { completed, incomplete } = separateCompletedItems(items as any);

@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setHeader, resetHeader, resetBackClick, updateSelectedItem } from '../stores/store';
 import type { RootState } from '../stores/store';
-import { useCategories } from '../hooks/useCategories';
+import { useCategoriesDexie } from '../hooks/useCategoriesDexie';
 import { getCategoryNameById } from '../api/supabaseApi';
 import { shoppingItemsApi } from '../api/supabaseApi';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
@@ -18,7 +18,7 @@ const CategorySelectPage: React.FC = () => {
   const item = useSelector((state: RootState) => state.selectedItem.item);
   
   // Use the categories hook to get categories
-  const { categories, loading } = useCategories();
+  const { categories, loading } = useCategoriesDexie();
   
   // Get current category name
   const currentCategoryName = item ? getCategoryNameById(item.category_id, categories) : '';

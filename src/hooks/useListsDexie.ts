@@ -28,4 +28,29 @@ export const useListsDexie = () => {
     loading: lists === undefined, // Live Query loading state
     error: null, // Live Query handles errors internally
   };
+};
+
+export const useListDexie = (listId: string) => {
+  const list = useLiveQuery(
+    () => db.lists
+      .where('id')
+      .equals(listId)
+      .filter(list => !list.is_deleted)
+      .first(),
+    [listId]
+  );
+
+  useEffect(() => {
+    if (listId) {
+      listsController.getList(listId).catch(error => {
+        console.error('Background Supabase sync failed:', error);
+      });
+    }
+  }, [listId]);
+
+  return {
+    list,
+    loading: list === undefined,
+    error: null,
+  };
 }; 

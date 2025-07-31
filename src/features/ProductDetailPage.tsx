@@ -3,8 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setHeader, resetHeader, resetBackClick, resetRightButtonClick, updateSelectedItem } from '../stores/store';
 import type { RootState } from '../stores/store';
-import { useCategories } from '../hooks/useCategories';
-import { useUnits } from '../hooks/useUnits';
+import { useCategoriesDexie } from '../hooks/useCategoriesDexie';
+import { useUnitsDexie } from '../hooks/useUnitsDexie';
 import { getCategoryNameById, getCategoryIconById, getUnitNameById, shoppingItemsApi } from '../api/supabaseApi';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
 import type { ShoppingItem } from '../api/supabaseApi';
@@ -28,10 +28,10 @@ const ProductDetailPage: React.FC = () => {
   const [isSavingQuantity, setIsSavingQuantity] = useState(false);
 
   // Use the categories hook to get categories
-  const { categories } = useCategories();
+  const { categories } = useCategoriesDexie();
   
   // Use the units hook to get units
-  const { units } = useUnits();
+  const { units } = useUnitsDexie();
   
   // Get category name and icon from current item
   const categoryName = item ? (item.category_id ? getCategoryNameById(item.category_id, categories) : 'Keine Kategorie') : '';

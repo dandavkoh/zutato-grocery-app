@@ -19,7 +19,7 @@
 
 ## 🎯 Übersicht
 
-Die HNGRY Einkaufslisten-App folgt einer **schichtenbasierten Architektur** mit klarer Trennung der Zuständigkeiten. Das System ist auf **Skalierbarkeit**, **Wartbarkeit** und **Performance** ausgelegt.
+Die ZUTATO Einkaufslisten-App folgt einer **schichtenbasierten Architektur** mit klarer Trennung der Zuständigkeiten. Das System ist auf **Skalierbarkeit**, **Wartbarkeit** und **Performance** ausgelegt.
 
 ### 🎨 Architektur-Prinzipien
 
@@ -835,8 +835,8 @@ workbox: {
 #### 2. Manifest
 ```json
 {
-  "name": "HNGRY - Einkaufsliste",
-  "short_name": "HNGRY",
+  "name": "ZUTATO - Einkaufsliste",
+  "short_name": "ZUTATO",
   "description": "Deine intelligente Einkaufsliste für den Haushalt",
   "theme_color": "#fbbf24",
   "background_color": "#000000",

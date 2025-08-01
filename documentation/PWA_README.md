@@ -1,8 +1,8 @@
-# HNGRY - Progressive Web App (PWA)
+# ZUTATO - Progressive Web App (PWA)
 
 ## 🚀 PWA Features
 
-HNGRY ist jetzt eine vollständige Progressive Web App mit folgenden Features:
+ZUTATO ist jetzt eine vollständige Progressive Web App mit folgenden Features:
 
 ### ✅ PWA-Funktionen
 - **Offline-Funktionalität**: App funktioniert auch ohne Internetverbindung
@@ -38,7 +38,7 @@ HNGRY ist jetzt eine vollständige Progressive Web App mit folgenden Features:
 - **Background Sync**: Für Offline-Operationen
 
 #### Manifest
-- **Name**: HNGRY - Einkaufsliste
+- **Name**: ZUTATO - Einkaufsliste
 - **Theme Color**: #fbbf24 (Gelb)
 - **Background Color**: #000000 (Schwarz)
 - **Display Mode**: Standalone
@@ -117,4 +117,4 @@ Die App unterstützt automatische Updates:
 
 ---
 
-**HNGRY** - Deine intelligente Einkaufsliste als Progressive Web App! 🛒📱 
+**ZUTATO** - Deine intelligente Einkaufsliste als Progressive Web App! 🛒📱 

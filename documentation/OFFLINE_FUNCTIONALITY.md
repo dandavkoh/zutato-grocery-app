@@ -1,8 +1,8 @@
-# Offline-Funktionalität für HNGRY PWA
+# Offline-Funktionalität für ZUTATO PWA
 
 ## Übersicht
 
-Die HNGRY PWA wurde um umfassende Offline-Funktionalität erweitert, die es Benutzern ermöglicht, die App auch ohne Internetverbindung zu nutzen. Alle CRUD-Operationen für Shopping Items werden unterstützt.
+Die ZUTATO PWA wurde um umfassende Offline-Funktionalität erweitert, die es Benutzern ermöglicht, die App auch ohne Internetverbindung zu nutzen. Alle CRUD-Operationen für Shopping Items werden unterstützt.
 
 ## Implementierte Features
 

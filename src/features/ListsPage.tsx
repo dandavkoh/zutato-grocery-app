@@ -5,6 +5,7 @@ import { setHeader, resetHeader } from '../stores/store';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
 import { useListsDexie } from '../hooks/useListsDexie';
 import { useAuth } from '../contexts/AuthContext';
+import InvitationRedeem from '../components/InvitationRedeem';
 
 const ListsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -12,7 +13,7 @@ const ListsPage: React.FC = () => {
   const { user } = useAuth();
   
   // Use the lists hook
-  const { lists, loading, error } = useListsDexie();
+  const { lists, loading, error, refetch } = useListsDexie();
 
   useEffect(() => {
     dispatch(setHeader({
@@ -50,10 +51,14 @@ const ListsPage: React.FC = () => {
           <FontAwesomeIcon icon="fa-plus" size="xl" style="regular"/>
           Neue Einkaufsliste
         </button>
-        <button className="w-full bg-yellow-400 text-white font-semibold py-3 rounded-xl mb-6 flex items-center justify-center text-lg gap-2">
-          <FontAwesomeIcon icon="fa-right-to-bracket" size="xl" style="regular"/>
-          Einkaufsliste beitreten
-        </button>
+        
+        {/* Invitation Redeem Component */}
+        <InvitationRedeem onSuccess={() => {
+          // Refresh lists after successful invitation redemption
+          if (refetch) {
+            refetch();
+          }
+        }} />
         
         {/* Loading state */}
         {loading && (

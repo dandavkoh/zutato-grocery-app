@@ -27,6 +27,7 @@ const EditListPage: React.FC = () => {
   
   // Local state
   const [listName, setListName] = useState(list?.name || '');
+  const [originalListName, setOriginalListName] = useState(list?.name || '');
   const [members, setMembers] = useState<ListMember[]>([
     { id: '1', name: 'Ich', email: 'ich@example.com', isOwner: true },
     { id: '2', name: 'Max Mustermann', email: 'max@example.com', isOwner: false },
@@ -53,18 +54,58 @@ const EditListPage: React.FC = () => {
     }
   }, [backClicked, navigate, dispatch]);
 
+
+
   // If no list data is available, redirect
   if (!list) {
     navigate('/lists');
     return null;
   }
 
-  const handleSaveList = () => {
-    console.log('Saving list:', { id: list.id, name: listName });
-    // TODO: Implement save logic
-    alert('Liste gespeichert!');
-    navigate('/lists');
+
+
+  const handleSaveListName = async () => {
+    if (!list || !listName.trim()) {
+      return;
+    }
+
+    // Don't save if name hasn't actually changed from original
+    if (listName.trim() === originalListName) {
+      return;
+    }
+
+    try {
+      console.log('Saving list name:', { id: list.id, name: listName.trim() });
+      
+      // Fire & forget - don't await the result
+      listsController.updateList(list.id, { name: listName.trim() }).catch(error => {
+        console.error('Failed to save list name (fire & forget):', error);
+      });
+      
+      console.log('List name save initiated (fire & forget)');
+      
+      // Update the header title immediately
+      dispatch(setHeader({
+        title: listName.trim(),
+        showBack: true,
+        background: 'bg-yellow-400',
+      }));
+      
+      // Update the original list name so the button becomes inactive
+      setOriginalListName(listName.trim());
+    } catch (error) {
+      console.error('Unexpected error saving list name:', error);
+    }
   };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSaveListName();
+    }
+  };
+
+  // Check if the save button should be active
+  const canSaveTitle = listName.trim() && listName.trim() !== originalListName;
 
   const handleDeleteMember = (memberId: string) => {
     const member = members.find(m => m.id === memberId);
@@ -75,12 +116,6 @@ const EditListPage: React.FC = () => {
     
     setMembers(members.filter(m => m.id !== memberId));
     console.log('Deleted member:', memberId);
-  };
-
-  const handleAddMember = () => {
-    console.log('Add new member');
-    // TODO: Implement add member logic
-    alert('Neues Mitglied hinzufügen - TODO');
   };
 
   const handleDeleteList = async () => {
@@ -121,8 +156,9 @@ const EditListPage: React.FC = () => {
               type="text"
               value={listName}
               onChange={(e) => setListName(e.target.value)}
+              onKeyPress={handleKeyPress}
               className="w-full bg-neutral-900 border border-gray-700 rounded-2xl pl-12 pr-12 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-yellow-400 transition-colors"
-              placeholder="Listenname eingeben"
+              placeholder="Listenname eingeben (Enter zum Speichern)"
             />
             {listName && (
               <button
@@ -133,6 +169,17 @@ const EditListPage: React.FC = () => {
               </button>
             )}
           </div>
+          <button
+            onClick={handleSaveListName}
+            disabled={!canSaveTitle}
+            className={`w-full font-semibold py-3 rounded-2xl transition-colors mt-3 ${
+              canSaveTitle 
+                ? 'bg-yellow-400 text-white hover:bg-yellow-500' 
+                : 'bg-neutral-800 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            TITEL ÄNDERN
+          </button>
         </div>
 
         {/* Invitation Manager Section */}
@@ -166,23 +213,10 @@ const EditListPage: React.FC = () => {
               </div>
             ))}
           </div>
-          <button
-            onClick={handleAddMember}
-            className="w-full bg-neutral-900 border border-yellow-400 text-white font-semibold py-3 rounded-2xl hover:bg-yellow-400 hover:text-black transition-colors"
-          >
-            NEUES MITGLIED HINZUFÜGEN
-          </button>
         </div>
 
         {/* Action Buttons */}
         <div className="space-y-4">
-          <button
-            onClick={handleSaveList}
-            className="w-full bg-yellow-400 text-white font-semibold py-3 rounded-2xl hover:bg-yellow-500 transition-colors"
-          >
-            LISTE SPEICHERN
-          </button>
-          
           <button
             onClick={handleDeleteList}
             className={`w-full font-semibold py-3 rounded-2xl transition-colors ${

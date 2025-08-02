@@ -6,6 +6,7 @@ import type { RootState } from '../stores/store';
 import { ListsController } from '../api/supabaseApi';
 import type { List } from '../api/supabaseApi';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
+import InvitationManager from '../components/InvitationManager';
 
 // Mock data für Mitglieder
 interface ListMember {
@@ -133,6 +134,9 @@ const EditListPage: React.FC = () => {
             )}
           </div>
         </div>
+
+        {/* Invitation Manager Section */}
+        <InvitationManager listId={list.id} />
 
         {/* Members Section */}
         <div className="mb-8">

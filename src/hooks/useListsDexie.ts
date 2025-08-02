@@ -23,10 +23,20 @@ export const useListsDexie = () => {
     });
   }, []);
 
+  // Refetch function to manually trigger sync
+  const refetch = useCallback(async () => {
+    try {
+      await listsController.getLists();
+    } catch (error) {
+      console.error('Manual Supabase sync failed:', error);
+    }
+  }, []);
+
   return {
     lists,
     loading: lists === undefined, // Live Query loading state
     error: null, // Live Query handles errors internally
+    refetch,
   };
 };
 

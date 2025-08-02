@@ -123,6 +123,55 @@ export interface ListMember {
   accepted_at: string;
 }
 
+// Invitation API Types
+export interface ListInvitation {
+  id: string;
+  list_id: string;
+  invitation_code: string;
+  created_by: string;
+  created_at: string;
+  expires_at: string;
+  used_by?: string;
+  used_at?: string;
+  is_deleted: boolean;
+  deleted_at?: string;
+  deleted_by?: string;
+  is_invalidated: boolean;
+  invalidated_at?: string;
+  invalidated_by?: string;
+}
+
+export interface CreateInvitationResponse {
+  invitation_code: string;
+  expires_at: string;
+  created_at: string;
+}
+
+export interface RedeemInvitationResponse {
+  success: boolean;
+  message: string;
+  list_id?: string;
+  list_name?: string;
+}
+
+export interface InvitationActionResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface ListInvitationWithStatus {
+  id: string;
+  invitation_code: string;
+  created_at: string;
+  expires_at: string;
+  used_by?: string;
+  used_at?: string;
+  is_invalidated: boolean;
+  invalidated_at?: string;
+  is_deleted: boolean;
+  status: 'active' | 'used' | 'expired' | 'invalidated' | 'deleted';
+}
+
 export interface ApiResponse<T> {
   data: T | null;
   error: string | null;
@@ -849,6 +898,174 @@ export class ListsController {
       };
     } catch (error) {
       logError('Unexpected error removing member from list', error);
+      return {
+        data: null,
+        error: 'Internal server error',
+        status: 500
+      };
+    }
+  }
+}
+
+// Invitation Controller
+export class InvitationController {
+  // Create a new invitation for a list
+  async createInvitation(listId: string): Promise<ApiResponse<CreateInvitationResponse>> {
+    try {
+      logDebug('Creating invitation from Supabase', { listId });
+      
+      const { data, error } = await supabase
+        .rpc('create_list_invitation', { list_uuid: listId });
+      
+      if (error) {
+        logError('Failed to create invitation from Supabase', error);
+        return {
+          data: null,
+          error: error.message,
+          status: 500
+        };
+      }
+      
+      logInfo('Successfully created invitation from Supabase', { invitation_code: data?.[0]?.invitation_code });
+      return {
+        data: data?.[0] || null,
+        error: null,
+        status: 200
+      };
+    } catch (error) {
+      logError('Unexpected error creating invitation', error);
+      return {
+        data: null,
+        error: 'Internal server error',
+        status: 500
+      };
+    }
+  }
+
+  // Redeem an invitation code
+  async redeemInvitationCode(code: string): Promise<ApiResponse<RedeemInvitationResponse>> {
+    try {
+      logDebug('Redeeming invitation code from Supabase', { code });
+      
+      const { data, error } = await supabase
+        .rpc('redeem_invitation_code', { code });
+      
+      if (error) {
+        logError('Failed to redeem invitation code from Supabase', error);
+        return {
+          data: null,
+          error: error.message,
+          status: 500
+        };
+      }
+      
+      logInfo('Successfully redeemed invitation code from Supabase', { success: data?.[0]?.success });
+      return {
+        data: data?.[0] || null,
+        error: null,
+        status: 200
+      };
+    } catch (error) {
+      logError('Unexpected error redeeming invitation code', error);
+      return {
+        data: null,
+        error: 'Internal server error',
+        status: 500
+      };
+    }
+  }
+
+  // Get all invitations for a list
+  async getListInvitations(listId: string): Promise<ApiResponse<ListInvitationWithStatus[]>> {
+    try {
+      logDebug('Fetching list invitations from Supabase', { listId });
+      
+      const { data, error } = await supabase
+        .rpc('get_list_invitations', { list_uuid: listId });
+      
+      if (error) {
+        logError('Failed to fetch list invitations from Supabase', error);
+        return {
+          data: null,
+          error: error.message,
+          status: 500
+        };
+      }
+      
+      logInfo('Successfully fetched list invitations from Supabase', { count: data?.length || 0 });
+      return {
+        data: data || [],
+        error: null,
+        status: 200
+      };
+    } catch (error) {
+      logError('Unexpected error fetching list invitations', error);
+      return {
+        data: null,
+        error: 'Internal server error',
+        status: 500
+      };
+    }
+  }
+
+  // Invalidate an invitation
+  async invalidateInvitation(invitationId: string): Promise<ApiResponse<InvitationActionResponse>> {
+    try {
+      logDebug('Invalidating invitation from Supabase', { invitationId });
+      
+      const { data, error } = await supabase
+        .rpc('invalidate_invitation', { invitation_uuid: invitationId });
+      
+      if (error) {
+        logError('Failed to invalidate invitation from Supabase', error);
+        return {
+          data: null,
+          error: error.message,
+          status: 500
+        };
+      }
+      
+      logInfo('Successfully invalidated invitation from Supabase', { success: data?.[0]?.success });
+      return {
+        data: data?.[0] || null,
+        error: null,
+        status: 200
+      };
+    } catch (error) {
+      logError('Unexpected error invalidating invitation', error);
+      return {
+        data: null,
+        error: 'Internal server error',
+        status: 500
+      };
+    }
+  }
+
+  // Soft delete an invitation
+  async deleteInvitation(invitationId: string): Promise<ApiResponse<InvitationActionResponse>> {
+    try {
+      logDebug('Deleting invitation from Supabase', { invitationId });
+      
+      const { data, error } = await supabase
+        .rpc('soft_delete_invitation', { invitation_uuid: invitationId });
+      
+      if (error) {
+        logError('Failed to delete invitation from Supabase', error);
+        return {
+          data: null,
+          error: error.message,
+          status: 500
+        };
+      }
+      
+      logInfo('Successfully deleted invitation from Supabase', { success: data?.[0]?.success });
+      return {
+        data: data?.[0] || null,
+        error: null,
+        status: 200
+      };
+    } catch (error) {
+      logError('Unexpected error deleting invitation', error);
       return {
         data: null,
         error: 'Internal server error',

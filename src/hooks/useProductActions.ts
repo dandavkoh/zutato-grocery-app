@@ -39,7 +39,7 @@ export const useProductActions = () => {
       if (existingItem) {
         // Product exists - navigate to product detail page
         dispatch(setSelectedItem(existingItem));
-        navigate('/product');
+        navigate(`/shopping-list/${currentListId}/product/${existingItem.id}`);
       } else {
         // Product doesn't exist - create new item (fire & forget)
         const newItemData = {

@@ -14,10 +14,12 @@ export const useProductInList = () => {
       
       // Check if any active item in the current list has the same name as the product
       // An item is considered active if it's not deleted and not completed
+      // AND without notes - items with notes are considered "not existing"
       return items.some((item: any) => 
         item.name.toLowerCase() === productTitle.toLowerCase() &&
         !item.is_deleted &&
-        !item.is_completed
+        !item.is_completed&&
+        !item.notes // Item must not have notes to be considered existing
       );
     };
   }, [currentListId, items]);

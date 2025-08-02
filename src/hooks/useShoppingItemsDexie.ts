@@ -18,7 +18,7 @@ export const useShoppingItemsDexie = (listId: string) => {
     [listId]
   ) || [];
 
-  // Sync with Supabase on mount (fire and forget)
+  // Sync with Supabase on mount and when coming back online
   useEffect(() => {
     if (listId) {
       // Fire and forget - sync with Supabase in background
@@ -27,6 +27,9 @@ export const useShoppingItemsDexie = (listId: string) => {
       });
     }
   }, [listId]);
+
+  // Note: Online status handling is now done in useRealtimeSync hook
+  // to avoid circular imports
 
   // Create item
   const createItem = useCallback(async (itemData: CreateShoppingItemRequest) => {
@@ -59,7 +62,7 @@ export const useShoppingItemsDexie = (listId: string) => {
   // Delete item
   const deleteItem = useCallback(async (id: string) => {
     try {
-      const response = await shoppingItemsController.deleteItem(id);
+      const response = await shoppingItemsController.deleteItem(id, listId);
       if (response.error) {
         throw new Error(response.error);
       }
@@ -67,7 +70,7 @@ export const useShoppingItemsDexie = (listId: string) => {
       console.error('Error deleting item:', err);
       throw err;
     }
-  }, []);
+  }, [listId]);
 
   // Set item completion
   const setItemCompletion = useCallback(async (id: string, isCompleted: boolean) => {

@@ -1,6 +1,7 @@
 import { supabase } from '../config/supabase';
 import { logDebug, logError, logInfo } from '../config/environment';
 import type { AuthError } from '@supabase/supabase-js';
+import { realtimeService } from '../services/realtimeService';
 
 // Initialize PWA service when Supabase API is imported
 if (typeof window !== 'undefined') {
@@ -302,6 +303,14 @@ export class ShoppingItemsController {
       };
       
       logInfo('Successfully created item in Supabase', { itemId: data.id });
+      
+      // Broadcast update to all subscribers
+      await realtimeService.broadcastUpdate(itemData.listId, {
+        type: 'item_created',
+        listId: itemData.listId,
+        itemId: data.id
+      });
+      
       return {
         data: shoppingItem,
         error: null,
@@ -361,6 +370,14 @@ export class ShoppingItemsController {
       };
       
       logInfo('Successfully updated item in Supabase', { itemId: id });
+      
+      // Broadcast update to all subscribers
+      await realtimeService.broadcastUpdate(data.list_id, {
+        type: 'item_updated',
+        listId: data.list_id,
+        itemId: id
+      });
+      
       return {
         data: shoppingItem,
         error: null,
@@ -377,7 +394,7 @@ export class ShoppingItemsController {
   }
 
   // Delete item (soft delete)
-  async deleteItem(id: string): Promise<ApiResponse<null>> {
+  async deleteItem(id: string, listId: string): Promise<ApiResponse<null>> {
     try {
       logDebug('Deleting item in Supabase', { itemId: id });
       
@@ -399,6 +416,14 @@ export class ShoppingItemsController {
       }
       
       logInfo('Successfully deleted item in Supabase', { itemId: id });
+      
+      // Broadcast update to all subscribers
+      await realtimeService.broadcastUpdate(listId, {
+        type: 'item_deleted',
+        listId: listId,
+        itemId: id
+      });
+      
       return {
         data: null,
         error: null,
@@ -458,6 +483,14 @@ export class ShoppingItemsController {
       };
       
       logInfo('Successfully set item completion status in Supabase', { itemId: id, isCompleted });
+      
+      // Broadcast update to all subscribers
+      await realtimeService.broadcastUpdate(data.list_id, {
+        type: 'item_completed',
+        listId: data.list_id,
+        itemId: id
+      });
+      
       return {
         data: shoppingItem,
         error: null,

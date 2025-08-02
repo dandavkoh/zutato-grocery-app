@@ -7,6 +7,7 @@ import { useShoppingItemsDexie } from '../hooks/useShoppingItemsDexie';
 import { useListDexie } from '../hooks/useListsDexie';
 import { useCategoriesDexie } from '../hooks/useCategoriesDexie';
 import { useUnitsDexie } from '../hooks/useUnitsDexie';
+import { useRealtimeSync } from '../hooks/useRealtimeSync';
 import { groupItemsByCategory, separateCompletedItems, getUnitShortNameById } from '../api/supabaseApi';
 import SwipeAction from '../components/SwipeAction';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
@@ -51,6 +52,13 @@ const ShoppingListPage: React.FC = () => {
   
   // Use the units hook to get units
   const { units, loading: unitsLoading } = useUnitsDexie();
+
+  // Set up realtime sync for this list
+  const { isConnected } = useRealtimeSync(listId, () => {
+    // Force a refresh of the shopping items when we receive an update
+    // The useShoppingItemsDexie hook will automatically reload from Supabase
+    console.log('Realtime update received, triggering refresh');
+  });
   
   // Group items by category and separate completed items
   const { completed, incomplete } = separateCompletedItems(items as any);
@@ -162,8 +170,8 @@ const ShoppingListPage: React.FC = () => {
       {/* Header entfernt, global! */}
       {/* Info-Box */}
       <div className="bg-neutral-900 flex items-center gap-3 px-4 py-3 mt-2 mb-2">
-        <FontAwesomeIcon icon="fa-sun-haze" className="text-yellow-400" size="2xl"/>
-        <span className="text-gray-200 text-sm flex-1">HNGRY wird ab dem 31. März 2025 nicht mehr verfügbar sein. <a href="#" className="underline text-gray-300">Mehr erfahren</a></span>
+        <FontAwesomeIcon icon="bell" className="text-yellow-400" size="2xl"/>
+        <span className="text-gray-200 text-sm flex-1">ZUTATO - Testversion</span>
       </div>
 
       {/* Kategorien & Produkte */}

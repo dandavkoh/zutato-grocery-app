@@ -12,10 +12,16 @@ import EditListPage from './features/EditListPage'
 import Header from './components/Header'
 import PWAUpdateBanner from './components/PWAUpdateBanner'
 import OfflineIndicator from './components/OfflineIndicator'
+import RealtimeStatus from './components/RealtimeStatus'
 import ProtectedRoute from './components/ProtectedRoute'
+import { useGlobalRealtimeSync } from './hooks/useGlobalRealtimeSync'
 
 function Layout() {
   const location = useLocation();
+  
+  // Global realtime sync for all shopping list routes
+  const { currentListId, isConnected } = useGlobalRealtimeSync();
+  
   // Optional: Header auf bestimmten Seiten ausblenden
   // const hideHeader = location.pathname === '/';
   return (
@@ -24,6 +30,7 @@ function Layout() {
       <PWAUpdateBanner />
       <Header />
       <div className="w-full"><Outlet /></div>
+      <RealtimeStatus />
     </div>
   );
 }

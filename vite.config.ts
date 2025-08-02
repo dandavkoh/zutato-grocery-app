@@ -65,8 +65,8 @@ export default defineConfig({
       },
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'HNGRY - Einkaufsliste',
-        short_name: 'HNGRY',
+        name: 'ZUTATO - Einkaufsliste',
+        short_name: 'ZUTATO',
         description: 'Deine intelligente Einkaufsliste für den Haushalt',
         theme_color: '#fbbf24',
         background_color: '#000000',

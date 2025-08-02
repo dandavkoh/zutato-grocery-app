@@ -34,17 +34,17 @@ export interface EnvironmentConfig {
 // Development Environment
 const developmentConfig: EnvironmentConfig = {
   // Supabase Configuration
-  supabaseUrl: import.meta.env.VITE_SUPABASE_API_URL || 'http://127.0.0.1:54321',
-  supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
-  supabaseServiceRoleKey: import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU',
+  supabaseUrl: import.meta.env.VITE_SUPABASE_API_URL,
+  supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+  supabaseServiceRoleKey: import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
   
   // API Configuration
   apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001',
   apiTimeout: 5000,
   
   // PWA Configuration
-  pwaName: 'HNGRY - Einkaufsliste (Dev)',
-  pwaShortName: 'HNGRY Dev',
+  pwaName: 'ZUTATO - Einkaufsliste (Dev)',
+  pwaShortName: 'ZUTATO Dev',
   pwaDescription: 'Deine intelligente Einkaufsliste für den Haushalt - Development Version',
   pwaThemeColor: '#fbbf24',
   pwaBackgroundColor: '#000000',
@@ -67,17 +67,17 @@ const developmentConfig: EnvironmentConfig = {
 // Production Environment
 const productionConfig: EnvironmentConfig = {
   // Supabase Configuration
-  supabaseUrl: import.meta.env.VITE_SUPABASE_API_URL || 'https://your-project.supabase.co',
-  supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || 'YOUR_PRODUCTION_ANON_KEY',
-  supabaseServiceRoleKey: import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || 'YOUR_PRODUCTION_SERVICE_ROLE_KEY',
+  supabaseUrl: import.meta.env.VITE_SUPABASE_API_URL,
+  supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+  supabaseServiceRoleKey: import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
   
   // API Configuration
-  apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'https://api.hngry.app',
+  apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'https://api.zutato.app',
   apiTimeout: 10000,
   
   // PWA Configuration
-  pwaName: 'HNGRY - Einkaufsliste',
-  pwaShortName: 'HNGRY',
+  pwaName: 'ZUTATO - Einkaufsliste',
+  pwaShortName: 'ZUTATO',
   pwaDescription: 'Deine intelligente Einkaufsliste für den Haushalt',
   pwaThemeColor: '#fbbf24',
   pwaBackgroundColor: '#000000',

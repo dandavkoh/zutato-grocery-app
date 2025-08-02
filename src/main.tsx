@@ -14,7 +14,7 @@ import { logInfo } from './config/environment'
 // Initialize services
 const initializeApp = async () => {
   try {
-    logInfo('Initializing HNGRY PWA...');
+    logInfo('Initializing ZUTATO PWA...');
     // Supabase is automatically initialized when the client is created
     logInfo('App initialization completed');
   } catch (error) {

@@ -2,7 +2,7 @@
 
 ## Übersicht
 
-Die HNGRY PWA verwendet eine umfassende Environment-Konfiguration für Development und Production mit Supabase-Integration. Dies ermöglicht eine saubere Trennung zwischen Entwicklungs- und Produktionsumgebungen.
+Die ZUTATO PWA verwendet eine umfassende Environment-Konfiguration für Development und Production mit Supabase-Integration. Dies ermöglicht eine saubere Trennung zwischen Entwicklungs- und Produktionsumgebungen.
 
 ## 📁 Dateien
 
@@ -106,7 +106,7 @@ enablePerformanceMonitoring: boolean; // Performance Monitoring
   supabaseServiceRoleKey: 'YOUR_PRODUCTION_SERVICE_ROLE_KEY',
   
   // API Configuration
-  apiBaseUrl: 'https://api.hngry.app',
+  apiBaseUrl: 'https://api.zutato.app',
   apiTimeout: 10000,
   
   // Offline Configuration

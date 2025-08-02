@@ -1,6 +1,6 @@
 {
-  "name": "HNGRY - Einkaufsliste",
-  "short_name": "HNGRY",
+  "name": "ZUTATO - Einkaufsliste",
+  "short_name": "ZUTATO",
   "description": "Deine intelligente Einkaufsliste für den Haushalt",
   "start_url": "/",
   "display": "standalone",

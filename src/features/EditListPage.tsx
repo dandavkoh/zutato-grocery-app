@@ -143,12 +143,6 @@ const EditListPage: React.FC = () => {
     console.log('Delete member:', memberId);
   };
 
-  const handleAddMember = () => {
-    // TODO: Implement add member functionality
-    console.log('Add new member');
-    alert('Neues Mitglied hinzufügen - TODO');
-  };
-
   const handleDeleteList = async () => {
     if (showDeleteConfirm) {
       try {
@@ -269,12 +263,6 @@ const EditListPage: React.FC = () => {
                   );
                 })}
               </div>
-              <button
-                onClick={handleAddMember}
-                className="w-full bg-neutral-900 border border-yellow-400 text-white font-semibold py-3 rounded-2xl hover:bg-yellow-400 hover:text-black transition-colors"
-              >
-                NEUES MITGLIED HINZUFÜGEN
-              </button>
             </>
           )}
         </div>

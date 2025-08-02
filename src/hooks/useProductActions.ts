@@ -30,10 +30,12 @@ export const useProductActions = () => {
       }
 
       // Find active item (not deleted and not completed) with the same name
+      // AND without notes - items with notes are considered "not existing"
       const existingItem = existingItems.data?.find(item => 
         item.name.toLowerCase() === product.title.toLowerCase() &&
         !item.is_deleted &&
-        !item.is_completed
+        !item.is_completed &&
+        !item.notes // Item must not have notes to be considered existing
       );
 
       if (existingItem) {

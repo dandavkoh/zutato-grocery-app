@@ -132,6 +132,9 @@ const EditListPage: React.FC = () => {
     return 0;
   });
 
+  // Check if current user is the list owner
+  const isListOwner = list?.created_by === user?.id;
+
   const handleDeleteMember = (memberId: string) => {
     const member = members.find(m => m.id === memberId);
     if (member?.role === 'owner') {
@@ -207,8 +210,8 @@ const EditListPage: React.FC = () => {
           </button>
         </div>
 
-        {/* Invitation Manager Section */}
-        <InvitationManager listId={list.id} />
+        {/* Invitation Manager Section - Only for list owners */}
+        {isListOwner && <InvitationManager listId={list.id} />}
 
         {/* Members Section */}
         <div className="mb-8">

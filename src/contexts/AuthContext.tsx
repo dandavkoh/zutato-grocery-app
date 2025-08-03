@@ -12,7 +12,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
   updateProfile: (userData: { firstName: string; lastName: string; email: string }) => Promise<{ success: boolean; error?: string; message?: string }>;
-  updatePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string; message?: string }>;
+  updatePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -173,7 +173,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const updatePassword = async (currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: string; message?: string }> => {
+  const updatePassword = async (currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const response = await authService.updatePassword(currentPassword, newPassword);
       
@@ -184,7 +184,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return { success: false, error: errorMsg };
       }
       
-      return { success: true, message: response.message };
+      return { success: true };
     } catch (error) {
       console.error('Update password error:', error);
       return { success: false, error: 'Passwort-Update fehlgeschlagen. Bitte versuchen Sie es erneut.' };

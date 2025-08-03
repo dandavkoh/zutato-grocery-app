@@ -42,8 +42,11 @@ const ListsPage: React.FC = () => {
             </div>
             <div className="text-gray-400 text-sm">{user?.email || 'E-Mail nicht verfügbar'}</div>
           </div>
-          <button className="text-gray-400 hover:text-yellow-400 text-2xl">
-            <FontAwesomeIcon icon="fa-plus" size="xl" style="regular"/>
+          <button 
+            onClick={() => navigate('/account')}
+            className="text-gray-400 hover:text-yellow-400 text-2xl"
+          >
+            <FontAwesomeIcon icon="fa-pen" size="xl" style="regular"/>
           </button>
         </div>
         <button 

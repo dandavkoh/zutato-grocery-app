@@ -1409,6 +1409,69 @@ export const authService = {
       return { error };
     }
   },
+
+  updateProfile: async (userData: { firstName: string; lastName: string; email: string }) => {
+    try {
+      // Get current user to check if email is actually changing
+      const { data: currentUser } = await supabase.auth.getUser();
+      const currentEmail = currentUser.user?.email;
+      
+      // Update user metadata (first_name, last_name)
+      const { data, error } = await supabase.auth.updateUser({
+        data: {
+          first_name: userData.firstName,
+          last_name: userData.lastName,
+        },
+      });
+      
+      if (error) throw error;
+      
+      // If email is changing, update it separately
+      if (currentEmail && currentEmail !== userData.email) {
+        const { error: emailError } = await supabase.auth.updateUser({
+          email: userData.email,
+        });
+        
+        if (emailError) {
+          return { user: null, error: emailError.message };
+        }
+        
+        // Return the user with updated metadata, email change will require confirmation
+        return { 
+          user: data.user, 
+          error: null,
+          message: 'Profil aktualisiert. Bitte bestätigen Sie die E-Mail-Änderung in Ihrem Posteingang.'
+        };
+      }
+      
+      return { user: data.user, error: null };
+    } catch (error) {
+      return { user: null, error };
+    }
+  },
+
+  updatePassword: async (currentPassword: string, newPassword: string) => {
+    try {
+      // First, verify the current password by trying to sign in
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: (await supabase.auth.getUser()).data.user?.email || '',
+        password: currentPassword,
+      });
+      
+      if (signInError) {
+        return { user: null, error: 'Aktuelles Passwort ist falsch' };
+      }
+      
+      // If current password is correct, update to new password
+      const { data, error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+      if (error) throw error;
+      return { user: data.user, error: null };
+    } catch (error) {
+      return { user: null, error };
+    }
+  },
 };
 
 // Helper function to group items by category

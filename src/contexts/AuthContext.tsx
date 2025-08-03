@@ -11,6 +11,8 @@ interface AuthContextType {
   register: (email: string, password: string, userData: { firstName: string; lastName: string }) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
+  updateProfile: (userData: { firstName: string; lastName: string; email: string }) => Promise<{ success: boolean; error?: string; message?: string }>;
+  updatePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string; message?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -140,6 +142,55 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const updateProfile = async (userData: { firstName: string; lastName: string; email: string }): Promise<{ success: boolean; error?: string; message?: string }> => {
+    try {
+      const response = await authService.updateProfile(userData);
+      
+      if (response.error) {
+        const errorMsg = typeof response.error === 'object' && response.error !== null && 'message' in response.error
+          ? (response.error as any).message
+          : String(response.error);
+        return { success: false, error: errorMsg };
+      }
+      
+      if (response.user) {
+        // Update local user state
+        const updatedUser = {
+          ...user!,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          email: userData.email,
+        };
+        setUser(updatedUser);
+        authStorage.setUser(updatedUser);
+        return { success: true, message: response.message };
+      }
+      
+      return { success: false, error: 'Profil-Update fehlgeschlagen' };
+    } catch (error) {
+      console.error('Update profile error:', error);
+      return { success: false, error: 'Profil-Update fehlgeschlagen. Bitte versuchen Sie es erneut.' };
+    }
+  };
+
+  const updatePassword = async (currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: string; message?: string }> => {
+    try {
+      const response = await authService.updatePassword(currentPassword, newPassword);
+      
+      if (response.error) {
+        const errorMsg = typeof response.error === 'object' && response.error !== null && 'message' in response.error
+          ? (response.error as any).message
+          : String(response.error);
+        return { success: false, error: errorMsg };
+      }
+      
+      return { success: true, message: response.message };
+    } catch (error) {
+      console.error('Update password error:', error);
+      return { success: false, error: 'Passwort-Update fehlgeschlagen. Bitte versuchen Sie es erneut.' };
+    }
+  };
+
   const value: AuthContextType = {
     user,
     isLoading,
@@ -148,6 +199,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     register,
     logout,
     resetPassword,
+    updateProfile,
+    updatePassword,
   };
 
   return (

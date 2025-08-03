@@ -254,14 +254,14 @@ const LoginPage: React.FC = () => {
         </form>
 
         {/* Divider */}
-        <div className="my-6 flex items-center">
+        {/* <div className="my-6 flex items-center">
           <div className="flex-1 border-t border-gray-600"></div>
           <span className="px-4 text-sm text-gray-400">oder</span>
           <div className="flex-1 border-t border-gray-600"></div>
-        </div>
+        </div> */}
 
         {/* Social Login Buttons */}
-        <div className="space-y-3">
+        {/* <div className="space-y-3">
           <button
             type="button"
             className="w-full flex items-center justify-center px-4 py-3 bg-neutral-900 border border-gray-600 rounded-xl text-gray-300 font-medium hover:bg-neutral-800 transition-colors"
@@ -276,7 +276,7 @@ const LoginPage: React.FC = () => {
             <FontAwesomeIcon icon="fa-apple" size="base" className="mr-3" />
             Mit Apple anmelden
           </button>
-        </div>
+        </div> */}
 
         {/* Register Link */}
         <div className="text-center mt-6">

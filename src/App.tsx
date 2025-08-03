@@ -10,6 +10,7 @@ import RegisterPage from './features/RegisterPage'
 import CreateListPage from './features/CreateListPage'
 import EditListPage from './features/EditListPage'
 import AccountPage from './features/AccountPage'
+import ResetPasswordPage from './features/ResetPasswordPage'
 import Header from './components/Header'
 import PWAUpdateBanner from './components/PWAUpdateBanner'
 import OfflineIndicator from './components/OfflineIndicator'
@@ -44,6 +45,7 @@ function App() {
       {/* Public routes */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       
       {/* Protected routes with layout */}
       <Route element={<Layout />}>

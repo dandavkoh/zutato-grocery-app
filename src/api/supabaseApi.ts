@@ -1402,7 +1402,12 @@ export const authService = {
 
   resetPassword: async (email: string) => {
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      // Get the current origin for the redirect URL
+      const redirectUrl = `${window.location.origin}/reset-password`;
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectUrl,
+      });
       if (error) throw error;
       return { error: null };
     } catch (error) {

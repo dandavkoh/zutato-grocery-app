@@ -33,9 +33,20 @@ const ResetPasswordPage: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string>('');
 
-  // Get access token from URL params (Supabase sends this in the reset link)
-  const accessToken = searchParams.get('access_token');
-  const refreshToken = searchParams.get('refresh_token');
+  // Get token from URL hash fragment (Supabase sends this in the reset link)
+  const [token, setToken] = useState<string | null>(null);
+  const [type, setType] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Parse hash fragment from URL
+    const hash = window.location.hash.substring(1); // Remove the #
+    const params = new URLSearchParams(hash);
+    const tokenParam = params.get('token');
+    const typeParam = params.get('type');
+    
+    setToken(tokenParam);
+    setType(typeParam);
+  }, []);
 
   useEffect(() => {
     dispatch(setHeader({
@@ -107,7 +118,7 @@ const ResetPasswordPage: React.FC = () => {
       return;
     }
 
-    if (!accessToken) {
+    if (!token || type !== 'recovery') {
       setErrors({ general: 'Ungültiger oder abgelaufener Reset-Link. Bitte fordern Sie einen neuen an.' });
       return;
     }
@@ -115,20 +126,10 @@ const ResetPasswordPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Use Supabase's updateUser with the access token to set the new password
+      // Use Supabase's updateUser with the recovery token to set the new password
       const { supabase } = await import('../config/supabase');
       
-      // Set the session with the tokens from the URL
-      const { error: sessionError } = await supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken || '',
-      });
-
-      if (sessionError) {
-        throw new Error('Ungültiger oder abgelaufener Reset-Link');
-      }
-
-      // Update the password
+      // Update the password using the recovery token
       const { error: updateError } = await supabase.auth.updateUser({
         password: formData.password,
       });
@@ -158,8 +159,8 @@ const ResetPasswordPage: React.FC = () => {
 
   const passwordStrength = getPasswordStrength(formData.password);
 
-  // If no access token, show error
-  if (!accessToken) {
+  // If no token or wrong type, show error
+  if (!token || type !== 'recovery') {
     return (
       <div className="min-h-screen bg-black flex flex-col">
         <div className="flex-1 px-4 pt-6 pb-10">

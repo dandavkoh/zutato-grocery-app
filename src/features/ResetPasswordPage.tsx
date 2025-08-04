@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { setHeader, resetHeader } from '../stores/store';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
 import { validatePassword, getPasswordStrength } from '../utils/authUtils';
-import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../config/supabase';
 
 interface ResetPasswordFormData {
   password: string;
@@ -19,9 +19,7 @@ interface ValidationErrors {
 
 const ResetPasswordPage: React.FC = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const dispatch = useDispatch();
-  const { resetPassword } = useAuth();
   
   const [formData, setFormData] = useState<ResetPasswordFormData>({
     password: '',
@@ -32,20 +30,23 @@ const ResetPasswordPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string>('');
-
-  // Get token from URL hash fragment (Supabase sends this in the reset link)
-  const [token, setToken] = useState<string | null>(null);
-  const [type, setType] = useState<string | null>(null);
+  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
 
   useEffect(() => {
-    // Parse hash fragment from URL
-    const hash = window.location.hash.substring(1); // Remove the #
-    const params = new URLSearchParams(hash);
-    const tokenParam = params.get('token');
-    const typeParam = params.get('type');
-    
-    setToken(tokenParam);
-    setType(typeParam);
+    // Check if we're in password recovery mode
+    const checkRecoveryMode = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      // If we have a session and it's a recovery session, show the form
+      if (session) {
+        setIsRecoveryMode(true);
+      } else {
+        // No session means invalid or expired recovery link
+        setErrors({ general: 'Ungültiger oder abgelaufener Reset-Link. Bitte fordern Sie einen neuen an.' });
+      }
+    };
+
+    checkRecoveryMode();
   }, []);
 
   useEffect(() => {
@@ -118,7 +119,7 @@ const ResetPasswordPage: React.FC = () => {
       return;
     }
 
-    if (!token || type !== 'recovery') {
+    if (!isRecoveryMode) {
       setErrors({ general: 'Ungültiger oder abgelaufener Reset-Link. Bitte fordern Sie einen neuen an.' });
       return;
     }
@@ -126,10 +127,7 @@ const ResetPasswordPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Use Supabase's updateUser with the recovery token to set the new password
-      const { supabase } = await import('../config/supabase');
-      
-      // Update the password using the recovery token
+      // Update the password - Supabase handles the recovery token automatically
       const { error: updateError } = await supabase.auth.updateUser({
         password: formData.password,
       });
@@ -159,8 +157,8 @@ const ResetPasswordPage: React.FC = () => {
 
   const passwordStrength = getPasswordStrength(formData.password);
 
-  // If no token or wrong type, show error
-  if (!token || type !== 'recovery') {
+  // If not in recovery mode, show error
+  if (!isRecoveryMode) {
     return (
       <div className="min-h-screen bg-black flex flex-col">
         <div className="flex-1 px-4 pt-6 pb-10">

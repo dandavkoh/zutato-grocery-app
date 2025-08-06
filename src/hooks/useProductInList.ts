@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../stores/store';
 import { useShoppingItemsDexie } from './useShoppingItemsDexie';
-import type { ProductGroup } from '../api/supabaseApi';
+import type { ProductOrGroup } from '../api/supabaseApi';
 
 export const useProductInList = () => {
   const currentListId = useSelector((state: RootState) => state.currentList.listId);

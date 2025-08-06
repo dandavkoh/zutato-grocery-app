@@ -39,13 +39,14 @@ export interface Category {
   icon: string;
 }
 
-export interface ProductGroup {
+export interface ProductOrGroup {
   id: string;
   title: string;
   rank: number;
   src: 'fts' | 'fuzzy' | 'exact';
-  default_icon: string;
-  default_category_id: string;
+  icon: string;
+  category_id: string;
+  type?: 'product' | 'group';
 }
 
 export interface ShoppingItem {
@@ -1259,12 +1260,12 @@ export class ProductGroupController {
     term: string, 
     limitFts: number = 10, 
     limitFuzzy: number = 10
-  ): Promise<ApiResponse<ProductGroup[]>> {
+  ): Promise<ApiResponse<ProductOrGroup[]>> {
     try {
       logDebug('Searching product groups with term:', term);
       
       const { data, error } = await supabase
-        .rpc('search_product_groups', {
+        .rpc('search_products_and_groups', {
           term: term,
           limit_fts: limitFts,
           limit_fuzzy: limitFuzzy

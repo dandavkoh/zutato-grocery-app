@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { productGroupsApi, type ProductGroup } from '../api/supabaseApi';
+import { productGroupsApi, type ProductOrGroup } from '../api/supabaseApi';
 
 interface UseProductSearchReturn {
-  searchResults: ProductGroup[];
+  searchResults: ProductOrGroup[];
   loading: boolean;
   error: string | null;
   searchProducts: (term: string) => void;
@@ -10,7 +10,7 @@ interface UseProductSearchReturn {
 }
 
 export const useProductSearch = (debounceMs: number = 300): UseProductSearchReturn => {
-  const [searchResults, setSearchResults] = useState<ProductGroup[]>([]);
+  const [searchResults, setSearchResults] = useState<ProductOrGroup[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -49,13 +49,13 @@ export const useProductSearch = (debounceMs: number = 300): UseProductSearchRetu
         } else {
           // Offline: Create exact suggestion
           console.log('📴 [Search] Offline mode - creating exact suggestion');
-          const exactSuggestion: ProductGroup = {
+          const exactSuggestion: ProductOrGroup = {
             id: 'exact-suggestion',
             title: term,
             rank: 1.0,
             src: 'exact',
-            default_icon: 'basket-shopping',
-            default_category_id: ''
+            icon: 'basket-shopping',
+            category_id: ''
           };
           setSearchResults([exactSuggestion]);
           setError(null);
@@ -64,13 +64,13 @@ export const useProductSearch = (debounceMs: number = 300): UseProductSearchRetu
         console.error('❌ [Search] Search error:', err);
         
         // Even if there's an error, show exact suggestion
-        const exactSuggestion: ProductGroup = {
+        const exactSuggestion: ProductOrGroup = {
           id: 'exact-suggestion',
           title: term,
           rank: 1.0,
           src: 'exact',
-          default_icon: 'basket-shopping',
-          default_category_id: ''
+          icon: 'basket-shopping',
+          category_id: ''
         };
         setSearchResults([exactSuggestion]);
         setError(null);

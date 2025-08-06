@@ -6,7 +6,7 @@ import type { RootState } from '../stores/store';
 import { useAuth } from '../contexts/AuthContext';
 import { shoppingItemsApi } from '../api/supabaseApi';
 import { generateGuid } from '../utils/guidUtils';
-import type { ProductGroup, ShoppingItem } from '../api/supabaseApi';
+import type { ProductOrGroup, ShoppingItem } from '../api/supabaseApi';
 
 export const useProductActions = () => {
   const navigate = useNavigate();
@@ -14,7 +14,7 @@ export const useProductActions = () => {
   const { user } = useAuth();
   const currentListId = useSelector((state: RootState) => state.currentList.listId);
 
-  const handleProductAction = useCallback(async (product: ProductGroup) => {
+  const handleProductAction = useCallback(async (product: ProductOrGroup) => {
     if (!currentListId || !user) {
       console.error('No current list or user found');
       return;
@@ -47,8 +47,8 @@ export const useProductActions = () => {
         const newItemData = {
           id: generateGuid(), // Generate standard GUID (with hyphens)
           name: product.title,
-          category_id: product.default_category_id || null, // Convert empty string to null
-          icon: product.default_icon,
+          category_id: product.category_id || null, // Convert empty string to null
+          icon: product.icon,
           listId: currentListId,
           createdBy: user.id,
         };

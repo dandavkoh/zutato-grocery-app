@@ -7,7 +7,7 @@ import FontAwesomeIcon from '../components/FontAwesomeIcon';
 import { useProductSearch } from '../hooks/useProductSearch';
 import { useProductInList } from '../hooks/useProductInList';
 import { useProductActions } from '../hooks/useProductActions';
-import type { ProductGroup } from '../api/supabaseApi';
+import type { ProductOrGroup } from '../api/supabaseApi';
 
 const recommendations = [
   { icon: <FontAwesomeIcon icon="sack" className="text-gray-300" size="2xl"/>, name: 'Zucker', sub: 'Brauner' },
@@ -75,13 +75,13 @@ const SearchPage: React.FC = () => {
     ));
 
   // Create exact suggestion if needed
-  const exactSuggestion: ProductGroup = {
+  const exactSuggestion: ProductOrGroup = {
     id: 'exact-suggestion',
     title: search,
     rank: 1.0,
     src: 'exact',
-    default_icon: 'basket-shopping',
-    default_category_id: ''
+    icon: 'basket-shopping',
+    category_id: ''
   };
 
   // Combine exact suggestion with search results
@@ -134,7 +134,7 @@ const SearchPage: React.FC = () => {
               return (
                 <div key={item.id} className="flex items-center px-4 py-3 bg-neutral-900">
                   <span className="mr-4 text-gray-300">
-                    <FontAwesomeIcon icon={item.default_icon} size="2xl" style="regular"/>
+                    <FontAwesomeIcon icon={item.icon} size="2xl" style="regular"/>
                   </span>
                   <span className="text-base text-gray-200 flex-1">
                     {item.title}

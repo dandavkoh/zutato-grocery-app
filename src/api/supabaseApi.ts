@@ -1111,18 +1111,18 @@ export class InvitationController {
 
 // Category API Controller
 export class CategoryController {
-  // Get all categories
+  // Get all grocery_categories
   async getCategories(): Promise<ApiResponse<Category[]>> {
     try {
-      logDebug('Fetching categories from Supabase');
+      logDebug('Fetching grocery_categories from Supabase');
       
       const { data, error } = await supabase
-        .from('categories')
+        .from('grocery_categories')
         .select('*')
         .order('name', { ascending: true });
       
       if (error) {
-        logError('Failed to fetch categories from Supabase', error);
+        logError('Failed to fetch grocery_categories from Supabase', error);
         return {
           data: null,
           error: error.message,
@@ -1130,14 +1130,14 @@ export class CategoryController {
         };
       }
       
-      logInfo('Successfully fetched categories from Supabase', { count: data?.length || 0 });
+      logInfo('Successfully fetched grocery_categories from Supabase', { count: data?.length || 0 });
       return {
         data: data || [],
         error: null,
         status: 200
       };
     } catch (error) {
-      logError('Unexpected error fetching categories', error);
+      logError('Unexpected error fetching grocery_categories', error);
       return {
         data: null,
         error: 'Internal server error',
@@ -1146,19 +1146,19 @@ export class CategoryController {
     }
   }
 
-  // Get category by ID
+  // Get grocery_category by ID
   async getCategoryById(id: string): Promise<ApiResponse<Category>> {
     try {
-      logDebug('Fetching category by ID from Supabase', { categoryId: id });
+      logDebug('Fetching grocery_category by ID from Supabase', { categoryId: id });
       
       const { data, error } = await supabase
-        .from('categories')
+        .from('grocery_categories')
         .select('*')
         .eq('id', id)
         .single();
       
       if (error) {
-        logError('Failed to fetch category by ID from Supabase', error);
+        logError('Failed to fetch grocery_category by ID from Supabase', error);
         return {
           data: null,
           error: error.message,
@@ -1166,14 +1166,14 @@ export class CategoryController {
         };
       }
       
-      logInfo('Successfully fetched category by ID from Supabase', { categoryId: id });
+      logInfo('Successfully fetched grocery_category by ID from Supabase', { categoryId: id });
       return {
         data: data,
         error: null,
         status: 200
       };
     } catch (error) {
-      logError('Unexpected error fetching category by ID', error);
+      logError('Unexpected error fetching grocery_category by ID', error);
       return {
         data: null,
         error: 'Internal server error',

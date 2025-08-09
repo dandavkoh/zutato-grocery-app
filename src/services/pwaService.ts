@@ -577,7 +577,7 @@ class PWAService {
           const isShoppingItemsRequest = url.includes('/rest/v1/') && url.includes('shopping_items');
           const isListsRequest = url.includes('/rest/v1/') && url.includes('lists');
           const isCategoriesRequest = url.includes('/rest/v1/') && url.includes('grocery_categories');
-          const isUnitsRequest = url.includes('/rest/v1/') && url.includes('units');
+          const isUnitsRequest = url.includes('/rest/v1/') && url.includes('grocery_units');
           
           // Handle GET requests for shopping_items (load all items)
           if (isShoppingItemsRequest && options?.method === 'GET') {

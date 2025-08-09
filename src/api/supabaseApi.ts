@@ -1187,15 +1187,15 @@ export class CategoryController {
 export class UnitController {
   async getUnits(): Promise<ApiResponse<Unit[]>> {
     try {
-      logDebug('Fetching units from Supabase');
+      logDebug('Fetching grocery_units from Supabase');
       
       const { data, error } = await supabase
-        .from('units')
+        .from('grocery_units')
         .select('*')
         .order('name');
       
       if (error) {
-        logError('Error fetching units:', error);
+        logError('Error fetching grocery_units:', error);
         return {
           data: null,
           error: error.message,
@@ -1203,14 +1203,14 @@ export class UnitController {
         };
       }
       
-      logDebug('Units fetched successfully:', data);
+      logDebug('grocery_units fetched successfully:', data);
       return {
         data: data || [],
         error: null,
         status: 200
       };
     } catch (error) {
-      logError('Unexpected error fetching units:', error);
+      logError('Unexpected error fetching grocery_units:', error);
       return {
         data: null,
         error: 'Unexpected error occurred',
@@ -1221,16 +1221,16 @@ export class UnitController {
 
   async getUnitById(id: string): Promise<ApiResponse<Unit>> {
     try {
-      logDebug('Fetching unit by ID:', id);
+      logDebug('Fetching grocery_units by ID:', id);
       
       const { data, error } = await supabase
-        .from('units')
+        .from('grocery_units')
         .select('*')
         .eq('id', id)
         .single();
       
       if (error) {
-        logError('Error fetching unit by ID:', error);
+        logError('Error fetching grocery_units by ID:', error);
         return {
           data: null,
           error: error.message,
@@ -1555,7 +1555,7 @@ export const separateCompletedItems = (items: ShoppingItem[]) => {
 export const getUnitById = async (unitId: string): Promise<Unit | null> => {
   try {
     const { data, error } = await supabase
-      .from('units')
+      .from('grocery_units')
       .select('*')
       .eq('id', unitId)
       .single();

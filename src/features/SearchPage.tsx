@@ -45,7 +45,7 @@ const SearchPage: React.FC = () => {
     dispatch(setHeader({
       title: '',
       showBack: false,
-      background: 'bg-yellow-400',
+      background: '',
       showSearchBar: true, // NEU: Suchleiste im Header anzeigen
     }));
     return () => { dispatch(resetHeader()); };
@@ -100,98 +100,99 @@ const SearchPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black flex flex-col">
-      {/* Header entfernt, global! */}
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {showResults ? (
-        <div className="w-full pb-8 pt-2">
-          <div className="px-4 pt-2 pb-1 flex items-center gap-2 text-gray-300 text-base font-semibold">
-           <FontAwesomeIcon icon="fa-clipboard-list-check" size="base" style="regular"/>
+        <div className="w-full">
+          <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2 flex items-center gap-2 text-gray-900 text-base font-semibold">
+            <FontAwesomeIcon icon="fa-clipboard-list-check" size="base" style="regular"/>
             Einkaufsvorschläge
           </div>
-          
+
           {loading && (
-            <div className="px-4 py-3 text-gray-400 text-center">
+            <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-3 text-gray-700 text-center">
               Suche läuft...
             </div>
           )}
-          
+
           {error && (
-            <div className="px-4 py-3 text-red-400 text-center">
+            <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-3 text-red-600 text-center">
               Fehler: {error}
             </div>
           )}
-          
+
           {!loading && !error && displayResults.length === 0 && search.length >= 3 && (
-            <div className="px-4 py-3 text-gray-400 text-center">
+            <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-3 text-gray-500 text-center">
               Keine Ergebnisse gefunden
             </div>
           )}
-          
-          <div className="divide-y divide-neutral-800">
-            {displayResults.map((item) => {
-              const isInList = isProductInList(item.title);
-              
-              return (
-                <div key={item.id} className="flex items-center px-4 py-3 bg-neutral-900">
-                  <span className="mr-4 text-gray-300">
-                    <FontAwesomeIcon icon={item.icon} size="2xl" style="regular"/>
-                  </span>
-                  <span className="text-base text-gray-200 flex-1">
-                    {item.title}
-                    <span className="text-gray-400 text-sm ml-2">
-                      ({item.src === 'exact' ? 'Exakter Vorschlag' : item.src === 'fts' ? 'Exakte Suche' : 'Ähnliche Suche'})
-                    </span>
-                  </span>
-                  <button 
-                    onClick={() => handleProductClick(item)}
-                    className="rounded-full border-2 border-yellow-400 text-yellow-400 w-8 h-8 flex items-center justify-center ml-2 hover:bg-yellow-400 hover:text-black transition-colors"
-                  >
-                    <FontAwesomeIcon 
-                      icon={isInList ? "fa-pen-circle" : "fa-circle-plus"} 
-                      size="2xl" 
-                      style="regular"
-                    />
-                  </button>
-                </div>
-              );
-            })}
+
+          <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 pb-6">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              {displayResults.map((item, idx) => {
+                const isInList = isProductInList(item.title);
+                return (
+                  <div key={item.id} className={idx < displayResults.length - 1 ? 'border-b border-gray-200' : ''}>
+                    <div className="flex items-center px-4 py-3 hover:bg-orange-50 transition-colors">
+                      <span className="mr-4 text-gray-600">
+                        <FontAwesomeIcon icon={item.icon} size="2xl" style="regular"/>
+                      </span>
+                      <span className="text-base text-gray-900 flex-1">
+                        {item.title}
+                        <span className="text-gray-500 text-sm ml-2">
+                          ({item.src === 'exact' ? 'Exakter Vorschlag' : item.src === 'fts' ? 'Exakte Suche' : 'Ähnliche Suche'})
+                        </span>
+                      </span>
+                      <button 
+                        onClick={() => handleProductClick(item)}
+                        className="rounded-full border-2 border-orange-600 text-orange-600 w-8 h-8 flex items-center justify-center ml-2 hover:bg-orange-600 hover:text-white transition-colors"
+                      >
+                        <FontAwesomeIcon 
+                          icon={isInList ? 'fa-pen-circle' : 'fa-circle-plus'} 
+                          size="2xl" 
+                          style="regular"
+                        />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       ) : (
         <>
-          {/* Importieren-Box */}
-          <div className="mx-4 mt-6 mb-4 p-4 rounded-2xl border border-gray-600 bg-neutral-900 flex flex-col relative overflow-hidden">
-            <div className="text-lg text-gray-200 font-semibold mb-1">Rezepte importieren</div>
-            <div className="text-gray-400 text-sm mb-4">Füge die Zutaten aus deinen online Lieblingsrezepten ganz einfach per Link hinzu.</div>
-            <button className="bg-yellow-400 text-white font-semibold rounded-full px-5 py-2 text-base w-fit">Dein Rezept hinzufügen</button>
-            <div className="absolute right-4 bottom-2 opacity-30">
-              <svg width="100" height="60" viewBox="0 0 100 60" fill="none"><rect x="60" y="30" width="30" height="20" rx="4" stroke="white" strokeWidth="2"/><rect x="10" y="10" width="20" height="20" rx="4" stroke="white" strokeWidth="2"/><rect x="40" y="10" width="15" height="15" rx="3" stroke="white" strokeWidth="2"/><rect x="80" y="10" width="10" height="10" rx="2" stroke="white" strokeWidth="2"/><rect x="10" y="40" width="15" height="15" rx="3" stroke="white" strokeWidth="2"/><rect x="30" y="40" width="10" height="10" rx="2" stroke="white" strokeWidth="2"/><rect x="50" y="40" width="10" height="10" rx="2" stroke="white" strokeWidth="2"/><rect x="70" y="40" width="10" height="10" rx="2" stroke="white" strokeWidth="2"/><rect x="90" y="40" width="5" height="5" rx="1" stroke="white" strokeWidth="2"/><rect x="40" y="30" width="15" height="15" rx="3" stroke="white" strokeWidth="2"/><rect x="20" y="30" width="10" height="10" rx="2" stroke="white" strokeWidth="2"/><rect x="60" y="10" width="10" height="10" rx="2" stroke="white" strokeWidth="2"/><rect x="80" y="30" width="10" height="10" rx="2" stroke="white" strokeWidth="2"/><rect x="90" y="10" width="5" height="5" rx="1" stroke="white" strokeWidth="2"/></svg>
+          <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 mb-4">
+            <div className="p-4 rounded-xl border border-gray-200 bg-white shadow-sm flex flex-col relative overflow-hidden">
+              <div className="text-lg text-gray-900 font-semibold mb-1">Rezepte importieren</div>
+              <div className="text-gray-600 text-sm mb-4">Füge die Zutaten aus deinen online Lieblingsrezepten ganz einfach per Link hinzu.</div>
+              <button className="bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-full px-5 py-2 text-base w-fit">Dein Rezept hinzufügen</button>
+              <div className="absolute right-4 bottom-2 opacity-20 text-gray-400">
+                <svg width="100" height="60" viewBox="0 0 100 60" fill="none"><rect x="60" y="30" width="30" height="20" rx="4" stroke="currentColor" strokeWidth="2"/><rect x="10" y="10" width="20" height="20" rx="4" stroke="currentColor" strokeWidth="2"/><rect x="40" y="10" width="15" height="15" rx="3" stroke="currentColor" strokeWidth="2"/><rect x="80" y="10" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="2"/><rect x="10" y="40" width="15" height="15" rx="3" stroke="currentColor" strokeWidth="2"/><rect x="30" y="40" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="2"/><rect x="50" y="40" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="2"/><rect x="70" y="40" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="2"/><rect x="90" y="40" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="2"/><rect x="40" y="30" width="15" height="15" rx="3" stroke="currentColor" strokeWidth="2"/><rect x="20" y="30" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="2"/><rect x="60" y="10" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="2"/><rect x="80" y="30" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="2"/><rect x="90" y="10" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="2"/></svg>
+              </div>
             </div>
           </div>
 
-          {/* Empfehlungen */}
-          <div className="px-4 mb-2">
-            <div className="text-xs text-gray-400 font-semibold mb-1">FÜR DICH EMPFOHLEN</div>
-            <div className="text-gray-400 text-xs mb-3">Aufgrund deiner Aktivitäten gehen wir davon aus, dass du diese Artikel bald benötigen wirst.</div>
+          <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 mb-2">
+            <div className="text-xs text-gray-500 font-semibold mb-1">Für dich empfohlen</div>
+            <div className="text-gray-600 text-xs mb-3">Aufgrund deiner Aktivitäten gehen wir davon aus, dass du diese Artikel bald benötigen wirst.</div>
             <div className="grid grid-cols-2 gap-3">
               {recommendations.map((rec, i) => (
-                <div key={i} className="flex items-center bg-neutral-900 rounded-xl px-4 py-3 border border-neutral-800">
-                  <span className="mr-3 text-gray-300">{rec.icon}</span>
-                  <span className="text-base text-gray-200 flex-1">{rec.name} {rec.sub && <span className='text-gray-400 text-sm'>{rec.sub}</span>}</span>
+                <div key={i} className="flex items-center bg-white rounded-xl px-4 py-3 border border-gray-200 shadow-sm">
+                  <span className="mr-3 text-gray-600">{rec.icon}</span>
+                  <span className="text-base text-gray-900 flex-1">{rec.name} {rec.sub && <span className='text-gray-600 text-sm'>{rec.sub}</span>}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Saisonale Produkte */}
-          <div className="px-4 mt-4">
-            <div className="text-xs text-gray-400 font-semibold mb-1">SAISONALE PRODUKTE</div>
-            <div className="text-gray-400 text-xs mb-3">Aktuell sind diese Produkte in Saison.</div>
+          <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 pb-24">
+            <div className="text-xs text-gray-500 font-semibold mb-1">Saisonale Produkte</div>
+            <div className="text-gray-600 text-xs mb-3">Aktuell sind diese Produkte in Saison.</div>
             <div className="grid grid-cols-2 gap-3">
               {seasonal.map((item, i) => (
-                <div key={i} className="flex items-center bg-neutral-900 rounded-xl px-4 py-3 border border-neutral-800">
-                  <span className="mr-3 text-gray-300">{item.icon}</span>
-                  <span className="text-base text-gray-200 flex-1">{item.name}</span>
+                <div key={i} className="flex items-center bg-white rounded-xl px-4 py-3 border border-gray-200 shadow-sm">
+                  <span className="mr-3 text-gray-600">{item.icon}</span>
+                  <span className="text-base text-gray-900 flex-1">{item.name}</span>
                 </div>
               ))}
             </div>
@@ -200,12 +201,12 @@ const SearchPage: React.FC = () => {
       )}
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 w-full bg-neutral-900 border-t border-neutral-800 flex justify-around items-center h-20 z-20">
-        <button className="flex flex-col items-center justify-center flex-1 py-2 text-yellow-400">
-        <FontAwesomeIcon icon="fa-square-poll-vertical" size="3xl" style="regular" className="mb-1"/>
+      <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 flex justify-around items-center h-20 z-20">
+        <button className="flex flex-col items-center justify-center flex-1 py-2 text-orange-600">
+          <FontAwesomeIcon icon="fa-square-poll-vertical" size="3xl" style="regular" className="mb-1"/>
           <span className="text-xs font-semibold">Einkaufsliste</span>
         </button>
-        <button className="flex flex-col items-center justify-center flex-1 py-2 text-gray-400">
+        <button className="flex flex-col items-center justify-center flex-1 py-2 text-gray-600">
           <FontAwesomeIcon icon="fa-shelves" size="3xl" style="regular" className="mb-1"/>
           <span className="text-xs font-semibold">Vorrat</span>
         </button>

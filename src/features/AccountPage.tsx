@@ -58,7 +58,7 @@ const AccountPage: React.FC = () => {
     dispatch(setHeader({
       title: 'Account verwalten',
       showBack: true,
-      background: 'bg-yellow-400',
+      background: '',
     }));
     return () => { dispatch(resetHeader()); };
   }, [dispatch]);
@@ -233,63 +233,57 @@ const AccountPage: React.FC = () => {
   const passwordStrength = getPasswordStrength(formData.newPassword);
 
   return (
-    <div className="flex-1">
-      {/* Content */}
-      <div className="flex-1 px-4 pt-6 pb-10">
-        {/* Success Message */}
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {successMessage && (
-          <div className="mb-6 bg-green-900 border border-green-700 rounded-2xl p-4">
-            <div className="text-green-400 text-sm">{successMessage}</div>
+          <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="text-green-700 text-sm">{successMessage}</div>
           </div>
         )}
 
         {/* Profile Section */}
-        <div className="mb-8">
-          <label className="block text-white text-sm font-medium mb-3 uppercase tracking-wide">
-            PROFIL INFORMATIONEN
+        <div className="mb-8 bg-white border border-gray-200 rounded-xl shadow-sm p-5 sm:p-6">
+          <label className="block text-gray-900 text-sm font-semibold mb-4">
+            Profilinformationen
           </label>
           
           {/* Name Fields */}
-          <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div>
               <div className="relative">
-                <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
-                  <FontAwesomeIcon icon="fa-user" size="base" style="regular" className="text-yellow-400"/>
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                  <FontAwesomeIcon icon="fa-user" size="base" style="regular"/>
                 </div>
                 <input
                   type="text"
                   name="firstName"
                   value={formData.firstName}
                   onChange={handleInputChange}
-                  className={`w-full bg-neutral-900 border rounded-2xl pl-12 pr-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-yellow-400 transition-colors ${
-                    errors.firstName ? 'border-red-500' : 'border-gray-700'
-                  }`}
+                  className={`w-full bg-gray-50 border ${errors.firstName ? 'border-red-500' : 'border-gray-400'} rounded-lg pl-10 pr-4 py-3 text-gray-900 placeholder-gray-500 hover:border-gray-500 focus:outline-none focus:border-orange-600 focus:ring-2 focus:ring-orange-500/40`}
                   placeholder="Vorname"
                 />
               </div>
               {errors.firstName && (
-                <p className="text-red-400 text-sm mt-1">{errors.firstName}</p>
+                <p className="text-red-600 text-sm mt-1">{errors.firstName}</p>
               )}
             </div>
 
             <div>
               <div className="relative">
-                <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
-                  <FontAwesomeIcon icon="fa-user" size="base" style="regular" className="text-yellow-400"/>
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                  <FontAwesomeIcon icon="fa-user" size="base" style="regular"/>
                 </div>
                 <input
                   type="text"
                   name="lastName"
                   value={formData.lastName}
                   onChange={handleInputChange}
-                  className={`w-full bg-neutral-900 border rounded-2xl pl-12 pr-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-yellow-400 transition-colors ${
-                    errors.lastName ? 'border-red-500' : 'border-gray-700'
-                  }`}
+                  className={`w-full bg-gray-50 border ${errors.lastName ? 'border-red-500' : 'border-gray-400'} rounded-lg pl-10 pr-4 py-3 text-gray-900 placeholder-gray-500 hover:border-gray-500 focus:outline-none focus:border-orange-600 focus:ring-2 focus:ring-orange-500/40`}
                   placeholder="Nachname"
                 />
               </div>
               {errors.lastName && (
-                <p className="text-red-400 text-sm mt-1">{errors.lastName}</p>
+                <p className="text-red-600 text-sm mt-1">{errors.lastName}</p>
               )}
             </div>
           </div>
@@ -297,100 +291,94 @@ const AccountPage: React.FC = () => {
           {/* Email Field */}
           <div className="mb-4">
             <div className="relative">
-              <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
-                <FontAwesomeIcon icon="fa-envelope" size="base" style="regular" className="text-yellow-400"/>
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                <FontAwesomeIcon icon="fa-envelope" size="base" style="regular"/>
               </div>
               <input
                 type="email"
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                className={`w-full bg-neutral-900 border rounded-2xl pl-12 pr-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-yellow-400 transition-colors ${
-                  errors.email ? 'border-red-500' : 'border-gray-700'
-                }`}
+                className={`w-full bg-gray-50 border ${errors.email ? 'border-red-500' : 'border-gray-400'} rounded-lg pl-10 pr-4 py-3 text-gray-900 placeholder-gray-500 hover:border-gray-500 focus:outline-none focus:border-orange-600 focus:ring-2 focus:ring-orange-500/40`}
                 placeholder="E-Mail-Adresse"
               />
             </div>
             {errors.email && (
-              <p className="text-red-400 text-sm mt-1">{errors.email}</p>
+              <p className="text-red-600 text-sm mt-1">{errors.email}</p>
             )}
           </div>
 
           <button
             onClick={handleSaveProfile}
             disabled={loading}
-            className="w-full bg-yellow-400 text-white font-semibold py-3 rounded-2xl hover:bg-yellow-500 transition-colors disabled:opacity-50"
+            className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-50"
           >
-            {loading ? 'Speichere...' : 'PROFIL SPEICHERN'}
+            {loading ? 'Speichere...' : 'Profil speichern'}
           </button>
         </div>
 
         {/* Password Section */}
-        <div className="mb-8">
-          <label className="block text-white text-sm font-medium mb-3 uppercase tracking-wide">
-            PASSWORT ÄNDERN
+        <div className="mb-8 bg-white border border-gray-200 rounded-xl shadow-sm p-5 sm:p-6">
+          <label className="block text-gray-900 text-sm font-semibold mb-4">
+            Passwort ändern
           </label>
           
           {/* Current Password */}
           <div className="mb-4">
             <div className="relative">
-              <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
-                <FontAwesomeIcon icon="fa-lock" size="base" style="regular" className="text-yellow-400"/>
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                <FontAwesomeIcon icon="fa-lock" size="base" style="regular"/>
               </div>
               <input
                 type={showCurrentPassword ? 'text' : 'password'}
                 name="currentPassword"
                 value={formData.currentPassword}
                 onChange={handleInputChange}
-                className={`w-full bg-neutral-900 border rounded-2xl pl-12 pr-12 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-yellow-400 transition-colors ${
-                  errors.currentPassword ? 'border-red-500' : 'border-gray-700'
-                }`}
+                className={`w-full bg-gray-50 border ${errors.currentPassword ? 'border-red-500' : 'border-gray-400'} rounded-lg pl-10 pr-12 py-3 text-gray-900 placeholder-gray-500 hover:border-gray-500 focus:outline-none focus:border-orange-600 focus:ring-2 focus:ring-orange-500/40`}
                 placeholder="Aktuelles Passwort"
               />
               <button
                 type="button"
                 onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
               >
                 <FontAwesomeIcon icon={showCurrentPassword ? "fa-eye-slash" : "fa-eye"} size="base" style="regular"/>
               </button>
             </div>
             {errors.currentPassword && (
-              <p className="text-red-400 text-sm mt-1">{errors.currentPassword}</p>
+              <p className="text-red-600 text-sm mt-1">{errors.currentPassword}</p>
             )}
           </div>
 
           {/* New Password */}
           <div className="mb-4">
             <div className="relative">
-              <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
-                <FontAwesomeIcon icon="fa-lock" size="base" style="regular" className="text-yellow-400"/>
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                <FontAwesomeIcon icon="fa-lock" size="base" style="regular"/>
               </div>
               <input
                 type={showNewPassword ? 'text' : 'password'}
                 name="newPassword"
                 value={formData.newPassword}
                 onChange={handleInputChange}
-                className={`w-full bg-neutral-900 border rounded-2xl pl-12 pr-12 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-yellow-400 transition-colors ${
-                  errors.newPassword ? 'border-red-500' : 'border-gray-700'
-                }`}
+                className={`w-full bg-gray-50 border ${errors.newPassword ? 'border-red-500' : 'border-gray-400'} rounded-lg pl-10 pr-12 py-3 text-gray-900 placeholder-gray-500 hover:border-gray-500 focus:outline-none focus:border-orange-600 focus:ring-2 focus:ring-orange-500/40`}
                 placeholder="Neues Passwort"
               />
               <button
                 type="button"
                 onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
               >
                 <FontAwesomeIcon icon={showNewPassword ? "fa-eye-slash" : "fa-eye"} size="base" style="regular"/>
               </button>
             </div>
             {errors.newPassword && (
-              <p className="text-red-400 text-sm mt-1">{errors.newPassword}</p>
+              <p className="text-red-600 text-sm mt-1">{errors.newPassword}</p>
             )}
             {formData.newPassword && (
               <div className="mt-2">
                 <div className="flex items-center gap-2 mb-1">
-                  <div className="flex-1 bg-gray-700 rounded-full h-2">
+                  <div className="flex-1 bg-gray-200 rounded-full h-2">
                     <div 
                       className={`h-2 rounded-full transition-all ${
                         passwordStrength.percentage <= 20 ? 'bg-red-500' :
@@ -401,7 +389,7 @@ const AccountPage: React.FC = () => {
                       style={{ width: `${passwordStrength.percentage}%` }}
                     />
                   </div>
-                  <span className={`text-xs ${passwordStrength.color}`}>
+                  <span className={`text-xs ${passwordStrength.color.replace('text-', 'text-')}`}>
                     {passwordStrength.strength}
                   </span>
                 </div>
@@ -412,53 +400,51 @@ const AccountPage: React.FC = () => {
           {/* Confirm Password */}
           <div className="mb-4">
             <div className="relative">
-              <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
-                <FontAwesomeIcon icon="fa-lock" size="base" style="regular" className="text-yellow-400"/>
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                <FontAwesomeIcon icon="fa-lock" size="base" style="regular"/>
               </div>
               <input
                 type={showConfirmPassword ? 'text' : 'password'}
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleInputChange}
-                className={`w-full bg-neutral-900 border rounded-2xl pl-12 pr-12 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-yellow-400 transition-colors ${
-                  errors.confirmPassword ? 'border-red-500' : 'border-gray-700'
-                }`}
+                className={`w-full bg-gray-50 border ${errors.confirmPassword ? 'border-red-500' : 'border-gray-400'} rounded-lg pl-10 pr-12 py-3 text-gray-900 placeholder-gray-500 hover:border-gray-500 focus:outline-none focus:border-orange-600 focus:ring-2 focus:ring-orange-500/40`}
                 placeholder="Passwort bestätigen"
               />
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
               >
                 <FontAwesomeIcon icon={showConfirmPassword ? "fa-eye-slash" : "fa-eye"} size="base" style="regular"/>
               </button>
             </div>
             {errors.confirmPassword && (
-              <p className="text-red-400 text-sm mt-1">{errors.confirmPassword}</p>
+              <p className="text-red-600 text-sm mt-1">{errors.confirmPassword}</p>
             )}
           </div>
 
           <button
             onClick={handleChangePassword}
             disabled={loading}
-            className="w-full bg-yellow-400 text-white font-semibold py-3 rounded-2xl hover:bg-yellow-500 transition-colors disabled:opacity-50"
+            className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-50"
           >
-            {loading ? 'Ändere...' : 'PASSWORT ÄNDERN'}
+            {loading ? 'Ändere...' : 'Passwort ändern'}
           </button>
         </div>
 
         {/* Logout Section */}
-        <div className="mb-8">
-          <label className="block text-white text-sm font-medium mb-3 uppercase tracking-wide">
-            ACCOUNT
+        <div className="mb-8 bg-white border border-gray-200 rounded-xl shadow-sm p-5 sm:p-6">
+          <label className="block text-gray-900 text-sm font-semibold mb-4">
+            Account
           </label>
           
           <button
             onClick={handleLogout}
             disabled={loading}
-            className="w-full bg-red-600 text-white font-semibold py-3 rounded-2xl hover:bg-red-700 transition-colors disabled:opacity-50"
+            className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-50"
           >
-            {loading ? 'Melde ab...' : 'ABMELDEN'}
+            {loading ? 'Melde ab...' : 'Abmelden'}
           </button>
         </div>
       </div>

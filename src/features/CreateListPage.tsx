@@ -23,7 +23,7 @@ const CreateListPage: React.FC = () => {
     dispatch(setHeader({
       title: 'Benenne deine neue Einkaufsliste',
       showBack: true,
-      background: 'bg-yellow-400',
+      background: '',
     }));
     return () => { dispatch(resetHeader()); };
   }, [dispatch]);
@@ -61,11 +61,10 @@ const CreateListPage: React.FC = () => {
   };
 
   return (
-    <div className="flex-1">
-      {/* Content */}
-      <div className="flex-1 px-4 pt-6 pb-10">
-        <div className="mb-6">
-          <label htmlFor="listName" className="block text-white text-lg font-medium mb-3">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="mb-6 bg-white border border-gray-200 rounded-xl shadow-sm p-5 sm:p-6">
+          <label htmlFor="listName" className="block text-gray-900 text-sm font-semibold mb-3">
             Listenname
           </label>
           <input
@@ -74,18 +73,18 @@ const CreateListPage: React.FC = () => {
             value={listName}
             onChange={(e) => setListName(e.target.value)}
             placeholder="z.B. Wocheneinkauf"
-            className="w-full bg-neutral-900 border border-gray-700 rounded-2xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-yellow-400 transition-colors"
+            className="w-full bg-gray-50 border border-gray-400 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-500 hover:border-gray-500 focus:outline-none focus:border-orange-600 focus:ring-2 focus:ring-orange-500/40"
             autoFocus
           />
         </div>
-        
+
         <button
           onClick={handleCreateList}
           disabled={!listName.trim()}
-          className="w-full bg-orange-500 text-white font-semibold py-3 rounded-xl mb-4 flex items-center justify-center text-lg gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-orange-600 transition-colors"
+          className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 rounded-lg mb-4 flex items-center justify-center text-lg gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <FontAwesomeIcon icon="fa-plus" size="xl" style="regular"/>
-          LISTE ERSTELLEN
+          Liste erstellen
         </button>
       </div>
     </div>

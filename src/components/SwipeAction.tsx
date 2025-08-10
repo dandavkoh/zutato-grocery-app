@@ -81,11 +81,14 @@ const SwipeAction: React.FC<SwipeActionProps> = ({ children, onDelete, className
   return (
     <div 
       ref={containerRef}
-      className={`relative overflow-hidden ${className}`}
+      className={`relative overflow-hidden bg-white ${className}`}
       style={{ touchAction: 'pan-y' }}
     >
       {/* Hintergrund-Action */}
-      <div className="absolute inset-y-0 right-0 flex items-center bg-red-500 w-[120px]">
+      <div 
+        className="absolute inset-y-0 right-0 flex items-center bg-red-500 w-[120px] z-0"
+        style={{ opacity: Math.min(1, Math.abs(translateX) / MAX_SWIPE) }}
+      >
         <button
           onClick={handleDelete}
           className="w-full h-full px-6 text-white font-semibold text-sm whitespace-nowrap bg-red-500 hover:bg-red-600 focus:bg-red-500 active:bg-red-700 transition-colors duration-200 flex items-center justify-center"
@@ -98,7 +101,7 @@ const SwipeAction: React.FC<SwipeActionProps> = ({ children, onDelete, className
       {/* Hauptinhalt */}
       <div
         ref={contentRef}
-        className="relative bg-neutral-900 transition-transform duration-200 ease-out"
+        className="relative bg-white w-full z-10 transition-transform duration-200 ease-out"
         style={{
           transform: `translateX(${translateX}px)`,
           touchAction: 'pan-y',

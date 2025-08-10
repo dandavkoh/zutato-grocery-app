@@ -31,7 +31,7 @@ const UnitSelectPage: React.FC = () => {
     dispatch(setHeader({
       title: 'Einheit',
       showBack: true,
-      background: 'bg-yellow-400',
+      background: '',
     }));
     return () => { dispatch(resetHeader()); };
   }, [dispatch]);
@@ -84,43 +84,44 @@ const UnitSelectPage: React.FC = () => {
   };
 
   return (
-    <div className="w-full pb-8 pt-2">
-      {loading ? (
-        <div className="text-center py-8">Lädt Einheiten...</div>
-      ) : units.length === 0 ? (
-        <div className="text-center py-8">Keine Einheiten gefunden.</div>
-      ) : (
-        <>
-          {/* "Keine Einheit" Option */}
-          <button
-            className="flex items-center px-5 py-3 border-b border-neutral-800 bg-neutral-900 w-full text-left hover:bg-neutral-800 transition-colors"
-            onClick={() => handleUnitSelect(null)}
-          >
-            <span className="text-lg text-gray-300 flex-1">Keine Einheit</span>
-            {!item?.unit_id && (
-              <span className="text-yellow-400">
-                <FontAwesomeIcon icon="fa-circle-check" size="xl" style="regular"/>
-              </span>
-            )}
-          </button>
-          
-          {/* Regular units */}
-          {units.map((unit, index) => (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {loading ? (
+          <div className="text-center py-12 text-gray-700">Lädt Einheiten...</div>
+        ) : units.length === 0 ? (
+          <div className="text-center py-12 text-gray-500">Keine Einheiten gefunden.</div>
+        ) : (
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
             <button
-              key={index}
-              className="flex items-center px-5 py-3 border-b border-neutral-800 bg-neutral-900 w-full text-left hover:bg-neutral-800 transition-colors"
-              onClick={() => handleUnitSelect(unit.id)}
+              className="flex items-center px-5 py-3 w-full text-left hover:bg-orange-50 transition-colors"
+              onClick={() => handleUnitSelect(null)}
             >
-              <span className="text-lg text-gray-300 flex-1">{formatUnitDisplay(unit)}</span>
-              {unit.id === item?.unit_id && (
-                <span className="text-yellow-400">
+              <span className="text-base text-gray-900 flex-1">Keine Einheit</span>
+              {!item?.unit_id && (
+                <span className="text-orange-600">
                   <FontAwesomeIcon icon="fa-circle-check" size="xl" style="regular"/>
                 </span>
               )}
             </button>
-          ))}
-        </>
-      )}
+            <div className="border-t border-gray-200" />
+            {units.map((unit, index) => (
+              <div key={index} className={index < units.length - 1 ? 'border-b border-gray-200' : ''}>
+                <button
+                  className="flex items-center px-5 py-3 w-full text-left hover:bg-orange-50 transition-colors"
+                  onClick={() => handleUnitSelect(unit.id)}
+                >
+                  <span className="text-base text-gray-900 flex-1">{formatUnitDisplay(unit)}</span>
+                  {unit.id === item?.unit_id && (
+                    <span className="text-orange-600">
+                      <FontAwesomeIcon icon="fa-circle-check" size="xl" style="regular"/>
+                    </span>
+                  )}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

@@ -31,7 +31,7 @@ const CategorySelectPage: React.FC = () => {
     dispatch(setHeader({
       title: 'Kategorie wechseln',
       showBack: true,
-      background: 'bg-yellow-400',
+      background: '',
     }));
     return () => { dispatch(resetHeader()); };
   }, [dispatch]);
@@ -74,52 +74,47 @@ const CategorySelectPage: React.FC = () => {
   };
 
   return (
-    <div className="w-full pb-8 pt-2">
+    <div className="min-h-screen bg-gray-50">
       {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="text-gray-400">Lade Kategorien...</div>
-        </div>
+        <div className="flex items-center justify-center h-64 text-gray-700">Lade Kategorien...</div>
       ) : (
-        <>
-          {/* "Keine" Option */}
-          <button
-            className="flex items-center px-5 py-3 border-b border-neutral-800 bg-neutral-900 w-full text-left hover:bg-neutral-800 transition-colors"
-            onClick={() => handleCategorySelect(null)}
-          >
-            <div className="w-12 flex justify-center mr-4">
-              <span className="text-gray-300">
-                <FontAwesomeIcon icon="basket-shopping" size="3xl" style="regular"/>
-              </span>
-            </div>
-            <span className="text-lg text-gray-300 flex-1">Keine Kategorie</span>
-            {!item?.category_id && (
-              <span className="text-yellow-400">
-                <FontAwesomeIcon icon="fa-circle-check" size="xl" style="regular"/>
-              </span>
-            )}
-          </button>
-          
-          {/* Regular categories */}
-          {categories.map((cat) => (
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
             <button
-              key={cat.id}
-              className="flex items-center px-5 py-3 border-b border-neutral-800 bg-neutral-900 w-full text-left hover:bg-neutral-800 transition-colors"
-              onClick={() => handleCategorySelect(cat.id)}
+              className="flex items-center px-5 py-3 w-full text-left hover:bg-orange-50 transition-colors"
+              onClick={() => handleCategorySelect(null)}
             >
-              <div className="w-12 flex justify-center mr-4">
-                <span className="text-gray-300">
-                  <FontAwesomeIcon icon={cat.icon} size="3xl" style="regular"/>
-                </span>
+              <div className="w-12 flex justify-center mr-4 text-gray-600">
+                <FontAwesomeIcon icon="basket-shopping" size="3xl" style="regular"/>
               </div>
-              <span className="text-lg text-gray-300 flex-1">{cat.name}</span>
-              {cat.id === item?.category_id && (
-                <span className="text-yellow-400">
+              <span className="text-base text-gray-900 flex-1">Keine Kategorie</span>
+              {!item?.category_id && (
+                <span className="text-orange-600">
                   <FontAwesomeIcon icon="fa-circle-check" size="xl" style="regular"/>
                 </span>
               )}
             </button>
-          ))}
-        </>
+            <div className="border-t border-gray-200" />
+            {categories.map((cat, idx) => (
+              <div key={cat.id} className={idx < categories.length - 1 ? 'border-b border-gray-200' : ''}>
+                <button
+                  className="flex items-center px-5 py-3 w-full text-left hover:bg-orange-50 transition-colors"
+                  onClick={() => handleCategorySelect(cat.id)}
+                >
+                  <div className="w-12 flex justify-center mr-4 text-gray-600">
+                    <FontAwesomeIcon icon={cat.icon} size="3xl" style="regular"/>
+                  </div>
+                  <span className="text-base text-gray-900 flex-1">{cat.name}</span>
+                  {cat.id === item?.category_id && (
+                    <span className="text-orange-600">
+                      <FontAwesomeIcon icon="fa-circle-check" size="xl" style="regular"/>
+                    </span>
+                  )}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );

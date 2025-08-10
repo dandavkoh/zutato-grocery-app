@@ -63,94 +63,101 @@ const Header: React.FC = () => {
   };
 
   return (
-    <div className={`relative ${background} rounded-b-3xl px-6 pt-8 pb-6 flex flex-col items-center ${className}`}>
-      {showBack && (
-        <button 
-          className="absolute left-4 top-14 bg-yellow-400/60 rounded-full p-2 z-50" 
-          onClick={handleBackClick}
-          style={{zIndex: 1000}}
-        >
-          <FontAwesomeIcon icon="fa-chevron-left" size="xl" style="regular"/>
-        </button>
-      )}
-      {/* Title Row: Different layouts for ShoppingListPage vs other pages */}
-      {!showBack && showFilterIcon ? (
-        // ShoppingListPage: Home icon + Title + Filter icon
-        <div className="w-full flex items-center justify-between mt-6 mb-2 drop-shadow-lg">
-          <div className="flex items-center">
-            <div
-              className="mr-3 cursor-pointer"
-              onClick={() => navigate('/lists')}
-            >
-              <FontAwesomeIcon icon="fa-house" size="2xl"/>
-            </div>
-            <div className="text-3xl font-cursive text-white font-bold text-left">{title}</div>
-          </div>
-          {showFilterIcon && (
-            <div
-              className="cursor-pointer"
-              onClick={handleFilterClick}
-            >
-              <FontAwesomeIcon icon="fa-filter" size="2xl"/>
-            </div>
-          )}
-        </div>
-      ) : (
-        // Other pages: Centered title
-        <div className="text-3xl font-cursive text-white font-bold mt-6 mb-2 drop-shadow-lg text-center">{title}</div>
-      )}
-      {subtitle && <div className="text-lg text-white mb-2">{subtitle}</div>}
-      {showRightButton && (
-        <div className="absolute right-6 top-14">
-          <button 
-            className="bg-yellow-300/80 rounded-full p-3 shadow-lg"
-            onClick={handleRightButtonClick}
-          >
-            <FontAwesomeIcon icon="fa-square-plus" size="xl" style="regular"/>
-          </button>
-        </div>
-      )}
-      {showSearchBar && (
-        <div className="w-full flex justify-center mt-4">
-          <div className="flex items-center bg-black rounded-2xl w-full px-4 py-2 relative">
-            <FontAwesomeIcon icon="fa-magnifying-glass" size="base" style="regular" className="mr-3"/>
-            <input
-              className="bg-transparent outline-none text-white placeholder-gray-400 flex-1 cursor-pointer"
-              placeholder={searchPlaceholder}
-              value={searchValue}
-              {...(isSearchPage
-                ? { 
-                    autoFocus: true, 
-                    readOnly: false, 
-                    onChange: (e: React.ChangeEvent<HTMLInputElement>) => dispatch(setSearch(e.target.value)),
-                    onClick: (e: React.MouseEvent<HTMLInputElement>) => {
-                      e.currentTarget.select();
-                    },
-                    onContextMenu: (e: React.MouseEvent<HTMLInputElement>) => {
-                      e.preventDefault();
-                    }
-                  }
-                : { 
-                    readOnly: true, 
-                    onClick: () => navigate(`/shopping-list/${listId}/search`) 
-                  }
-              )}
-            />
-            {isSearchPage && (
-              <span
-                className="ml-3 text-white font-semibold cursor-pointer select-none"
-                onClick={() => {
-                  dispatch({ type: 'search/clearSearch' });
-                  navigateToParent();
-                }}
+    <header className={`bg-white shadow-md sticky top-0 z-50 ${className}`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Top row: back/home, title, optional actions */}
+        <div className="flex items-center justify-between py-4">
+          <div className="flex items-center gap-3">
+            {showBack && (
+              <button 
+                className="p-2 rounded-full border border-gray-300 text-gray-700 hover:bg-gray-100"
+                onClick={handleBackClick}
               >
-                FERTIG
-              </span>
+                <FontAwesomeIcon icon="fa-chevron-left" size="lg" style="regular"/>
+              </button>
+            )}
+            {!showBack && showFilterIcon && (
+              <button 
+                className="p-2 rounded-full border border-gray-300 text-gray-700 hover:bg-gray-100"
+                onClick={() => navigate('/lists')}
+              >
+                <FontAwesomeIcon icon="fa-house" size="lg" />
+              </button>
+            )}
+            <div className="text-xl sm:text-2xl font-bold text-gray-900">{title}</div>
+            {subtitle && <div className="text-sm text-gray-500 ml-2">{subtitle}</div>}
+          </div>
+
+          <div className="flex items-center gap-3">
+            {showFilterIcon && (
+              <button
+                className="p-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100"
+                onClick={handleFilterClick}
+              >
+                <FontAwesomeIcon icon="fa-filter" size="lg" />
+              </button>
+            )}
+            {showRightButton && (
+              <button 
+                className="p-2.5 rounded-md bg-orange-600 hover:bg-orange-700 text-white"
+                onClick={handleRightButtonClick}
+              >
+                <FontAwesomeIcon icon="fa-square-plus" size="lg" style="regular"/>
+              </button>
             )}
           </div>
         </div>
-      )}
-    </div>
+
+        {showSearchBar && (
+          <div className="pb-4">
+            <div className="flex">
+              <div className="flex items-center w-full">
+                <div className="flex items-center w-full">
+                  <div className="flex items-center w-full">
+                    <div className="flex items-center w-full border border-gray-400 rounded-full bg-gray-50 px-4 py-2">
+                      <FontAwesomeIcon icon="fa-magnifying-glass" size="base" style="regular" className="mr-3 text-gray-600"/>
+                      <input
+                        className="bg-transparent outline-none text-gray-900 placeholder-gray-500 flex-1 cursor-pointer"
+                        placeholder={searchPlaceholder}
+                        value={searchValue}
+                        {...(isSearchPage
+                          ? { 
+                              autoFocus: true, 
+                              readOnly: false, 
+                              onChange: (e: React.ChangeEvent<HTMLInputElement>) => dispatch(setSearch(e.target.value)),
+                              onClick: (e: React.MouseEvent<HTMLInputElement>) => {
+                                e.currentTarget.select();
+                              },
+                              onContextMenu: (e: React.MouseEvent<HTMLInputElement>) => {
+                                e.preventDefault();
+                              }
+                            }
+                          : { 
+                              readOnly: true, 
+                              onClick: () => navigate(`/shopping-list/${listId}/search`) 
+                            }
+                        )}
+                      />
+                      {isSearchPage && (
+                        <span
+                          className="ml-3 text-orange-600 font-semibold cursor-pointer select-none"
+                          onClick={() => {
+                            dispatch({ type: 'search/clearSearch' });
+                            navigateToParent();
+                          }}
+                        >
+                          Fertig
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </header>
   );
 };
 

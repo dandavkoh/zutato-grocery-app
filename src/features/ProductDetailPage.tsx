@@ -55,7 +55,7 @@ const ProductDetailPage: React.FC = () => {
       title: item?.name || 'Produkt',
       showBack: true,
       showRightButton: true,
-      background: 'bg-gradient-to-b from-yellow-400 to-yellow-500',
+      background: '',
     }));
     return () => { dispatch(resetHeader()); };
   }, [dispatch, item]);
@@ -199,53 +199,53 @@ const ProductDetailPage: React.FC = () => {
   // If no item data is available, show a fallback
   if (!item) {
     return (
-      <div className="w-full pb-8 pt-2">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-gray-400">Produktdaten nicht verfügbar</div>
-        </div>
+      <div className="min-h-screen bg-gray-50">
+        <div className="flex items-center justify-center h-64 text-gray-600">Produktdaten nicht verfügbar</div>
       </div>
     );
   }
 
   return (
-    <div className="w-full pb-8 pt-2">
-      <div className="flex flex-col gap-3">
-        {/* Läden */}
-        <div className="border-b border-neutral-800 bg-neutral-900 px-5 py-4">
-          <div className="text-xs text-gray-400 mb-1">LÄDEN</div>
-          <div className="flex items-center justify-between">
-            <span className="text-gray-300">
-              {item.store
-                ? item.store
-                : 'Wähle den Laden aus, das diesem Produkt zugeordnet werden soll.'
-              }
-            </span>
-            <FontAwesomeIcon className="w-5 h-5 text-gray-500 ml-2" icon="fa-chevron-right" size="base" style="regular"/>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        {/* Läden & Personen */}
+        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-200">
+            <div className="text-xs text-gray-500 mb-1">Läden</div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-900">
+                {item.store
+                  ? item.store
+                  : 'Wähle den Laden aus, das diesem Produkt zugeordnet werden soll.'
+                }
+              </span>
+              <FontAwesomeIcon className="w-5 h-5 text-gray-400 ml-2" icon="fa-chevron-right" size="base" style="regular"/>
+            </div>
+          </div>
+          <div className="px-5 py-4">
+            <div className="text-xs text-gray-500 mb-1">Personen</div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-900">
+                {item.assignedTo
+                  ? item.assignedTo
+                  : 'Wähle Person aus, die diesem Produkt zugeordnet werden soll.'
+                }
+              </span>
+              <FontAwesomeIcon className="w-5 h-5 text-gray-400 ml-2" icon="fa-chevron-right" size="base" style="regular"/>
+            </div>
           </div>
         </div>
-        {/* Personen */}
-        <div className="border-b border-neutral-800 bg-neutral-900 px-5 py-4">
-          <div className="text-xs text-gray-400 mb-1">PERSONEN</div>
-          <div className="flex items-center justify-between">
-            <span className="text-gray-300">
-              {item.assignedTo
-                ? item.assignedTo
-                : 'Wähle Person aus, die diesem Produkt zugeordnet werden soll.'
-              }
-            </span>
-            <FontAwesomeIcon className="w-5 h-5 text-gray-500 ml-2" icon="fa-chevron-right" size="base" style="regular"/>
-          </div>
-        </div>
+
         {/* Notiz */}
-        <div className="border-b border-neutral-800 bg-neutral-900 px-5 py-4">
-          <div className="text-xs text-gray-400 mb-1">NOTIZ</div>
+        <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
+          <div className="text-xs text-gray-500 mb-2">Notiz</div>
           {isEditingNotes ? (
             <div className="space-y-3">
               <textarea
                 value={notesValue}
                 onChange={(e) => setNotesValue(e.target.value)}
                 placeholder="Notiz hinzufügen"
-                className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-gray-200 placeholder-gray-500 focus:outline-none focus:border-yellow-400 resize-none"
+                className="w-full bg-gray-50 border border-gray-400 rounded-lg px-3 py-2 text-gray-900 placeholder-gray-500 hover:border-gray-500 focus:outline-none focus:border-orange-600 focus:ring-2 focus:ring-orange-500/40 resize-none"
                 rows={3}
                 autoFocus
               />
@@ -253,14 +253,14 @@ const ProductDetailPage: React.FC = () => {
                 <button
                   onClick={handleNotesCancel}
                   disabled={isSavingNotes}
-                  className="flex-1 bg-neutral-700 text-gray-200 font-semibold py-2 px-4 rounded-lg hover:bg-neutral-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Abbrechen
                 </button>
                 <button
                   onClick={handleNotesSave}
                   disabled={isSavingNotes}
-                  className="flex-1 bg-yellow-400 text-black font-semibold py-2 px-4 rounded-lg hover:bg-yellow-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSavingNotes ? 'Speichern...' : 'Speichern'}
                 </button>
@@ -269,18 +269,19 @@ const ProductDetailPage: React.FC = () => {
           ) : (
             <button
               onClick={handleNotesEdit}
-              className="w-full text-left hover:bg-neutral-800 -mx-5 px-5 py-2 rounded-lg transition-colors"
+              className="w-full text-left hover:bg-orange-50 -mx-5 px-5 py-2 rounded-lg transition-colors"
             >
-              <div className="text-gray-300">
+              <div className="text-gray-900">
                 {item.notes || 'Notiz hinzufügen'}
               </div>
             </button>
           )}
         </div>
+
         {/* Menge & Einheit */}
-        <div className="flex gap-2">
-          <div className="flex-1 bg-neutral-900 border-b border-neutral-800 py-4 px-5 rounded-r-lg">
-            <div className="text-xs text-gray-400 mb-1">MENGE</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
+            <div className="text-xs text-gray-500 mb-2">Menge</div>
             {isEditingQuantity ? (
               <div className="space-y-3">
                 <input
@@ -289,21 +290,21 @@ const ProductDetailPage: React.FC = () => {
                   value={quantityValue}
                   onChange={handleQuantityChange}
                   placeholder="Menge eingeben"
-                  className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-gray-200 placeholder-gray-500 focus:outline-none focus:border-yellow-400"
+                  className="w-full bg-gray-50 border border-gray-400 rounded-lg px-3 py-2 text-gray-900 placeholder-gray-500 hover:border-gray-500 focus:outline-none focus:border-orange-600"
                   autoFocus
                 />
                 <div className="flex gap-2">
                   <button
                     onClick={handleQuantityCancel}
                     disabled={isSavingQuantity}
-                    className="flex-1 bg-neutral-700 text-gray-200 font-semibold py-2 px-4 rounded-lg hover:bg-neutral-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Abbrechen
                   </button>
                   <button
                     onClick={handleQuantitySave}
                     disabled={isSavingQuantity}
-                    className="flex-1 bg-yellow-400 text-black font-semibold py-2 px-4 rounded-lg hover:bg-yellow-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSavingQuantity ? 'Speichern...' : 'Speichern'}
                   </button>
@@ -312,36 +313,37 @@ const ProductDetailPage: React.FC = () => {
             ) : (
               <button
                 onClick={handleQuantityEdit}
-                className="w-full text-left hover:bg-neutral-800 -mx-5 px-5 py-2 rounded-lg transition-colors"
+                className="w-full text-left hover:bg-orange-50 -mx-5 px-5 py-2 rounded-lg transition-colors"
               >
-                <div className="text-gray-300">
+                <div className="text-gray-900">
                   {item.quantity || 'Menge eingeben'}
                 </div>
               </button>
             )}
           </div>
           <button
-            className="flex-1 bg-neutral-900 border-b border-neutral-800 py-4 px-5 flex items-center justify-between text-left rounded-l-lg"
+            className="bg-white border border-gray-200 rounded-xl shadow-sm p-5 text-left flex items-center justify-between"
             onClick={() => navigate(`/shopping-list/${listId}/product/${productId}/unit`, { state: { item: item } })}
           >
             <div>
-              <div className="text-xs text-gray-400 mb-1">EINHEIT</div>
-              <div className="text-gray-300">
+              <div className="text-xs text-gray-500 mb-2">Einheit</div>
+              <div className="text-gray-900">
                 {item.unit_id ? getUnitNameById(item.unit_id, units) : 'Einheit eingeben'}
               </div>
             </div>
-            <FontAwesomeIcon className="w-5 h-5 text-gray-500 ml-2" icon="fa-chevron-right" size="base" style="regular"/>
+            <FontAwesomeIcon className="w-5 h-5 text-gray-400 ml-2" icon="fa-chevron-right" size="base" style="regular"/>
           </button>
         </div>
+
         {/* Kategorie wechseln */}
         <button
-          className="bg-neutral-900 border-b border-neutral-800 px-5 py-4 w-full text-left"
+          className="bg-white border border-gray-200 rounded-xl shadow-sm px-5 py-4 w-full text-left hover:bg-orange-50"
           onClick={() => navigate(`/shopping-list/${listId}/product/${productId}/category`, { state: { item: item } })}
         >
-          <div className="text-xs text-gray-400 mb-1">KATEGORIE WECHSELN</div>
+          <div className="text-xs text-gray-500 mb-2">Kategorie wechseln</div>
           <div className="flex items-center gap-2">
-            <FontAwesomeIcon icon={categoryIcon} size="2xl" style="regular"/>
-            <span className="text-gray-300">{categoryName}</span>
+            <span className="text-gray-700"><FontAwesomeIcon icon={categoryIcon} size="2xl" style="regular"/></span>
+            <span className="text-gray-900">{categoryName}</span>
           </div>
         </button>
       </div>

@@ -147,16 +147,16 @@ const InvitationManager: React.FC<InvitationManagerProps> = ({ listId }) => {
   }, [listId]);
 
   return (
-    <div className="mb-8">
-      <label className="block text-white text-sm font-medium mb-3 uppercase tracking-wide">
-        EINLADUNGEN VERWALTEN
+    <div className="">
+      <label className="block text-gray-900 text-sm font-semibold mb-3">
+        Einladungen verwalten
       </label>
       
       {/* Create new invitation button */}
       <button
         onClick={handleCreateInvitation}
         disabled={creating}
-        className="w-full bg-neutral-900 border border-yellow-400 text-white font-semibold py-3 rounded-2xl hover:bg-yellow-400 hover:text-black transition-colors mb-4 disabled:opacity-50"
+        className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 rounded-lg transition-colors mb-4 disabled:opacity-50"
       >
         {creating ? (
           <span className="flex items-center justify-center gap-2">
@@ -173,25 +173,25 @@ const InvitationManager: React.FC<InvitationManagerProps> = ({ listId }) => {
 
       {/* New invitation modal */}
       {showNewInvitation && newInvitation && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-neutral-900 rounded-2xl p-6 max-w-md w-full">
-            <h3 className="text-white text-lg font-semibold mb-4">Neue Einladung erstellt!</h3>
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-lg">
+            <h3 className="text-gray-900 text-lg font-semibold mb-4">Neue Einladung erstellt!</h3>
             
-            <div className="bg-neutral-800 rounded-xl p-4 mb-4">
-              <div className="text-gray-400 text-sm mb-2">Einladungscode:</div>
-              <div className="text-white font-mono text-lg mb-2 break-all">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+              <div className="text-gray-600 text-sm mb-2">Einladungscode:</div>
+              <div className="text-gray-900 font-mono text-lg mb-2 break-all">
                 {newInvitation.invitation_code}
               </div>
               <button
                 onClick={() => copyToClipboard(newInvitation.invitation_code)}
-                className="text-yellow-400 hover:text-yellow-300 text-sm flex items-center gap-1"
+                className="text-orange-600 hover:text-orange-700 text-sm flex items-center gap-1"
               >
                 <FontAwesomeIcon icon="fa-copy" size="base" style="regular"/>
                 In Zwischenablage kopieren
               </button>
             </div>
             
-            <div className="text-gray-400 text-sm mb-4">
+            <div className="text-gray-600 text-sm mb-4">
               <div>Gültig bis: {formatDate(newInvitation.expires_at)}</div>
               <div className="mt-1">Teile diesen Code mit der Person, die du einladen möchtest.</div>
             </div>
@@ -201,7 +201,7 @@ const InvitationManager: React.FC<InvitationManagerProps> = ({ listId }) => {
                 setShowNewInvitation(false);
                 setNewInvitation(null);
               }}
-              className="w-full bg-yellow-400 text-black font-semibold py-3 rounded-xl hover:bg-yellow-500 transition-colors"
+              className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 rounded-lg transition-colors"
             >
               Verstanden
             </button>
@@ -213,19 +213,19 @@ const InvitationManager: React.FC<InvitationManagerProps> = ({ listId }) => {
       <div className="space-y-3">
         {loading ? (
           <div className="text-center py-4">
-            <div className="text-white">Lade Einladungen...</div>
+            <div className="text-gray-700">Lade Einladungen...</div>
           </div>
         ) : invitations.length > 0 ? (
           invitations.map((invitation) => (
-            <div key={invitation.id} className="bg-neutral-900 rounded-2xl p-4">
+            <div key={invitation.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center">
-                    <FontAwesomeIcon icon="fa-ticket" size="base" style="regular" className="text-black"/>
+                  <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center">
+                    <FontAwesomeIcon icon="fa-ticket" size="base" style="regular" className="text-white"/>
                   </div>
                   <div>
-                    <div className="text-white font-mono text-sm">{invitation.invitation_code}</div>
-                    <div className={`text-xs ${getStatusColor(invitation.status)}`}>
+                    <div className="text-gray-900 font-mono text-sm">{invitation.invitation_code}</div>
+                    <div className={`text-xs ${getStatusColor(invitation.status).replace('text-yellow-400', 'text-orange-600')}`}>
                       {getStatusText(invitation.status)}
                     </div>
                   </div>
@@ -236,21 +236,21 @@ const InvitationManager: React.FC<InvitationManagerProps> = ({ listId }) => {
                   <div className="flex gap-2">
                     <button
                       onClick={() => copyToClipboard(invitation.invitation_code)}
-                      className="text-yellow-400 hover:text-yellow-300 p-2"
+                      className="text-orange-600 hover:text-orange-700 p-2"
                       title="Code kopieren"
                     >
                       <FontAwesomeIcon icon="fa-copy" size="base" style="regular"/>
                     </button>
                     <button
                       onClick={() => handleInvalidateInvitation(invitation.id)}
-                      className="text-red-400 hover:text-red-300 p-2"
+                      className="text-red-600 hover:text-red-700 p-2"
                       title="Ungültig machen"
                     >
                       <FontAwesomeIcon icon="fa-ban" size="base" style="regular"/>
                     </button>
                     <button
                       onClick={() => handleDeleteInvitation(invitation.id)}
-                      className="text-gray-400 hover:text-red-400 p-2"
+                      className="text-gray-500 hover:text-red-600 p-2"
                       title="Löschen"
                     >
                       <FontAwesomeIcon icon="fa-trash" size="base" style="regular"/>
@@ -259,7 +259,7 @@ const InvitationManager: React.FC<InvitationManagerProps> = ({ listId }) => {
                 )}
               </div>
               
-              <div className="text-gray-400 text-xs">
+              <div className="text-gray-600 text-xs">
                 <div>Erstellt: {formatDate(invitation.created_at)}</div>
                 <div>Gültig bis: {formatDate(invitation.expires_at)}</div>
                 {invitation.used_at && (
@@ -273,7 +273,7 @@ const InvitationManager: React.FC<InvitationManagerProps> = ({ listId }) => {
           ))
         ) : (
           <div className="text-center py-4">
-            <div className="text-gray-400">Keine Einladungen vorhanden</div>
+            <div className="text-gray-600">Keine Einladungen vorhanden</div>
           </div>
         )}
       </div>

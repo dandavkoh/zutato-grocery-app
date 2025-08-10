@@ -71,7 +71,7 @@ const ShoppingListPage: React.FC = () => {
     dispatch(setHeader({
       title: list?.name || 'Lade...',
       showBack: false,
-      background: 'bg-yellow-400',
+      background: '',
       showSearchBar: true,
       showFilterIcon: true,
     }));
@@ -146,9 +146,9 @@ const ShoppingListPage: React.FC = () => {
   // Loading state
   if (loading && items.length === 0 || categoriesLoading || unitsLoading) {
     return (
-      <div className="min-h-screen bg-black flex flex-col">
+      <div className="min-h-screen bg-gray-50 flex flex-col">
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-white text-lg">Lade Einkaufsliste...</div>
+          <div className="text-gray-700 text-lg">Lade Einkaufsliste...</div>
         </div>
       </div>
     );
@@ -157,79 +157,76 @@ const ShoppingListPage: React.FC = () => {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-black flex flex-col">
+      <div className="min-h-screen bg-gray-50 flex flex-col">
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-red-400 text-lg">Fehler beim Laden: {error}</div>
+          <div className="text-red-600 text-lg">Fehler beim Laden: {error}</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black flex flex-col">
-      {/* Header entfernt, global! */}
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Info-Box */}
-      <div className="bg-neutral-900 flex items-center gap-3 px-4 py-3 mt-2 mb-2">
-        <FontAwesomeIcon icon="bell" className="text-yellow-400" size="2xl"/>
-        <span className="text-gray-200 text-sm flex-1">ZUTATO - Testversion</span>
+      <div className="bg-white border border-gray-200 shadow-sm flex items-center gap-3 px-4 py-3 mt-2 mb-2">
+        <FontAwesomeIcon icon="bell" className="text-orange-600" size="2xl"/>
+        <span className="text-gray-900 text-sm flex-1">ZUTATO - Testversion</span>
       </div>
 
       {/* Kategorien & Produkte */}
       <div className="flex-1 overflow-y-auto pb-32">
-        <div className="divide-y divide-neutral-800">
-          {/* Render items grouped by category */}
+        <div className="divide-y divide-gray-200">
           {Object.entries(groupedIncompleteItems).map(([categoryName, categoryData]) => (
             <div key={categoryName}>
-              <div className="px-4 pt-4 pb-1 text-gray-300 text-sm">{categoryName}</div>
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-1 text-gray-700 text-sm">{categoryName}</div>
               {categoryData.items.map((item) => (
-                <SwipeAction
-                  key={item.id}
-                  onDelete={() => handleDeleteItem(item.id)}
-                  className="border-b border-neutral-800"
-                >
-                  <div className="flex items-center bg-neutral-900">
-                    <button
-                      className="flex items-center pl-4 py-3 flex-1 text-left"
-                      onClick={(e) => handleToggleCompletion(item.id, e)}
-                    >
-                      {/* Item icon with fixed width container */}
-                      <div className="w-8 flex justify-center mr-4">
-                        <FontAwesomeIcon 
-                          icon={item.icon || 'basket-shopping'} 
-                          className="text-gray-300" 
-                          size="2xl"
-                        />
-                      </div>
-                      <span className="text-lg text-gray-200">
-                        {item.name}
-                        {item.notes && (
-                          <span className="text-gray-400 text-sm ml-1">{item.notes}</span>
-                        )}
-                      </span>
-                      <span className="flex-1" />
-                      {item.quantity && (
-                        <span className="text-gray-400 text-base">
-                          {item.quantity}{item.unit_id && ` ${getUnitShortNameById(item.unit_id, units)}`}
-                        </span>
-                      )}
-                    </button>
+                <div key={item.id} className="bg-white">
+                  <SwipeAction
+                    onDelete={() => handleDeleteItem(item.id)}
+                    className="border-b border-gray-200"
+                  >
                     <div className="flex items-center">
-                      <div className="w-[1px] h-8 bg-neutral-700 mx-2 my-2" />
                       <button
-                        className="px-4 py-3 hover:bg-neutral-800"
-                        onClick={() => handleItemClick(item.id)}
+                        className="flex items-center pl-4 py-3 flex-1 text-left hover:bg-orange-50 transition-colors"
+                        onClick={(e) => handleToggleCompletion(item.id, e)}
                       >
-                        <FontAwesomeIcon className="text-gray-500" icon="fa-chevron-right" size="base" style="regular"/>
+                        <div className="w-8 flex justify-center mr-4">
+                          <FontAwesomeIcon 
+                            icon={item.icon || 'basket-shopping'} 
+                            className="text-gray-600" 
+                            size="2xl"
+                          />
+                        </div>
+                        <span className="text-lg text-gray-900">
+                          {item.name}
+                          {item.notes && (
+                            <span className="text-gray-600 text-sm ml-1">{item.notes}</span>
+                          )}
+                        </span>
+                        <span className="flex-1" />
+                        {item.quantity && (
+                          <span className="text-gray-600 text-base">
+                            {item.quantity}{item.unit_id && ` ${getUnitShortNameById(item.unit_id, units)}`}
+                          </span>
+                        )}
                       </button>
+                      <div className="flex items-center">
+                        <div className="w-[1px] h-8 bg-gray-200 mx-2 my-2" />
+                        <button
+                          className="px-4 py-3 hover:bg-orange-50 rounded-md"
+                          onClick={() => handleItemClick(item.id)}
+                        >
+                          <FontAwesomeIcon className="text-gray-500" icon="fa-chevron-right" size="base" style="regular"/>
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                </SwipeAction>
+                  </SwipeAction>
+                </div>
               ))}
             </div>
           ))}
         </div>
 
-        {/* Gekaufte Produkte */}
         {completed.length > 0 && (
           <div className="mt-6">
             <button
@@ -237,55 +234,54 @@ const ShoppingListPage: React.FC = () => {
               onClick={() => setShowCompleted((v) => !v)}
               type="button"
             >
-              <span className="text-gray-300 text-xs font-semibold flex-1 text-left">GEKAUFTE PRODUKTE</span>
+              <span className="text-gray-700 text-xs font-semibold flex-1 text-left">Gekaufte Produkte</span>
               <FontAwesomeIcon
-                className={`w-5 h-5 text-gray-300 transition-transform duration-200 ${showCompleted ? '' : 'rotate-180'}`}
+                className={`w-5 h-5 text-gray-700 transition-transform duration-200 ${showCompleted ? '' : 'rotate-180'}`}
                 icon="fa-chevron-down"
                 size="base"
                 style="regular"/>
-            </button>
-            <div
-              className={`overflow-hidden transition-all duration-300 ${showCompleted ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}
-            >
-              <div className="divide-y divide-neutral-800">
-                {completed.map((item) => {
-                  return (
-                    <div key={item.id} className="flex items-center px-4 py-3">
-                      {/* Item icon for completed items with fixed width container */}
-                      <div className="w-8 flex justify-center mr-4">
-                        <FontAwesomeIcon 
-                          icon={item.icon || 'basket-shopping'} 
-                          className="text-gray-300" 
-                          size="2xl"
-                        />
-                      </div>
-                      <span className={`text-lg ${item.is_completed ? 'text-gray-400 line-through' : 'text-gray-200'}`}> {item.name}
-                        {item.notes && (
-                          <span className="text-gray-400 text-sm ml-1">{item.notes}</span>
-                        )}
-                      </span>
-                      <span className="flex-1" />
-                      {item.quantity && (
-                        <span className="text-gray-400 text-base">
-                          {item.quantity}{item.unit_id && ` ${getUnitShortNameById(item.unit_id, units)}`}
+              </button>
+              <div
+                className={`overflow-hidden transition-all duration-300 ${showCompleted ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}
+              >
+                <div className="divide-y divide-gray-200">
+                  {completed.map((item) => {
+                    return (
+                      <div key={item.id} className="flex items-center px-4 py-3 bg-white">
+                        <div className="w-8 flex justify-center mr-4">
+                          <FontAwesomeIcon 
+                            icon={item.icon || 'basket-shopping'} 
+                            className="text-gray-600" 
+                            size="2xl"
+                          />
+                        </div>
+                        <span className={`text-lg ${item.is_completed ? 'text-gray-500 line-through' : 'text-gray-900'}`}> {item.name}
+                          {item.notes && (
+                            <span className="text-gray-600 text-sm ml-1">{item.notes}</span>
+                          )}
                         </span>
-                      )}
-                    </div>
-                  );
-                })}
+                        <span className="flex-1" />
+                        {item.quantity && (
+                          <span className="text-gray-600 text-base">
+                            {item.quantity}{item.unit_id && ` ${getUnitShortNameById(item.unit_id, units)}`}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 w-full bg-neutral-900 border-t border-neutral-800 flex justify-around items-center h-20 z-20">
-        <button className="flex flex-col items-center justify-center flex-1 py-2 text-yellow-400">
+      <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 flex justify-around items-center h-20 z-20">
+        <button className="flex flex-col items-center justify-center flex-1 py-2 text-orange-600">
           <FontAwesomeIcon icon="fa-square-poll-vertical" size="3xl" style="regular" className="mb-1"/>
           <span className="text-xs font-semibold">Einkaufsliste</span>
         </button>
-        <button className="flex flex-col items-center justify-center flex-1 py-2 text-gray-400">
+        <button className="flex flex-col items-center justify-center flex-1 py-2 text-gray-600">
           <FontAwesomeIcon icon="fa-shelves" size="3xl" style="regular" className="mb-1"/>
           <span className="text-xs font-semibold">Vorrat</span>
         </button>
@@ -294,33 +290,31 @@ const ShoppingListPage: React.FC = () => {
       {/* Bottom Sheet Sortiermenü */}
       {sortSheetOpen && (
         <>
-          {/* Overlay */}
           <div
-            className="fixed inset-0 bg-black/40 z-40"
+            className="fixed inset-0 bg-black/20 z-40"
             onClick={() => setSortSheetOpen(false)}
           />
-          {/* Bottom Sheet */}
           <div className="fixed left-0 right-0 bottom-0 z-50">
-            <div className="mx-auto max-w-md rounded-t-3xl bg-neutral-900 p-6 pb-8 shadow-2xl border-t border-neutral-800 relative">
-              <div className="w-12 h-1.5 bg-neutral-700 rounded-full mx-auto mb-4" onClick={() => setSortSheetOpen(false)} />
-              <div className="text-center text-gray-400 text-sm mb-6">Liste sortieren</div>
+            <div className="mx-auto max-w-md rounded-t-3xl bg-white p-6 pb-8 shadow-2xl border-t border-gray-200 relative">
+              <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-4" onClick={() => setSortSheetOpen(false)} />
+              <div className="text-center text-gray-700 text-sm mb-6">Liste sortieren</div>
               <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between text-yellow-400 font-semibold text-lg">
+                <div className="flex items-center justify-between text-orange-600 font-semibold text-lg">
                   <div className="flex items-center">
                     <FontAwesomeIcon icon="fa-list" size="base" style="regular" className="mr-3"/>
                     Nach Kategorie
                   </div>
-                  <FontAwesomeIcon icon="fa-pen-circle" size="base" className="text-yellow-400"/>
+                  <FontAwesomeIcon icon="fa-pen-circle" size="base" className="text-orange-600"/>
                 </div>
-                <div className="flex items-center text-gray-300 text-base">
+                <div className="flex items-center text-gray-900 text-base">
                   <FontAwesomeIcon icon="fa-arrow-down-9-1" size="base" style="regular" className="mr-3"/>
                   Letztes Produkt oben
                 </div>
-                <div className="flex items-center text-gray-300 text-base">
+                <div className="flex items-center text-gray-900 text-base">
                   <FontAwesomeIcon icon="fa-arrow-down-1-9" size="base" style="regular" className="mr-3"/>
                   Letztes Produkt unten
                 </div>
-                <div className="flex items-center text-gray-300 text-base">
+                <div className="flex items-center text-gray-900 text-base">
                   <FontAwesomeIcon icon="fa-arrow-down-a-z" size="base" style="regular" className="mr-3"/>
                   Alphabetisch
                 </div>

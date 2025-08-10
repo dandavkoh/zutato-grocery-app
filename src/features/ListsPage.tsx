@@ -19,84 +19,78 @@ const ListsPage: React.FC = () => {
     dispatch(setHeader({
       title: 'Meine Listen',
       showBack: false,
-      background: 'bg-yellow-400',
+      background: '',
+      showFilterIcon: false,
+      showRightButton: false,
     }));
     return () => { dispatch(resetHeader()); };
   }, [dispatch]);
 
   return (
-    <div className="flex-1">
-      {/* Content */}
-      <div className="flex-1 px-4 pt-6 pb-10">
-        <p className="text-gray-200 mb-3">Listen anzeigen für</p>
-        <div className="flex items-center bg-neutral-900 rounded-2xl p-4 mb-6 border border-gray-700">
-          <div className="w-12 h-12 rounded-full mr-4 border-2 border-yellow-400 bg-yellow-400 flex items-center justify-center">
-            <FontAwesomeIcon icon="fa-user" size="xl" style="regular" className="text-black"/>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <p className="text-gray-600 mb-3">Listen anzeigen für</p>
+        <div className="flex items-center bg-white rounded-xl p-4 mb-6 border border-gray-200 shadow-sm">
+          <div className="w-12 h-12 rounded-full mr-4 border-2 border-orange-500 bg-orange-500 flex items-center justify-center">
+            <FontAwesomeIcon icon="fa-user" size="xl" style="regular" className="text-white"/>
           </div>
           <div className="flex-1">
-            <div className="text-white font-semibold">
+            <div className="text-gray-900 font-semibold">
               {user?.firstName && user?.lastName 
                 ? `${user.firstName} ${user.lastName}`
                 : user?.firstName || user?.lastName || 'Benutzer'
               }
             </div>
-            <div className="text-gray-400 text-sm">{user?.email || 'E-Mail nicht verfügbar'}</div>
+            <div className="text-gray-500 text-sm">{user?.email || 'E-Mail nicht verfügbar'}</div>
           </div>
           <button 
             onClick={() => navigate('/account')}
-            className="text-gray-400 hover:text-yellow-400 text-2xl"
+            className="text-gray-600 hover:text-orange-600 text-2xl"
           >
             <FontAwesomeIcon icon="fa-pen" size="xl" style="regular"/>
           </button>
         </div>
+
         <button 
           onClick={() => navigate('/create-list')}
-          className="w-full bg-yellow-400 text-white font-semibold py-3 rounded-xl mb-4 flex items-center justify-center text-lg gap-2"
+          className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 rounded-lg mb-6 flex items-center justify-center text-lg gap-2"
         >
           <FontAwesomeIcon icon="fa-plus" size="xl" style="regular"/>
           Neue Einkaufsliste
         </button>
         
-        {/* Invitation Redeem Component */}
         <InvitationRedeem onSuccess={() => {
-          // Refresh lists after successful invitation redemption
           if (refetch) {
             refetch();
           }
         }} />
-        
-        {/* Loading state */}
+
         {loading && (
           <div className="text-center py-8">
-            <div className="text-white">Lade Listen...</div>
+            <div className="text-gray-700">Lade Listen...</div>
           </div>
         )}
         
-        {/* Error state */}
         {error && (
           <div className="text-center py-8">
-            <div className="text-red-400">Fehler beim Laden der Listen</div>
+            <div className="text-red-600">Fehler beim Laden der Listen</div>
           </div>
         )}
         
-        {/* Lists */}
         {!loading && !error && lists && lists.length > 0 && (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {lists.map((list: any) => (
-              <div key={list.id} className="bg-[#5a470a] rounded-2xl relative overflow-hidden w-full hover:shadow-lg transition-shadow">
-                <div className="flex justify-between items-stretch relative z-10 h-full">
-                  {/* Linker klickbarer Bereich - Navigiert zur ShoppingListPage */}
+              <div key={list.id} className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex justify-between items-stretch">
                   <div
-                    className="flex-1 cursor-pointer p-6"
+                    className="flex-1 cursor-pointer p-5"
                     onClick={() => {
-                      console.log('ListsPage - Clicking list:', list);
-                      console.log('ListsPage - Navigating to listId:', list.id);
                       navigate(`/shopping-list/${list.id}`);
                     }}
                   >
                     <div>
-                      <div className="text-white text-xl font-semibold mb-2">{list.name}</div>
-                      <div className="flex items-center gap-4 text-white/80 text-base">
+                      <div className="text-gray-900 text-lg font-semibold mb-2">{list.name}</div>
+                      <div className="flex items-center gap-4 text-gray-600 text-sm">
                         <span className="flex items-center gap-1">
                           <FontAwesomeIcon icon="fa-clipboard-list-check" size="base" style="regular"/>
                           {/* {new Date(list.created_at).toLocaleDateString('de-DE')} */}
@@ -110,15 +104,10 @@ const ListsPage: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                  
-                  {/* Senkrechte Trennlinie */}
-                  <div className="w-px bg-white/20 mx-4 my-6"></div>
-                  
-                  {/* Rechter klickbarer Bereich - Navigiert zur EditListPage */}
+                  <div className="w-px bg-gray-200 my-4"></div>
                   <div 
-                    className="flex items-center justify-center w-16 cursor-pointer"
+                    className="flex items-center justify-center w-16 cursor-pointer text-gray-600 hover:text-orange-600"
                     onClick={() => {
-                      console.log('Edit button clicked for list:', list.id);
                       navigate('/edit-list', { state: { list } });
                     }}
                   >
@@ -130,10 +119,9 @@ const ListsPage: React.FC = () => {
           </div>
         )}
         
-        {/* Empty state */}
         {!loading && !error && (!lists || lists.length === 0) && (
           <div className="text-center py-8">
-            <div className="text-white/60">Keine Listen gefunden</div>
+            <div className="text-gray-500">Keine Listen gefunden</div>
           </div>
         )}
       </div>

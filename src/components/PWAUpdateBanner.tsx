@@ -76,7 +76,7 @@ const PWAUpdateBanner: React.FC = () => {
   };
 
   return (
-    <div className={`fixed top-0 left-0 right-0 z-50 p-4 ${getBannerStyle()}`}>
+    <div className={`fixed top-0 left-0 right-0 z-[200] p-4 ${getBannerStyle()}`}>
       <div className="flex items-center justify-between max-w-md mx-auto">
         <div className="flex items-center space-x-3">
           {getIcon()}

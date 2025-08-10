@@ -63,7 +63,7 @@ const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({ className = '' }) =
   }
 
   return (
-    <div className={`fixed top-0 left-0 right-0 z-50 ${className}`}>
+    <div className={`fixed top-0 left-0 right-0 z-[200] ${className}`}>
       {/* Offline Status */}
       {!isOnline && (
         <div className="bg-red-500 text-white px-4 py-2 text-center text-sm font-medium">

@@ -27,7 +27,7 @@ function Layout() {
   // Optional: Header auf bestimmten Seiten ausblenden
   // const hideHeader = location.pathname === '/';
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-gray-50" style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
       <OfflineIndicator />
       <PWAUpdateBanner />
       <Header />

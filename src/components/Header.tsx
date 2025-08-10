@@ -63,7 +63,7 @@ const Header: React.FC = () => {
   };
 
   return (
-    <header className={`bg-white shadow-md sticky top-0 z-50 ${className}`}>
+    <header className={`bg-white shadow-md sticky top-0 z-[100] ios-sticky-fix ${className}`} style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Top row: back/home, title, optional actions */}
         <div className="flex items-center justify-between py-4">

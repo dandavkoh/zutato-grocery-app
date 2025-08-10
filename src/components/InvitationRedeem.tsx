@@ -75,7 +75,7 @@ const InvitationRedeem: React.FC<InvitationRedeemProps> = ({ onSuccess }) => {
       {/* Button to open modal */}
       <button
         onClick={() => setShowModal(true)}
-        className="w-full bg-yellow-400 text-white font-semibold py-3 rounded-xl mb-6 flex items-center justify-center text-lg gap-2"
+        className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 rounded-lg mb-6 flex items-center justify-center text-lg gap-2"
       >
         <FontAwesomeIcon icon="fa-right-to-bracket" size="xl" style="regular"/>
         Einkaufsliste beitreten
@@ -83,13 +83,13 @@ const InvitationRedeem: React.FC<InvitationRedeemProps> = ({ onSuccess }) => {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-neutral-900 rounded-2xl p-6 max-w-md w-full">
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-lg">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-white text-lg font-semibold">Einkaufsliste beitreten</h3>
+              <h3 className="text-gray-900 text-lg font-semibold">Einkaufsliste beitreten</h3>
               <button
                 onClick={handleCloseModal}
-                className="text-gray-400 hover:text-white"
+                className="text-gray-500 hover:text-gray-700"
               >
                 <FontAwesomeIcon icon="fa-times" size="base" style="regular"/>
               </button>
@@ -101,13 +101,13 @@ const InvitationRedeem: React.FC<InvitationRedeemProps> = ({ onSuccess }) => {
                 <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
                   <FontAwesomeIcon icon="fa-check" size="xl" style="regular" className="text-white"/>
                 </div>
-                <h4 className="text-white text-lg font-semibold mb-2">Erfolgreich beigetreten!</h4>
-                <p className="text-gray-400 mb-4">
+                <h4 className="text-gray-900 text-lg font-semibold mb-2">Erfolgreich beigetreten!</h4>
+                <p className="text-gray-600 mb-4">
                   Du bist jetzt Mitglied der Liste "{success.listName}"
                 </p>
                 <button
                   onClick={handleCloseModal}
-                  className="w-full bg-yellow-400 text-black font-semibold py-3 rounded-xl hover:bg-yellow-500 transition-colors"
+                  className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 rounded-lg transition-colors"
                 >
                   Schließen
                 </button>
@@ -115,7 +115,7 @@ const InvitationRedeem: React.FC<InvitationRedeemProps> = ({ onSuccess }) => {
             ) : (
               // Input state
               <>
-                <p className="text-gray-400 mb-4">
+                <p className="text-gray-600 mb-4">
                   Gib den Einladungscode ein, den du erhalten hast:
                 </p>
                 
@@ -126,22 +126,22 @@ const InvitationRedeem: React.FC<InvitationRedeemProps> = ({ onSuccess }) => {
                     onChange={(e) => setInvitationCode(e.target.value.toUpperCase())}
                     onKeyPress={handleKeyPress}
                     placeholder="Einladungscode eingeben"
-                    className="w-full bg-neutral-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-yellow-400 transition-colors font-mono text-center text-lg tracking-wider"
+                    className="w-full bg-gray-50 border border-gray-400 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-500 hover:border-gray-500 focus:outline-none focus:border-orange-600 transition-colors font-mono text-center text-lg tracking-wider"
                     maxLength={12}
                     disabled={loading}
                   />
                 </div>
 
                 {error && (
-                  <div className="bg-red-900 border border-red-700 rounded-xl p-3 mb-4">
-                    <div className="text-red-400 text-sm">{error}</div>
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                    <div className="text-red-700 text-sm">{error}</div>
                   </div>
                 )}
 
                 <div className="flex gap-3">
                   <button
                     onClick={handleCloseModal}
-                    className="flex-1 bg-neutral-800 text-white font-semibold py-3 rounded-xl hover:bg-neutral-700 transition-colors"
+                    className="flex-1 bg-gray-100 text-gray-900 font-semibold py-3 rounded-lg hover:bg-gray-200 transition-colors"
                     disabled={loading}
                   >
                     Abbrechen
@@ -149,7 +149,7 @@ const InvitationRedeem: React.FC<InvitationRedeemProps> = ({ onSuccess }) => {
                   <button
                     onClick={handleRedeemCode}
                     disabled={loading || !invitationCode.trim()}
-                    className="flex-1 bg-yellow-400 text-black font-semibold py-3 rounded-xl hover:bg-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? (
                       <span className="flex items-center justify-center gap-2">

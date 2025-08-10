@@ -6,6 +6,7 @@ import { logDebug, logInfo, logError } from '../config/environment';
 export const useRealtimeSync = (listId: string | undefined, onUpdate: () => void) => {
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const onlineUnsubscribeRef = useRef<(() => void) | null>(null);
+  const debounceRef = useRef<number | null>(null);
 
   // Subscribe to realtime updates
   const subscribeToUpdates = useCallback(() => {
@@ -16,8 +17,30 @@ export const useRealtimeSync = (listId: string | undefined, onUpdate: () => void
 
     logInfo('Setting up realtime sync for list', { listId });
 
+    // Handler: trigger UI update and reload items (debounced)
+    const handleRealtime = () => {
+      try {
+        onUpdate();
+      } catch (e) {
+        logError('onUpdate callback error', e as any);
+      }
+      if (debounceRef.current) {
+        window.clearTimeout(debounceRef.current);
+      }
+      debounceRef.current = window.setTimeout(async () => {
+        try {
+          if (listId) {
+            await dataSyncService.reloadShoppingItems(listId);
+            logDebug('Reloaded shopping items after realtime event', { listId });
+          }
+        } catch (error) {
+          logError('Failed to reload shopping items after realtime event', { listId, error });
+        }
+      }, 150);
+    };
+
     // Subscribe to the list channel
-    unsubscribeRef.current = realtimeService.subscribeToList(listId, onUpdate);
+    unsubscribeRef.current = realtimeService.subscribeToList(listId, handleRealtime);
 
     // Subscribe to online status changes
     onlineUnsubscribeRef.current = realtimeService.onOnline(async () => {

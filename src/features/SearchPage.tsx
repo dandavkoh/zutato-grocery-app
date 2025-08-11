@@ -8,6 +8,7 @@ import { useProductSearch } from '../hooks/useProductSearch';
 import { useProductInList } from '../hooks/useProductInList';
 import { useProductActions } from '../hooks/useProductActions';
 import type { ProductOrGroup } from '../api/supabaseApi';
+import { isIOS, releaseKeyboardPrimer } from '../utils/iosKeyboard';
 
 const recommendations = [
   { icon: <FontAwesomeIcon icon="sack" className="text-gray-300" size="2xl"/>, name: 'Zucker', sub: 'Brauner' },
@@ -50,6 +51,28 @@ const SearchPage: React.FC = () => {
     }));
     return () => { dispatch(resetHeader()); };
   }, [dispatch, navigate]);
+
+  // On mount of the search page, transfer focus from the primer (if any) to the real input.
+  useEffect(() => {
+    if (!isIOS()) return;
+    // Defer a bit to ensure the header input is in the DOM
+    const timeoutId = window.setTimeout(() => {
+      const headerInput = document.querySelector('header input');
+      if (headerInput instanceof HTMLInputElement) {
+        headerInput.focus();
+        try {
+          headerInput.setSelectionRange(headerInput.value.length, headerInput.value.length);
+        } catch {
+          // ignore
+        }
+      }
+      releaseKeyboardPrimer();
+    }, 50);
+    return () => {
+      window.clearTimeout(timeoutId);
+      releaseKeyboardPrimer();
+    };
+  }, []);
 
   // Trigger search when search value changes
   useEffect(() => {

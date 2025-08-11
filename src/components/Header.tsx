@@ -4,6 +4,7 @@ import type { RootState } from '../stores/store';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { setSearch, triggerFilterClick, triggerBackClick, triggerRightButtonClick } from '../stores/store';
 import FontAwesomeIcon from './FontAwesomeIcon';
+import { isIOS, primeKeyboard } from '../utils/iosKeyboard';
 
 const Header: React.FC = () => {
   const header = useSelector((state: RootState) => state.header);
@@ -134,7 +135,13 @@ const Header: React.FC = () => {
                             }
                           : { 
                               readOnly: true, 
-                              onClick: () => navigate(`/shopping-list/${listId}/search`) 
+                              onClick: () => {
+                                // Prime iOS keyboard within the same user gesture before navigation
+                                if (isIOS()) {
+                                  primeKeyboard();
+                                }
+                                navigate(`/shopping-list/${listId}/search`);
+                              }
                             }
                         )}
                       />

@@ -7,6 +7,7 @@ import { useCategoriesDexie } from '../hooks/useCategoriesDexie';
 import { useUnitsDexie } from '../hooks/useUnitsDexie';
 import { getCategoryNameById, getCategoryIconById, getUnitNameById, shoppingItemsApi } from '../api/supabaseApi';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
+import { useToast } from '../contexts/ToastContext';
 import type { ShoppingItem } from '../api/supabaseApi';
 
 const ProductDetailPage: React.FC = () => {
@@ -14,6 +15,7 @@ const ProductDetailPage: React.FC = () => {
   const location = useLocation();
   const { listId, productId } = useParams<{ listId: string; productId: string }>();
   const dispatch = useDispatch();
+  const { showToast } = useToast();
   
   // Get item from global store only
   const item = useSelector((state: RootState) => state.selectedItem.item);
@@ -104,6 +106,7 @@ const ProductDetailPage: React.FC = () => {
       
       if (response.error) {
         console.error('Failed to update notes:', response.error);
+        showToast('Fehler beim Aktualisieren', { type: 'error' });
         return;
       }
       
@@ -168,6 +171,7 @@ const ProductDetailPage: React.FC = () => {
       
       if (response.error) {
         console.error('Failed to update quantity:', response.error);
+        showToast('Fehler beim Aktualisieren', { type: 'error' });
         return;
       }
       

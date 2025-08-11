@@ -6,6 +6,7 @@ import { store } from './stores/store'
 import { AuthProvider } from './contexts/AuthContext'
 import './index.css'
 import App from './App.tsx'
+import { ToastProvider } from './contexts/ToastContext'
 // Initialize PWA Service
 import './services/pwaService'
 // Supabase is automatically initialized
@@ -29,7 +30,9 @@ initializeApp().then(() => {
       <Provider store={store}>
         <BrowserRouter>
           <AuthProvider>
-            <App />
+            <ToastProvider>
+              <App />
+            </ToastProvider>
           </AuthProvider>
         </BrowserRouter>
       </Provider>

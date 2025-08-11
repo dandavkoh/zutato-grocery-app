@@ -11,6 +11,7 @@ import { useRealtimeSync } from '../hooks/useRealtimeSync';
 import { groupItemsByCategory, separateCompletedItems, getUnitShortNameById } from '../api/supabaseApi';
 import SwipeAction from '../components/SwipeAction';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
+import { useToast } from '../contexts/ToastContext';
 
 const ShoppingListPage: React.FC = () => {
   const [sortSheetOpen, setSortSheetOpen] = useState(false);
@@ -63,6 +64,7 @@ const ShoppingListPage: React.FC = () => {
   // Group items by category and separate completed items
   const { completed, incomplete } = separateCompletedItems(items as any);
   const groupedIncompleteItems = groupItemsByCategory(incomplete as any, categories);
+  const { showToast } = useToast();
 
   // Watch for filter click events
   const filterClicked = useSelector((state: RootState) => state.events.filterClicked);
@@ -126,10 +128,14 @@ const ShoppingListPage: React.FC = () => {
     // Set a new timeout to prevent rapid clicks
     toggleDebounceRef.current[itemId] = window.setTimeout(() => {
       // Fire and forget - don't await the result for better UX
-      setItemCompletion(itemId, newCompletionStatus).catch((error: any) => {
+      setItemCompletion(itemId, newCompletionStatus)
+        .then(() => {
+          showToast(`${currentItem.name} ${newCompletionStatus ? 'erledigt' : 'unerledigt'}`, { type: 'success' });
+        })
+        .catch((error: any) => {
         console.error('Failed to set item completion:', error);
-        // Optionally show a toast notification here
-      });
+          showToast('Fehler beim Aktualisieren des Status', { type: 'error' });
+        });
       // Clean up the timeout reference
       delete toggleDebounceRef.current[itemId];
     }, 100); // 100ms debounce
@@ -137,10 +143,19 @@ const ShoppingListPage: React.FC = () => {
 
   const handleDeleteItem = (itemId: string) => {
     // Fire and forget - don't await the result for better UX
-    deleteItem(itemId).catch(error => {
-      console.error('Failed to delete item:', error);
-      // Optionally show a toast notification here
-    });
+    const item = items.find(i => i.id === itemId);
+    deleteItem(itemId)
+      .then(() => {
+        if (item) {
+          showToast(`${item.name} gelöscht`, { type: 'success' });
+        } else {
+          showToast('Produkt gelöscht', { type: 'success' });
+        }
+      })
+      .catch(error => {
+        console.error('Failed to delete item:', error);
+        showToast('Fehler beim Löschen', { type: 'error' });
+      });
   };
 
   // Loading state

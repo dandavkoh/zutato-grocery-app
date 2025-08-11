@@ -7,12 +7,14 @@ import { useAuth } from '../contexts/AuthContext';
 import { shoppingItemsApi } from '../api/supabaseApi';
 import { generateGuid } from '../utils/guidUtils';
 import type { ProductOrGroup, ShoppingItem } from '../api/supabaseApi';
+import { useToast } from '../contexts/ToastContext';
 
 export const useProductActions = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useAuth();
   const currentListId = useSelector((state: RootState) => state.currentList.listId);
+  const { showToast } = useToast();
 
   const handleProductAction = useCallback(async (product: ProductOrGroup) => {
     if (!currentListId || !user) {
@@ -54,9 +56,14 @@ export const useProductActions = () => {
         };
 
         // Fire and forget - don't await the result
-        shoppingItemsApi.createItem(newItemData).catch(error => {
+        shoppingItemsApi.createItem(newItemData)
+          .then(() => {
+            showToast(`${newItemData.name} hinzugefügt`, { type: 'success' });
+          })
+          .catch(error => {
           console.error('Failed to create item (fire & forget):', error);
-        });
+            showToast('Fehler beim Hinzufügen', { type: 'error' });
+          });
 
         console.log('Item creation initiated (fire & forget):', newItemData.name);
       }

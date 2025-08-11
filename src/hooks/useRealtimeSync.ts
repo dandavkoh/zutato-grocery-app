@@ -7,6 +7,12 @@ export const useRealtimeSync = (listId: string | undefined, onUpdate: () => void
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const onlineUnsubscribeRef = useRef<(() => void) | null>(null);
   const debounceRef = useRef<number | null>(null);
+  const onUpdateRef = useRef(onUpdate);
+
+  // Keep the latest onUpdate without changing function identities
+  useEffect(() => {
+    onUpdateRef.current = onUpdate;
+  }, [onUpdate]);
 
   // Subscribe to realtime updates
   const subscribeToUpdates = useCallback(() => {
@@ -20,7 +26,7 @@ export const useRealtimeSync = (listId: string | undefined, onUpdate: () => void
     // Handler: trigger UI update and reload items (debounced)
     const handleRealtime = () => {
       try {
-        onUpdate();
+        onUpdateRef.current();
       } catch (e) {
         logError('onUpdate callback error', e as any);
       }
@@ -47,7 +53,7 @@ export const useRealtimeSync = (listId: string | undefined, onUpdate: () => void
       logInfo('Online status restored, triggering update and reload', { listId });
       
       // Trigger immediate update
-      onUpdate();
+      onUpdateRef.current();
       
       // Also reload data from Supabase to ensure we have the latest state
       if (listId) {
@@ -60,7 +66,7 @@ export const useRealtimeSync = (listId: string | undefined, onUpdate: () => void
       }
     });
 
-  }, [listId, onUpdate]);
+  }, [listId]);
 
   // Unsubscribe from updates
   const unsubscribeFromUpdates = useCallback(() => {

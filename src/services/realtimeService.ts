@@ -8,11 +8,14 @@ export interface RealtimeMessage {
   timestamp: string;
 }
 
+type ChannelEntry = {
+  channel: any;
+  callbacks: Set<() => void>;
+};
+
 class RealtimeService {
-  private channels: Map<string, any> = new Map();
-  private reconnectAttempts: Map<string, number> = new Map();
-  private maxReconnectAttempts = 5;
-  private reconnectDelay = 1000; // Start with 1 second
+  // One channel per listId; multiple listeners per channel
+  private channels: Map<string, ChannelEntry> = new Map();
   private isOnline = navigator.onLine;
   private onlineListeners: Set<() => void> = new Set();
 
@@ -59,19 +62,24 @@ class RealtimeService {
 
   /**
    * Subscribe to a shopping list channel for real-time updates
+   * Multiple callers can subscribe; a single channel is shared.
    */
   subscribeToList(listId: string, onUpdate: () => void): () => void {
     logInfo('Subscribing to list channel', { listId });
 
-    // Unsubscribe from existing channel if it exists
-    this.unsubscribeFromList(listId);
+    const existing = this.channels.get(listId);
+    if (existing) {
+      existing.callbacks.add(onUpdate);
+      logDebug('Added listener to existing channel', { listId, listeners: existing.callbacks.size });
+      return () => this.removeListener(listId, onUpdate);
+    }
 
-    // Create new channel
+    // Create new channel with both broadcast and DB change listeners
     const channel = supabase
       .channel(`list-${listId}`)
       // .on('broadcast', { event: 'shopping_list_update' }, (payload) => {
       //   logDebug('Received realtime update', { listId, payload });
-      //   this.handleRealtimeUpdate(listId, payload, onUpdate);
+      //   this.handleRealtimeUpdate(listId, payload);
       // })
       // Listen to database changes for cross-device sync without explicit broadcast
       .on('postgres_changes', { event: '*', schema: 'public', table: 'shopping_items', filter: `list_id=eq.${listId}` }, (payload: any) => {
@@ -88,7 +96,7 @@ class RealtimeService {
             itemId: payload?.new?.id || payload?.old?.id,
             timestamp: new Date().toISOString()
           } satisfies RealtimeMessage;
-          this.handleRealtimeUpdate(listId, { payload: synthetic }, onUpdate);
+          this.handleRealtimeUpdate(listId, { payload: synthetic });
         } catch (e) {
           logError('Error handling DB change event', { listId, error: e });
         }
@@ -104,43 +112,50 @@ class RealtimeService {
       })
       .on('system', { event: 'disconnect' }, () => {
         logError('Realtime connection lost', { listId });
-        this.handleDisconnect(listId, onUpdate);
+        // Let Supabase handle reconnection automatically
       })
       .on('system', { event: 'reconnect' }, () => {
         logInfo('Realtime connection restored', { listId });
-        this.resetReconnectAttempts(listId);
       });
 
     // Subscribe to the channel
     channel.subscribe((status: any) => {
       logDebug('Channel subscription status', { listId, status });
-      
       if (status === 'SUBSCRIBED') {
         logInfo('Successfully subscribed to list channel', { listId });
-        this.resetReconnectAttempts(listId);
       } else if (status === 'CHANNEL_ERROR') {
         logError('Channel subscription error', { listId });
-        this.handleDisconnect(listId, onUpdate);
       }
     });
 
-    // Store the channel
-    this.channels.set(listId, channel);
+    // Store the channel with initial listener
+    const entry: ChannelEntry = { channel, callbacks: new Set([onUpdate]) };
+    this.channels.set(listId, entry);
 
-    // Return unsubscribe function
-    return () => this.unsubscribeFromList(listId);
+    // Return unsubscribe function for this listener
+    return () => this.removeListener(listId, onUpdate);
+  }
+
+  /** Remove a single listener; if none remain, tear down the channel */
+  private removeListener(listId: string, onUpdate: () => void): void {
+    const entry = this.channels.get(listId);
+    if (!entry) return;
+    entry.callbacks.delete(onUpdate);
+    logDebug('Removed listener from channel', { listId, listeners: entry.callbacks.size });
+    if (entry.callbacks.size === 0) {
+      this.unsubscribeFromList(listId);
+    }
   }
 
   /**
    * Unsubscribe from a shopping list channel
    */
   unsubscribeFromList(listId: string): void {
-    const channel = this.channels.get(listId);
-    if (channel) {
+    const entry = this.channels.get(listId);
+    if (entry) {
       logInfo('Unsubscribing from list channel', { listId });
-      supabase.removeChannel(channel);
+      supabase.removeChannel(entry.channel);
       this.channels.delete(listId);
-      this.reconnectAttempts.delete(listId);
     }
   }
 
@@ -155,8 +170,8 @@ class RealtimeService {
       return;
     }
 
-    const channel = this.channels.get(listId);
-    if (!channel) {
+    const entry = this.channels.get(listId);
+    if (!entry) {
       logDebug('No channel found for broadcast', { listId });
       return;
     }
@@ -167,7 +182,7 @@ class RealtimeService {
         timestamp: new Date().toISOString()
       };
 
-      const { error } = await channel.send({
+      const { error } = await entry.channel.send({
         type: 'broadcast',
         event: 'shopping_list_update',
         payload: fullMessage
@@ -288,12 +303,11 @@ class RealtimeService {
    * Check and reconnect channels if needed
    */
   private checkAndReconnectChannels(): void {
-    this.channels.forEach((channel, listId) => {
-      // Check if channel is still active
-      if (channel.state !== 'SUBSCRIBED') {
-        logInfo('Channel not subscribed, attempting reconnection', { listId });
-        // The channel will automatically attempt to reconnect
-        // If it fails, it will be handled by the existing reconnection logic
+    this.channels.forEach((entry, listId) => {
+      // Supabase handles reconnection internally; just log state if available
+      const state = (entry.channel as any)?.state;
+      if (state && state !== 'SUBSCRIBED') {
+        logInfo('Channel state', { listId, state });
       }
     });
   }
@@ -301,7 +315,7 @@ class RealtimeService {
   /**
    * Handle realtime updates from the channel
    */
-  private async handleRealtimeUpdate(listId: string, payload: any, onUpdate: () => void): Promise<void> {
+  private async handleRealtimeUpdate(listId: string, payload: any): Promise<void> {
     try {
       const message: RealtimeMessage = payload.payload;
       
@@ -314,66 +328,22 @@ class RealtimeService {
       }
 
       logInfo('Processing realtime update', { listId, message });
-
-      // Trigger UI update - the hook will handle reloading data
-      onUpdate();
+      this.dispatchUpdate(listId);
       
     } catch (error) {
       logError('Error handling realtime update', { listId, error });
     }
   }
 
-  /**
-   * Handle disconnection and attempt reconnection
-   */
-  private handleDisconnect(listId: string, onUpdate: () => void): void {
-    const attempts = this.reconnectAttempts.get(listId) || 0;
-    
-    if (attempts < this.maxReconnectAttempts) {
-      logInfo('Attempting to reconnect', { listId, attempt: attempts + 1 });
-      
-      this.reconnectAttempts.set(listId, attempts + 1);
-      
-      setTimeout(() => {
-        this.attemptReconnect(listId, onUpdate);
-      }, this.reconnectDelay * Math.pow(2, attempts)); // Exponential backoff
-    } else {
-      logError('Max reconnection attempts reached', { listId });
-    }
+  /** Notify all listeners for a listId */
+  private dispatchUpdate(listId: string): void {
+    const entry = this.channels.get(listId);
+    if (!entry) return;
+    entry.callbacks.forEach(cb => {
+      try { cb(); } catch (e) { logError('Listener callback error', e as any); }
+    });
   }
 
-  /**
-   * Attempt to reconnect to a channel
-   */
-  private async attemptReconnect(listId: string, onUpdate: () => void): Promise<void> {
-    if (!this.isOnline) {
-      logDebug('Skipping reconnection attempt - offline', { listId });
-      return;
-    }
-
-    try {
-      logInfo('Attempting reconnection', { listId });
-      
-      // Unsubscribe and resubscribe
-      this.unsubscribeFromList(listId);
-      
-      // Wait a bit before resubscribing
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Resubscribe
-      this.subscribeToList(listId, onUpdate);
-      
-    } catch (error) {
-      logError('Reconnection attempt failed', { listId, error });
-    }
-  }
-
-  /**
-   * Reset reconnection attempts for a list
-   */
-  private resetReconnectAttempts(listId: string): void {
-    this.reconnectAttempts.delete(listId);
-  }
 
   /**
    * Handle online status restoration

@@ -132,7 +132,11 @@ const SearchPage: React.FC = () => {
                 const isInList = isProductInList(item.title);
                 return (
                   <div key={item.id} className={idx < displayResults.length - 1 ? 'border-b border-gray-200' : ''}>
-                    <div className="flex items-center px-4 py-3 hover:bg-orange-50 transition-colors">
+                    <button
+                      type="button"
+                      onClick={() => handleProductClick(item)}
+                      className="flex items-center px-4 py-3 hover:bg-orange-50 transition-colors w-full text-left"
+                    >
                       <span className="mr-4 text-gray-600">
                         <FontAwesomeIcon icon={item.icon} size="2xl" style="regular"/>
                       </span>
@@ -142,17 +146,14 @@ const SearchPage: React.FC = () => {
                           ({item.src === 'exact' ? 'Exakter Vorschlag' : item.src === 'fts' ? 'Exakte Suche' : 'Ähnliche Suche'})
                         </span>
                       </span>
-                      <button 
-                        onClick={() => handleProductClick(item)}
-                        className="rounded-full border-2 border-orange-600 text-orange-600 w-8 h-8 flex items-center justify-center ml-2 hover:bg-orange-600 hover:text-white transition-colors"
-                      >
+                      <span className="rounded-full border-2 border-orange-600 text-orange-600 w-8 h-8 flex items-center justify-center ml-2">
                         <FontAwesomeIcon 
                           icon={isInList ? 'fa-pen-circle' : 'fa-circle-plus'} 
                           size="2xl" 
                           style="regular"
                         />
-                      </button>
-                    </div>
+                      </span>
+                    </button>
                   </div>
                 );
               })}

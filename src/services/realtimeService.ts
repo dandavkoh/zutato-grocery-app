@@ -69,9 +69,29 @@ class RealtimeService {
     // Create new channel
     const channel = supabase
       .channel(`list-${listId}`)
-      .on('broadcast', { event: 'shopping_list_update' }, (payload) => {
-        logDebug('Received realtime update', { listId, payload });
-        this.handleRealtimeUpdate(listId, payload, onUpdate);
+      // .on('broadcast', { event: 'shopping_list_update' }, (payload) => {
+      //   logDebug('Received realtime update', { listId, payload });
+      //   this.handleRealtimeUpdate(listId, payload, onUpdate);
+      // })
+      // Listen to database changes for cross-device sync without explicit broadcast
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'shopping_items', filter: `list_id=eq.${listId}` }, (payload: any) => {
+        try {
+          logDebug('Received DB change event', { listId, eventType: payload?.eventType, payload });
+          const mappedType: RealtimeMessage['type'] = payload?.eventType === 'INSERT'
+            ? 'item_created'
+            : payload?.eventType === 'DELETE'
+              ? 'item_deleted'
+              : 'item_updated';
+          const synthetic = {
+            type: mappedType,
+            listId,
+            itemId: payload?.new?.id || payload?.old?.id,
+            timestamp: new Date().toISOString()
+          } satisfies RealtimeMessage;
+          this.handleRealtimeUpdate(listId, { payload: synthetic }, onUpdate);
+        } catch (e) {
+          logError('Error handling DB change event', { listId, error: e });
+        }
       })
       .on('presence', { event: 'sync' }, () => {
         logDebug('Presence sync', { listId });
@@ -92,7 +112,7 @@ class RealtimeService {
       });
 
     // Subscribe to the channel
-    channel.subscribe((status) => {
+    channel.subscribe((status: any) => {
       logDebug('Channel subscription status', { listId, status });
       
       if (status === 'SUBSCRIBED') {
@@ -210,6 +230,7 @@ class RealtimeService {
 
       for (const action of queue) {
         try {
+          // TODO: Broadcast after all changes are processed. Keep in mind that there may be changes in other lists.
           await this.broadcastUpdate(action.listId, {
             type: action.type,
             listId: action.listId,

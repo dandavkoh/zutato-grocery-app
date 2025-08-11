@@ -26,13 +26,7 @@ class DataSyncService {
         throw error;
       }
       
-      // Persist latest data to Dexie so UI updates immediately on other devices
-      if (Array.isArray(data)) {
-        await dexieService.syncShoppingItems(data as any);
-        logInfo('Successfully reloaded and synced shopping items', { listId, count: data.length });
-      } else {
-        logInfo('Successfully reloaded shopping items (no array)', { listId, count: 0 });
-      }
+      logInfo('Successfully reloaded shopping items', { listId, count: data?.length || 0 });
     } catch (error) {
       logError('Error reloading shopping items', { listId, error });
       throw error;

@@ -247,7 +247,12 @@ const ShoppingListPage: React.FC = () => {
                 <div className="divide-y divide-gray-200">
                   {completed.map((item) => {
                     return (
-                      <div key={item.id} className="flex items-center px-4 py-3 bg-white">
+                      <button
+                        key={item.id}
+                        className="flex items-center px-4 py-3 bg-white w-full text-left hover:bg-orange-50"
+                        onClick={(e) => handleToggleCompletion(item.id, e)}
+                        type="button"
+                      >
                         <div className="w-8 flex justify-center mr-4">
                           <FontAwesomeIcon 
                             icon={item.icon || 'basket-shopping'} 
@@ -266,7 +271,7 @@ const ShoppingListPage: React.FC = () => {
                             {item.quantity}{item.unit_id && ` ${getUnitShortNameById(item.unit_id, units)}`}
                           </span>
                         )}
-                      </div>
+                      </button>
                     );
                   })}
                 </div>

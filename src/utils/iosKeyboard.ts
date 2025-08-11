@@ -28,7 +28,6 @@ export function primeKeyboard(): void {
     input.type = 'text';
     input.inputMode = 'search';
     input.autocapitalize = 'off';
-    input.autocorrect = 'off';
     input.spellcheck = false;
     input.id = 'keyboard-primer';
 

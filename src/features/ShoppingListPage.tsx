@@ -9,6 +9,8 @@ import { useCategoriesDexie } from '../hooks/useCategoriesDexie';
 import { useUnitsDexie } from '../hooks/useUnitsDexie';
 import { useRealtimeSync } from '../hooks/useRealtimeSync';
 import { groupItemsByCategory, separateCompletedItems, getUnitShortNameById } from '../api/supabaseApi';
+import type { ShoppingItem } from '../api/supabaseApi';
+import { sortItems, SortModes } from '../utils/sortUtils';
 import SwipeAction from '../components/SwipeAction';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
 import { useToast } from '../contexts/ToastContext';
@@ -16,6 +18,7 @@ import { useToast } from '../contexts/ToastContext';
 const ShoppingListPage: React.FC = () => {
   const [sortSheetOpen, setSortSheetOpen] = useState(false);
   const [showCompleted, setShowCompleted] = useState(true);
+  const [openSortMode, setOpenSortMode] = useState<'category' | 'last_top' | 'last_bottom' | 'alpha'>('category');
   const navigate = useNavigate();
   const { listId } = useParams<{ listId: string }>();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -63,7 +66,33 @@ const ShoppingListPage: React.FC = () => {
   
   // Group items by category and separate completed items
   const { completed, incomplete } = separateCompletedItems(items as any);
-  const groupedIncompleteItems = groupItemsByCategory(incomplete as any, categories);
+  // Newest first = descending by Edited
+  const sortedCompleted = sortItems<ShoppingItem>(SortModes.Edited, false, completed as ShoppingItem[]);
+
+  // Open items sorting/grouping
+  let groupedIncompleteItems: ReturnType<typeof groupItemsByCategory> | null = null;
+  let flatSortedIncompleteItems: ShoppingItem[] | null = null;
+
+  if (openSortMode === 'category') {
+    const grouped = groupItemsByCategory(incomplete as any, categories);
+    // Sort items within each category alphabetically ascending
+    groupedIncompleteItems = Object.fromEntries(
+      Object.entries(grouped).map(([categoryName, categoryData]) => {
+        const sortedItems = sortItems<ShoppingItem>(SortModes.Alphabetical, true, categoryData.items as any);
+        return [categoryName, { ...categoryData, items: sortedItems }];
+      })
+    );
+  } else {
+    // Flat sorting without grouping
+    if (openSortMode === 'last_top') {
+      flatSortedIncompleteItems = sortItems<ShoppingItem>(SortModes.Edited, false, incomplete as any);
+    } else if (openSortMode === 'last_bottom') {
+      flatSortedIncompleteItems = sortItems<ShoppingItem>(SortModes.Edited, true, incomplete as any);
+    } else {
+      // 'alpha'
+      flatSortedIncompleteItems = sortItems<ShoppingItem>(SortModes.Alphabetical, true, incomplete as any);
+    }
+  }
   const { showToast } = useToast();
 
   // Watch for filter click events
@@ -191,55 +220,104 @@ const ShoppingListPage: React.FC = () => {
       {/* Kategorien & Produkte */}
       <div className="flex-1 overflow-y-auto pb-32">
         <div className="divide-y divide-gray-200">
-          {Object.entries(groupedIncompleteItems).map(([categoryName, categoryData]) => (
-            <div key={categoryName}>
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-1 text-gray-700 text-sm">{categoryName}</div>
-              {categoryData.items.map((item) => (
-                <div key={item.id} className="bg-white">
-                  <SwipeAction
-                    onDelete={() => handleDeleteItem(item.id)}
-                    className="border-b border-gray-200"
-                  >
-                    <div className="flex items-center">
-                      <button
-                        className="flex items-center pl-4 py-3 flex-1 text-left hover:bg-orange-50 transition-colors"
-                        onClick={(e) => handleToggleCompletion(item.id, e)}
-                      >
-                        <div className="w-8 flex justify-center mr-4">
-                          <FontAwesomeIcon 
-                            icon={item.icon || 'basket-shopping'} 
-                            className="text-gray-600" 
-                            size="2xl"
-                          />
-                        </div>
-                        <span className="text-lg text-gray-900">
-                          {item.name}
-                          {item.notes && (
-                            <span className="text-gray-600 text-sm ml-1">{item.notes}</span>
-                          )}
-                        </span>
-                        <span className="flex-1" />
-                        {item.quantity && (
-                          <span className="text-gray-600 text-base">
-                            {item.quantity}{item.unit_id && ` ${getUnitShortNameById(item.unit_id, units)}`}
-                          </span>
-                        )}
-                      </button>
+          {openSortMode === 'category' && groupedIncompleteItems && (
+            Object.entries(groupedIncompleteItems).map(([categoryName, categoryData]) => (
+              <div key={categoryName}>
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-1 text-gray-700 text-sm">{categoryName}</div>
+                {categoryData.items.map((item) => (
+                  <div key={item.id} className="bg-white">
+                    <SwipeAction
+                      onDelete={() => handleDeleteItem(item.id)}
+                      className="border-b border-gray-200"
+                    >
                       <div className="flex items-center">
-                        <div className="w-[1px] h-8 bg-gray-200 mx-2 my-2" />
                         <button
-                          className="px-4 py-3 hover:bg-orange-50 rounded-md"
-                          onClick={() => handleItemClick(item.id)}
+                          className="flex items-center pl-4 py-3 flex-1 text-left hover:bg-orange-50 transition-colors"
+                          onClick={(e) => handleToggleCompletion(item.id, e)}
                         >
-                          <FontAwesomeIcon className="text-gray-500" icon="fa-chevron-right" size="base" style="regular"/>
+                          <div className="w-8 flex justify-center mr-4">
+                            <FontAwesomeIcon 
+                              icon={item.icon || 'basket-shopping'} 
+                              className="text-gray-600" 
+                              size="2xl"
+                            />
+                          </div>
+                          <span className="text-lg text-gray-900">
+                            {item.name}
+                            {item.notes && (
+                              <span className="text-gray-600 text-sm ml-1">{item.notes}</span>
+                            )}
+                          </span>
+                          <span className="flex-1" />
+                          {item.quantity && (
+                            <span className="text-gray-600 text-base">
+                              {item.quantity}{item.unit_id && ` ${getUnitShortNameById(item.unit_id, units)}`}
+                            </span>
+                          )}
                         </button>
+                        <div className="flex items-center">
+                          <div className="w-[1px] h-8 bg-gray-200 mx-2 my-2" />
+                          <button
+                            className="px-4 py-3 hover:bg-orange-50 rounded-md"
+                            onClick={() => handleItemClick(item.id)}
+                          >
+                            <FontAwesomeIcon className="text-gray-500" icon="fa-chevron-right" size="base" style="regular"/>
+                          </button>
+                        </div>
                       </div>
+                    </SwipeAction>
+                  </div>
+                ))}
+              </div>
+            ))
+          )}
+
+          {openSortMode !== 'category' && flatSortedIncompleteItems && (
+            flatSortedIncompleteItems.map((item) => (
+              <div key={item.id} className="bg-white">
+                <SwipeAction
+                  onDelete={() => handleDeleteItem(item.id)}
+                  className="border-b border-gray-200"
+                >
+                  <div className="flex items-center">
+                    <button
+                      className="flex items-center pl-4 py-3 flex-1 text-left hover:bg-orange-50 transition-colors"
+                      onClick={(e) => handleToggleCompletion(item.id, e)}
+                    >
+                      <div className="w-8 flex justify-center mr-4">
+                        <FontAwesomeIcon 
+                          icon={item.icon || 'basket-shopping'} 
+                          className="text-gray-600" 
+                          size="2xl"
+                        />
+                      </div>
+                      <span className="text-lg text-gray-900">
+                        {item.name}
+                        {item.notes && (
+                          <span className="text-gray-600 text-sm ml-1">{item.notes}</span>
+                        )}
+                      </span>
+                      <span className="flex-1" />
+                      {item.quantity && (
+                        <span className="text-gray-600 text-base">
+                          {item.quantity}{item.unit_id && ` ${getUnitShortNameById(item.unit_id, units)}`}
+                        </span>
+                      )}
+                    </button>
+                    <div className="flex items-center">
+                      <div className="w-[1px] h-8 bg-gray-200 mx-2 my-2" />
+                      <button
+                        className="px-4 py-3 hover:bg-orange-50 rounded-md"
+                        onClick={() => handleItemClick(item.id)}
+                      >
+                        <FontAwesomeIcon className="text-gray-500" icon="fa-chevron-right" size="base" style="regular"/>
+                      </button>
                     </div>
-                  </SwipeAction>
-                </div>
-              ))}
-            </div>
-          ))}
+                  </div>
+                </SwipeAction>
+              </div>
+            ))
+          )}
         </div>
 
         {completed.length > 0 && (
@@ -260,7 +338,7 @@ const ShoppingListPage: React.FC = () => {
                 className={`transition-all duration-300 ${showCompleted ? 'opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}
               >
                 <div className="divide-y divide-gray-200">
-                  {completed.map((item) => {
+                  {sortedCompleted.map((item) => {
                     return (
                       <button
                         key={item.id}
@@ -318,26 +396,51 @@ const ShoppingListPage: React.FC = () => {
             <div className="mx-auto max-w-md rounded-t-3xl bg-white p-6 pb-8 shadow-2xl border-t border-gray-200 relative">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-4" onClick={() => setSortSheetOpen(false)} />
               <div className="text-center text-gray-700 text-sm mb-6">Liste sortieren</div>
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between text-orange-600 font-semibold text-lg">
+              <div className="flex flex-col gap-2">
+                <button
+                  className={`flex items-center justify-between rounded-lg px-3 py-2 border ${openSortMode === 'category' ? 'border-orange-600 bg-orange-50 text-orange-700' : 'border-gray-200 text-gray-900'}`}
+                  onClick={() => { setOpenSortMode('category'); setSortSheetOpen(false); }}
+                  type="button"
+                >
                   <div className="flex items-center">
                     <FontAwesomeIcon icon="fa-list" size="base" style="regular" className="mr-3"/>
-                    Nach Kategorie
+                    Nach Kategorie (A→Z)
                   </div>
-                  <FontAwesomeIcon icon="fa-pen-circle" size="base" className="text-orange-600"/>
-                </div>
-                <div className="flex items-center text-gray-900 text-base">
-                  <FontAwesomeIcon icon="fa-arrow-down-9-1" size="base" style="regular" className="mr-3"/>
-                  Letztes Produkt oben
-                </div>
-                <div className="flex items-center text-gray-900 text-base">
-                  <FontAwesomeIcon icon="fa-arrow-down-1-9" size="base" style="regular" className="mr-3"/>
-                  Letztes Produkt unten
-                </div>
-                <div className="flex items-center text-gray-900 text-base">
-                  <FontAwesomeIcon icon="fa-arrow-down-a-z" size="base" style="regular" className="mr-3"/>
-                  Alphabetisch
-                </div>
+                  {openSortMode === 'category' && <FontAwesomeIcon icon="fa-check" className="text-orange-600"/>}
+                </button>
+                <button
+                  className={`flex items-center justify-between rounded-lg px-3 py-2 border ${openSortMode === 'last_top' ? 'border-orange-600 bg-orange-50 text-orange-700' : 'border-gray-200 text-gray-900'}`}
+                  onClick={() => { setOpenSortMode('last_top'); setSortSheetOpen(false); }}
+                  type="button"
+                >
+                  <div className="flex items-center">
+                    <FontAwesomeIcon icon="fa-arrow-down-9-1" size="base" style="regular" className="mr-3"/>
+                    Letztes Produkt oben
+                  </div>
+                  {openSortMode === 'last_top' && <FontAwesomeIcon icon="fa-check" className="text-orange-600"/>}
+                </button>
+                <button
+                  className={`flex items-center justify-between rounded-lg px-3 py-2 border ${openSortMode === 'last_bottom' ? 'border-orange-600 bg-orange-50 text-orange-700' : 'border-gray-200 text-gray-900'}`}
+                  onClick={() => { setOpenSortMode('last_bottom'); setSortSheetOpen(false); }}
+                  type="button"
+                >
+                  <div className="flex items-center">
+                    <FontAwesomeIcon icon="fa-arrow-down-1-9" size="base" style="regular" className="mr-3"/>
+                    Letztes Produkt unten
+                  </div>
+                  {openSortMode === 'last_bottom' && <FontAwesomeIcon icon="fa-check" className="text-orange-600"/>}
+                </button>
+                <button
+                  className={`flex items-center justify-between rounded-lg px-3 py-2 border ${openSortMode === 'alpha' ? 'border-orange-600 bg-orange-50 text-orange-700' : 'border-gray-200 text-gray-900'}`}
+                  onClick={() => { setOpenSortMode('alpha'); setSortSheetOpen(false); }}
+                  type="button"
+                >
+                  <div className="flex items-center">
+                    <FontAwesomeIcon icon="fa-arrow-down-a-z" size="base" style="regular" className="mr-3"/>
+                    Alphabetisch (A→Z)
+                  </div>
+                  {openSortMode === 'alpha' && <FontAwesomeIcon icon="fa-check" className="text-orange-600"/>}
+                </button>
               </div>
             </div>
           </div>

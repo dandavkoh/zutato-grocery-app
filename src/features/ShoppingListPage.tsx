@@ -17,6 +17,8 @@ import { useToast } from '../contexts/ToastContext';
 
 const ShoppingListPage: React.FC = () => {
   const [sortSheetOpen, setSortSheetOpen] = useState(false);
+  const [sheetVisible, setSheetVisible] = useState(false);
+  const closeAnimTimeoutRef = useRef<number | null>(null);
   const [showCompleted, setShowCompleted] = useState(true);
   const [openSortMode, setOpenSortMode] = useState<'category' | 'last_top' | 'last_bottom' | 'alpha'>('category');
   const navigate = useNavigate();
@@ -123,7 +125,14 @@ const ShoppingListPage: React.FC = () => {
   // Handle filter click events
   useEffect(() => {
     if (filterClicked) {
-      setSortSheetOpen(true);
+      // Open with animation
+      if (closeAnimTimeoutRef.current) {
+        clearTimeout(closeAnimTimeoutRef.current);
+        closeAnimTimeoutRef.current = null;
+      }
+      setSheetVisible(true);
+      // Ensure initial translate-y-full is applied before switching to open state
+      requestAnimationFrame(() => setSortSheetOpen(true));
       dispatch(resetFilterClick());
     }
   }, [filterClicked, dispatch]);
@@ -136,6 +145,24 @@ const ShoppingListPage: React.FC = () => {
       });
     };
   }, []);
+
+  const openSortSheet = () => {
+    if (closeAnimTimeoutRef.current) {
+      clearTimeout(closeAnimTimeoutRef.current);
+      closeAnimTimeoutRef.current = null;
+    }
+    setSheetVisible(true);
+    requestAnimationFrame(() => setSortSheetOpen(true));
+  };
+
+  const closeSortSheet = () => {
+    setSortSheetOpen(false);
+    // Unmount after animation ends
+    closeAnimTimeoutRef.current = window.setTimeout(() => {
+      setSheetVisible(false);
+      closeAnimTimeoutRef.current = null;
+    }, 300);
+  };
 
   const handleItemClick = (itemId: string) => {
     // Navigate to product detail page with item data
@@ -397,20 +424,31 @@ const ShoppingListPage: React.FC = () => {
       </div>
 
       {/* Bottom Sheet Sortiermenü */}
-      {sortSheetOpen && (
+      {sheetVisible && (
         <>
           <div
-            className="fixed inset-0 bg-black/20 z-40"
-            onClick={() => setSortSheetOpen(false)}
+            className={`fixed inset-0 z-40 transition-opacity duration-300 ${sortSheetOpen ? 'opacity-100 bg-black/20' : 'opacity-0 bg-black/20'}`}
+            onClick={closeSortSheet}
           />
-          <div className="fixed left-0 right-0 bottom-0 z-50">
+          <div className={`fixed left-0 right-0 bottom-0 z-50 transform transition-transform duration-300 ${sortSheetOpen ? 'translate-y-0' : 'translate-y-full'}`}>
             <div className="mx-auto max-w-md rounded-t-3xl bg-white p-6 pb-8 shadow-2xl border-t border-gray-200 relative">
-              <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-4" onClick={() => setSortSheetOpen(false)} />
-              <div className="text-center text-gray-700 text-sm mb-6">Liste sortieren</div>
+              <div className="grid grid-cols-3 items-center mb-6">
+                <div />
+                <div className="text-center text-gray-700 text-sm">Liste sortieren</div>
+                <div className="flex justify-end">
+                  <button
+                    className="p-2 rounded-md hover:bg-gray-100"
+                    onClick={closeSortSheet}
+                    type="button"
+                  >
+                    <FontAwesomeIcon icon="fa-xmark" size="xl" className="text-gray-500" />
+                  </button>
+                </div>
+              </div>
               <div className="flex flex-col gap-2">
                 <button
                   className={`flex items-center justify-between rounded-lg px-3 py-2 border ${openSortMode === 'category' ? 'border-orange-600 bg-orange-50 text-orange-700' : 'border-gray-200 text-gray-900'}`}
-                  onClick={() => { setOpenSortMode('category'); setSortSheetOpen(false); }}
+                  onClick={() => { setOpenSortMode('category'); closeSortSheet(); }}
                   type="button"
                 >
                   <div className="flex items-center">
@@ -421,7 +459,7 @@ const ShoppingListPage: React.FC = () => {
                 </button>
                 <button
                   className={`flex items-center justify-between rounded-lg px-3 py-2 border ${openSortMode === 'last_top' ? 'border-orange-600 bg-orange-50 text-orange-700' : 'border-gray-200 text-gray-900'}`}
-                  onClick={() => { setOpenSortMode('last_top'); setSortSheetOpen(false); }}
+                  onClick={() => { setOpenSortMode('last_top'); closeSortSheet(); }}
                   type="button"
                 >
                   <div className="flex items-center">
@@ -432,7 +470,7 @@ const ShoppingListPage: React.FC = () => {
                 </button>
                 <button
                   className={`flex items-center justify-between rounded-lg px-3 py-2 border ${openSortMode === 'last_bottom' ? 'border-orange-600 bg-orange-50 text-orange-700' : 'border-gray-200 text-gray-900'}`}
-                  onClick={() => { setOpenSortMode('last_bottom'); setSortSheetOpen(false); }}
+                  onClick={() => { setOpenSortMode('last_bottom'); closeSortSheet(); }}
                   type="button"
                 >
                   <div className="flex items-center">
@@ -443,7 +481,7 @@ const ShoppingListPage: React.FC = () => {
                 </button>
                 <button
                   className={`flex items-center justify-between rounded-lg px-3 py-2 border ${openSortMode === 'alpha' ? 'border-orange-600 bg-orange-50 text-orange-700' : 'border-gray-200 text-gray-900'}`}
-                  onClick={() => { setOpenSortMode('alpha'); setSortSheetOpen(false); }}
+                  onClick={() => { setOpenSortMode('alpha'); closeSortSheet(); }}
                   type="button"
                 >
                   <div className="flex items-center">

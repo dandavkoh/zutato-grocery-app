@@ -81,21 +81,6 @@ const CategorySelectPage: React.FC = () => {
       ) : (
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
            <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-            <button
-              className="flex items-center px-5 py-3 w-full text-left hover:bg-orange-50 transition-colors"
-              onClick={() => handleCategorySelect(null)}
-            >
-              <div className="w-12 flex justify-center mr-4 text-gray-600">
-                <FontAwesomeIcon icon="basket-shopping" size="3xl" style="regular"/>
-              </div>
-              <span className="text-base text-gray-900 flex-1">Keine Kategorie</span>
-              {!item?.category_id && (
-                <span className="text-orange-600">
-                  <FontAwesomeIcon icon="fa-circle-check" size="xl" style="regular"/>
-                </span>
-              )}
-            </button>
-            <div className="border-t border-gray-200" />
             {sortedCategories.map((cat, idx) => (
               <div key={cat.id} className={idx < sortedCategories.length - 1 ? 'border-b border-gray-200' : ''}>
                 <button
@@ -114,6 +99,21 @@ const CategorySelectPage: React.FC = () => {
                 </button>
               </div>
             ))}
+            <div className="border-t border-gray-200" />
+            <button
+              className="flex items-center px-5 py-3 w-full text-left hover:bg-orange-50 transition-colors"
+              onClick={() => handleCategorySelect(null)}
+            >
+              <div className="w-12 flex justify-center mr-4 text-gray-600">
+                <FontAwesomeIcon icon="basket-shopping" size="3xl" style="regular"/>
+              </div>
+              <span className="text-base text-gray-900 flex-1">Keine Kategorie</span>
+              {!item?.category_id && (
+                <span className="text-orange-600">
+                  <FontAwesomeIcon icon="fa-circle-check" size="xl" style="regular"/>
+                </span>
+              )}
+            </button>
           </div>
         </div>
       )}

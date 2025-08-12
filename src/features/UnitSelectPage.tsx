@@ -93,18 +93,6 @@ const UnitSelectPage: React.FC = () => {
           <div className="text-center py-12 text-gray-500">Keine Einheiten gefunden.</div>
         ) : (
           <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-            <button
-              className="flex items-center px-5 py-3 w-full text-left hover:bg-orange-50 transition-colors"
-              onClick={() => handleUnitSelect(null)}
-            >
-              <span className="text-base text-gray-900 flex-1">Keine Einheit</span>
-              {!item?.unit_id && (
-                <span className="text-orange-600">
-                  <FontAwesomeIcon icon="fa-circle-check" size="xl" style="regular"/>
-                </span>
-              )}
-            </button>
-            <div className="border-t border-gray-200" />
             {sortedUnits.map((unit, index) => (
               <div key={index} className={index < sortedUnits.length - 1 ? 'border-b border-gray-200' : ''}>
                 <button
@@ -120,6 +108,18 @@ const UnitSelectPage: React.FC = () => {
                 </button>
               </div>
             ))}
+            <div className="border-t border-gray-200" />
+            <button
+              className="flex items-center px-5 py-3 w-full text-left hover:bg-orange-50 transition-colors"
+              onClick={() => handleUnitSelect(null)}
+            >
+              <span className="text-base text-gray-900 flex-1">Keine Einheit</span>
+              {!item?.unit_id && (
+                <span className="text-orange-600">
+                  <FontAwesomeIcon icon="fa-circle-check" size="xl" style="regular"/>
+                </span>
+              )}
+            </button>
           </div>
         )}
       </div>

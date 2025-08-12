@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { setHeader, resetHeader, resetBackClick, resetRightButtonClick, updateSelectedItem } from '../stores/store';
+import { setHeader, resetHeader, resetBackClick, updateSelectedItem } from '../stores/store';
 import type { RootState } from '../stores/store';
 import { useCategoriesDexie } from '../hooks/useCategoriesDexie';
 import { useUnitsDexie } from '../hooks/useUnitsDexie';
@@ -50,13 +50,12 @@ const ProductDetailPage: React.FC = () => {
 
   // Watch for events
   const backClicked = useSelector((state: RootState) => state.events.backClicked);
-  const rightButtonClicked = useSelector((state: RootState) => state.events.rightButtonClicked);
+  
 
   useEffect(() => {
     dispatch(setHeader({
       title: item?.name || 'Produkt',
       showBack: true,
-      showRightButton: true,
       background: '',
     }));
     return () => { dispatch(resetHeader()); };
@@ -70,14 +69,7 @@ const ProductDetailPage: React.FC = () => {
     }
   }, [backClicked, navigate, dispatch, listId]);
 
-  // Handle right button events
-  useEffect(() => {
-    if (rightButtonClicked) {
-      // Handle right button click - for now just log it
-      console.log('Right button clicked');
-      dispatch(resetRightButtonClick());
-    }
-  }, [rightButtonClicked, dispatch]);
+  
 
   // Handle notes editing
   const handleNotesEdit = () => {
@@ -212,8 +204,9 @@ const ProductDetailPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        {/* TODO: Läden & Personen */}
         {/* Läden & Personen */}
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+        {/* <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-200">
             <div className="text-xs text-gray-500 mb-1">Läden</div>
             <div className="flex items-center justify-between">
@@ -238,7 +231,7 @@ const ProductDetailPage: React.FC = () => {
               <FontAwesomeIcon className="w-5 h-5 text-gray-400 ml-2" icon="fa-chevron-right" size="base" style="regular"/>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Notiz */}
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5">

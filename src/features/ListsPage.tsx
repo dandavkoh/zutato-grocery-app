@@ -21,7 +21,6 @@ const ListsPage: React.FC = () => {
       showBack: false,
       background: '',
       showFilterIcon: false,
-      showRightButton: false,
     }));
     return () => { dispatch(resetHeader()); };
   }, [dispatch]);

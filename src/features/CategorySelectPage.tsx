@@ -20,6 +20,7 @@ const CategorySelectPage: React.FC = () => {
   
   // Use the categories hook to get categories
   const { categories, loading } = useCategoriesDexie();
+  const sortedCategories = [...categories].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
   
   // Get current category name
   const currentCategoryName = item ? getCategoryNameById(item.category_id, categories) : '';
@@ -79,7 +80,7 @@ const CategorySelectPage: React.FC = () => {
         <div className="flex items-center justify-center h-64 text-gray-700">Lade Kategorien...</div>
       ) : (
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+           <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
             <button
               className="flex items-center px-5 py-3 w-full text-left hover:bg-orange-50 transition-colors"
               onClick={() => handleCategorySelect(null)}
@@ -95,8 +96,8 @@ const CategorySelectPage: React.FC = () => {
               )}
             </button>
             <div className="border-t border-gray-200" />
-            {categories.map((cat, idx) => (
-              <div key={cat.id} className={idx < categories.length - 1 ? 'border-b border-gray-200' : ''}>
+            {sortedCategories.map((cat, idx) => (
+              <div key={cat.id} className={idx < sortedCategories.length - 1 ? 'border-b border-gray-200' : ''}>
                 <button
                   className="flex items-center px-5 py-3 w-full text-left hover:bg-orange-50 transition-colors"
                   onClick={() => handleCategorySelect(cat.id)}

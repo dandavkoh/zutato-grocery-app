@@ -20,6 +20,7 @@ const UnitSelectPage: React.FC = () => {
   
   // Use the units hook to get units
   const { units, loading } = useUnitsDexie();
+  const sortedUnits = [...units].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
   
   // Get current unit
   const currentUnit = item?.unit_id ? units.find(u => u.id === item.unit_id) : null;
@@ -104,8 +105,8 @@ const UnitSelectPage: React.FC = () => {
               )}
             </button>
             <div className="border-t border-gray-200" />
-            {units.map((unit, index) => (
-              <div key={index} className={index < units.length - 1 ? 'border-b border-gray-200' : ''}>
+            {sortedUnits.map((unit, index) => (
+              <div key={index} className={index < sortedUnits.length - 1 ? 'border-b border-gray-200' : ''}>
                 <button
                   className="flex items-center px-5 py-3 w-full text-left hover:bg-orange-50 transition-colors"
                   onClick={() => handleUnitSelect(unit.id)}

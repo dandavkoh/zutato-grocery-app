@@ -76,12 +76,23 @@ const ShoppingListPage: React.FC = () => {
   if (openSortMode === 'category') {
     const grouped = groupItemsByCategory(incomplete as any, categories);
     // Sort items within each category alphabetically ascending
-    groupedIncompleteItems = Object.fromEntries(
-      Object.entries(grouped).map(([categoryName, categoryData]) => {
-        const sortedItems = sortItems<ShoppingItem>(SortModes.Alphabetical, true, categoryData.items as any);
-        return [categoryName, { ...categoryData, items: sortedItems }];
-      })
-    );
+    const entries = Object.entries(grouped).map(([categoryName, categoryData]) => {
+      const sortedItems = sortItems<ShoppingItem>(SortModes.Alphabetical, true, categoryData.items as any);
+      return [categoryName, { ...categoryData, items: sortedItems }] as const;
+    });
+    // Order groups by category.sort_order ascending; "Keine Kategorie" always on top
+    const sortedEntries = entries.sort((a, b) => {
+      const aCat = a[1].category;
+      const bCat = b[1].category;
+      const aIsNone = aCat.id === 'none' || a[0] === 'Keine Kategorie';
+      const bIsNone = bCat.id === 'none' || b[0] === 'Keine Kategorie';
+      if (aIsNone && !bIsNone) return -1;
+      if (!aIsNone && bIsNone) return 1;
+      const aOrder = (aCat as any).sort_order ?? 0;
+      const bOrder = (bCat as any).sort_order ?? 0;
+      return aOrder - bOrder;
+    });
+    groupedIncompleteItems = Object.fromEntries(sortedEntries);
   } else {
     // Flat sorting without grouping
     if (openSortMode === 'last_top') {

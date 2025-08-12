@@ -8,6 +8,7 @@ import { useProductSearch } from '../hooks/useProductSearch';
 import { useProductInList } from '../hooks/useProductInList';
 import { useProductActions } from '../hooks/useProductActions';
 import type { ProductOrGroup } from '../api/supabaseApi';
+import { useToast } from '../contexts/ToastContext';
 import { isIOS, releaseKeyboardPrimer } from '../utils/iosKeyboard';
 
 const recommendations = [
@@ -41,6 +42,7 @@ const SearchPage: React.FC = () => {
   
   // Use the product actions hook to handle product clicks
   const { handleProductAction, currentListId, user } = useProductActions();
+  const { showToast } = useToast();
 
   useEffect(() => {
     dispatch(setHeader({
@@ -230,9 +232,9 @@ const SearchPage: React.FC = () => {
           <FontAwesomeIcon icon="fa-square-poll-vertical" size="3xl" style="regular" className="mb-1"/>
           <span className="text-xs font-semibold">Einkaufsliste</span>
         </button>
-        <button className="flex flex-col items-center justify-center flex-1 py-2 text-gray-600">
-          <FontAwesomeIcon icon="fa-shelves" size="3xl" style="regular" className="mb-1"/>
-          <span className="text-xs font-semibold">Vorrat</span>
+        <button className="flex flex-col items-center justify-center flex-1 py-2 text-gray-600" onClick={() => showToast('Kommt in einer zukünftigen Version', { type: 'info' })}>
+          <FontAwesomeIcon icon="fa-book" size="3xl" style="regular" className="mb-1"/>
+          <span className="text-xs font-semibold">Kochbuch</span>
         </button>
       </div>
     </div>

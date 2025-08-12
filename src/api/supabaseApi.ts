@@ -31,12 +31,14 @@ export interface Unit {
   id: string;
   name: string; // Langer Name, z.B. "Packungen"
   short_name: string; // Kurze Abkürzung, z.B. "Pkg"
+  sort_order: number;
 }
 
 export interface Category {
   id: string;
   name: string;
   icon: string;
+  sort_order: number;
 }
 
 export interface ProductOrGroup {
@@ -1498,7 +1500,8 @@ export const groupItemsByCategory = (items: ShoppingItem[], categories: Category
     const fallbackCategory: Category = {
       id: 'none',
       name: 'Keine Kategorie',
-      icon: 'fa-basket-shopping'
+    icon: 'fa-basket-shopping',
+    sort_order: 0
     };
     
     if (!grouped[categoryName]) {

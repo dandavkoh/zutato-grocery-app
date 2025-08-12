@@ -49,6 +49,7 @@ export interface Category {
   icon: string;
   created_at: string;
   updated_at: string;
+  sort_order: number;
 }
 
 export interface Unit {
@@ -57,6 +58,7 @@ export interface Unit {
   short_name: string;
   created_at: string;
   updated_at: string;
+  sort_order: number;
 }
 
 class ShoppingItemsDatabase extends Dexie {

@@ -26,6 +26,7 @@ export interface EnvironmentConfig {
 
   // Shopping List Limits
   shoppingListMaxActiveItems: number;
+  shoppingListMaxCompletedItems: number;
 }
 
 // Development Environment
@@ -56,6 +57,7 @@ const developmentConfig: EnvironmentConfig = {
 
   // Shopping List Limits
   shoppingListMaxActiveItems: parseInt(import.meta.env.VITE_SHOPPINGLIST_MAX_ACTIVE_ITEMS || '300'),
+  shoppingListMaxCompletedItems: parseInt(import.meta.env.VITE_SHOPPINGLIST_MAX_COMPLETED_ITEMS || '100'),
 };
 
 // Production Environment
@@ -86,6 +88,7 @@ const productionConfig: EnvironmentConfig = {
 
   // Shopping List Limits
   shoppingListMaxActiveItems: parseInt(import.meta.env.VITE_SHOPPINGLIST_MAX_ACTIVE_ITEMS || '300'),
+  shoppingListMaxCompletedItems: parseInt(import.meta.env.VITE_SHOPPINGLIST_MAX_COMPLETED_ITEMS || '100'),
 };
 
 // Environment Detection

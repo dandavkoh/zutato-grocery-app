@@ -1,5 +1,5 @@
 import { supabase } from '../config/supabase';
-import { logDebug, logError, logInfo } from '../config/environment';
+import { logDebug, logError, logInfo, environment } from '../config/environment';
 import type { AuthError } from '@supabase/supabase-js';
 import { realtimeService } from '../services/realtimeService';
 
@@ -190,14 +190,15 @@ export class ShoppingItemsController {
   async getItems(listId: string): Promise<ApiResponse<ShoppingItem[]>> {
     try {
       logDebug('Fetching items from Supabase', { listId });
-      
+      const totalLimit = environment.shoppingListMaxActiveItems + environment.shoppingListMaxCompletedItems;
       const { data, error } = await supabase
         .from('shopping_items')
         .select('*')
         .eq('list_id', listId)
         .eq('is_deleted', false)
-        .order('created_at', { ascending: false });
-      
+        .order('updated_at', { ascending: false })
+        .limit(totalLimit);
+
       if (error) {
         logError('Failed to fetch items from Supabase', error);
         return {
@@ -206,8 +207,8 @@ export class ShoppingItemsController {
           status: 500
         };
       }
-      
-      logInfo('Successfully fetched items from Supabase', { count: data?.length || 0 });
+
+      logInfo('Successfully fetched items from Supabase (single query with limit)', { count: data?.length || 0, limit: totalLimit });
       return {
         data: data || [],
         error: null,
@@ -215,82 +216,6 @@ export class ShoppingItemsController {
       };
     } catch (error) {
       logError('Unexpected error fetching items', error);
-      return {
-        data: null,
-        error: 'Internal server error',
-        status: 500
-      };
-    }
-  }
-
-  // Get items by category
-  async getItemsByCategory(listId: string, category_id: string): Promise<ApiResponse<ShoppingItem[]>> {
-    try {
-      logDebug('Fetching items by category from Supabase', { listId, category_id });
-      
-      const { data, error } = await supabase
-        .from('shopping_items')
-        .select('*')
-        .eq('list_id', listId)
-        .eq('category_id', category_id)
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        logError('Failed to fetch items by category from Supabase', error);
-        return {
-          data: null,
-          error: error.message,
-          status: 500
-        };
-      }
-      
-      logInfo('Successfully fetched items by category from Supabase', { count: data?.length || 0 });
-      return {
-        data: data || [],
-        error: null,
-        status: 200
-      };
-    } catch (error) {
-      logError('Unexpected error fetching items by category', error);
-      return {
-        data: null,
-        error: 'Internal server error',
-        status: 500
-      };
-    }
-  }
-
-  // Get completed items
-  async getCompletedItems(listId: string): Promise<ApiResponse<ShoppingItem[]>> {
-    try {
-      logDebug('Fetching completed items from Supabase', { listId });
-      
-      const { data, error } = await supabase
-        .from('shopping_items')
-        .select('*')
-        .eq('list_id', listId)
-        .eq('is_completed', true)
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        logError('Failed to fetch completed items from Supabase', error);
-        return {
-          data: null,
-          error: error.message,
-          status: 500
-        };
-      }
-      
-      logInfo('Successfully fetched completed items from Supabase', { count: data?.length || 0 });
-      return {
-        data: data || [],
-        error: null,
-        status: 200
-      };
-    } catch (error) {
-      logError('Unexpected error fetching completed items', error);
       return {
         data: null,
         error: 'Internal server error',

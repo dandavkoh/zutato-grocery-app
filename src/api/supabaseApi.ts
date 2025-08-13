@@ -196,7 +196,7 @@ export class ShoppingItemsController {
         .select('*')
         .eq('list_id', listId)
         .eq('is_deleted', false)
-        .order('updated_at', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(totalLimit);
 
       if (error) {

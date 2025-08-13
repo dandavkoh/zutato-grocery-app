@@ -3,10 +3,8 @@ export interface EnvironmentConfig {
   // Supabase Configuration
   supabaseUrl: string;
   supabaseAnonKey: string;
-  supabaseServiceRoleKey: string;
   
   // API Configuration
-  apiBaseUrl: string;
   apiTimeout: number;
   
   // PWA Configuration
@@ -17,12 +15,8 @@ export interface EnvironmentConfig {
   pwaBackgroundColor: string;
   
   // Offline Configuration
-  maxQueueSize: number;
-  cacheDuration: number;
-  cacheCleanupInterval: number;
   
   // Feature Flags
-  enableOfflineMode: boolean;
   enableNotifications: boolean;
   enableBackgroundSync: boolean;
   
@@ -39,10 +33,8 @@ const developmentConfig: EnvironmentConfig = {
   // Supabase Configuration
   supabaseUrl: import.meta.env.VITE_SUPABASE_API_URL,
   supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-  supabaseServiceRoleKey: import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
   
   // API Configuration
-  apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001',
   apiTimeout: 5000,
   
   // PWA Configuration
@@ -53,12 +45,8 @@ const developmentConfig: EnvironmentConfig = {
   pwaBackgroundColor: '#000000',
   
   // Offline Configuration
-  maxQueueSize: parseInt(import.meta.env.VITE_MAX_QUEUE_SIZE || '50'),
-  cacheDuration: parseInt(import.meta.env.VITE_CACHE_DURATION || '300000'),
-  cacheCleanupInterval: parseInt(import.meta.env.VITE_CACHE_CLEANUP_INTERVAL || '120000'),
   
   // Feature Flags
-  enableOfflineMode: import.meta.env.VITE_ENABLE_OFFLINE_MODE === 'true' || true,
   enableNotifications: false, // Deaktiviert in Development
   enableBackgroundSync: false, // Deaktiviert in Development
   
@@ -75,10 +63,8 @@ const productionConfig: EnvironmentConfig = {
   // Supabase Configuration
   supabaseUrl: import.meta.env.VITE_SUPABASE_API_URL,
   supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-  supabaseServiceRoleKey: import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
   
   // API Configuration
-  apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'https://api.zutato.app',
   apiTimeout: 10000,
   
   // PWA Configuration
@@ -89,12 +75,8 @@ const productionConfig: EnvironmentConfig = {
   pwaBackgroundColor: '#000000',
   
   // Offline Configuration
-  maxQueueSize: parseInt(import.meta.env.VITE_MAX_QUEUE_SIZE || '100'),
-  cacheDuration: parseInt(import.meta.env.VITE_CACHE_DURATION || '86400000'),
-  cacheCleanupInterval: parseInt(import.meta.env.VITE_CACHE_CLEANUP_INTERVAL || '3600000'),
   
   // Feature Flags
-  enableOfflineMode: import.meta.env.VITE_ENABLE_OFFLINE_MODE === 'true' || true,
   enableNotifications: true,
   enableBackgroundSync: true,
   
@@ -126,22 +108,19 @@ export const environmentInfo = {
 
 // Utility Functions
 export const isOfflineModeEnabled = (): boolean => {
-  return environment.enableOfflineMode;
+  return false;
 };
 
 export const isDebugModeEnabled = (): boolean => {
   return environment.enableDebugLogs;
 };
 
-export const getApiUrl = (endpoint: string): string => {
-  return `${environment.apiBaseUrl}${endpoint}`;
-};
+// Removed getApiUrl; no API base URL is used client-side.
 
 export const getSupabaseConfig = () => {
   return {
     url: environment.supabaseUrl,
     anonKey: environment.supabaseAnonKey,
-    serviceRoleKey: environment.supabaseServiceRoleKey,
   };
 };
 
@@ -164,10 +143,6 @@ export const validateEnvironment = (): void => {
   const requiredFields: (keyof EnvironmentConfig)[] = [
     'supabaseUrl',
     'supabaseAnonKey',
-    'apiBaseUrl',
-    'maxQueueSize',
-    'cacheDuration',
-    'enableOfflineMode'
   ];
 
   for (const field of requiredFields) {
@@ -175,18 +150,11 @@ export const validateEnvironment = (): void => {
     if (value === undefined || value === null || value === '') {
       throw new Error(`Missing required environment field: ${field}`);
     }
-    
-    // Spezielle Validierung für enableOfflineMode
-    if (field === 'enableOfflineMode' && typeof value !== 'boolean') {
-      throw new Error(`Invalid value for enableOfflineMode: ${value}. Expected boolean.`);
-    }
   }
 
   logInfo('Environment validation passed', {
     mode: environmentInfo.mode,
     supabaseUrl: environment.supabaseUrl,
-    apiBaseUrl: environment.apiBaseUrl,
-    offlineMode: environment.enableOfflineMode,
     debugLogs: environment.enableDebugLogs
   });
 }; 

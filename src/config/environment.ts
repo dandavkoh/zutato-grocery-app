@@ -29,6 +29,9 @@ export interface EnvironmentConfig {
   // Debug Configuration
   enableDebugLogs: boolean;
   enablePerformanceMonitoring: boolean;
+
+  // Shopping List Limits
+  shoppingListMaxActiveItems: number;
 }
 
 // Development Environment
@@ -62,6 +65,9 @@ const developmentConfig: EnvironmentConfig = {
   // Debug Configuration
   enableDebugLogs: import.meta.env.VITE_ENABLE_DEBUG_LOGS === 'true' || true,
   enablePerformanceMonitoring: true,
+
+  // Shopping List Limits
+  shoppingListMaxActiveItems: parseInt(import.meta.env.VITE_SHOPPINGLIST_MAX_ACTIVE_ITEMS || '300'),
 };
 
 // Production Environment
@@ -95,6 +101,9 @@ const productionConfig: EnvironmentConfig = {
   // Debug Configuration
   enableDebugLogs: import.meta.env.VITE_ENABLE_DEBUG_LOGS === 'true' || false,
   enablePerformanceMonitoring: true,
+
+  // Shopping List Limits
+  shoppingListMaxActiveItems: parseInt(import.meta.env.VITE_SHOPPINGLIST_MAX_ACTIVE_ITEMS || '300'),
 };
 
 // Environment Detection

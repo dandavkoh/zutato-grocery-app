@@ -10,8 +10,9 @@ import { useProductActions } from '../hooks/useProductActions';
 import type { ProductOrGroup } from '../api/supabaseApi';
 import { useToast } from '../contexts/ToastContext';
 import { isIOS, releaseKeyboardPrimer } from '../utils/iosKeyboard';
+import { environment } from '../config/environment';
 
-const MAX_ACTIVE_ITEMS = 300;
+const MAX_ACTIVE_ITEMS = environment.shoppingListMaxActiveItems;
 
 const recommendations = [
   { icon: <FontAwesomeIcon icon="sack" className="text-gray-300" size="2xl"/>, name: 'Zucker', sub: 'Brauner' },

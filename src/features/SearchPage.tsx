@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { setHeader, resetHeader } from '../stores/store';
@@ -10,6 +10,8 @@ import { useProductActions } from '../hooks/useProductActions';
 import type { ProductOrGroup } from '../api/supabaseApi';
 import { useToast } from '../contexts/ToastContext';
 import { isIOS, releaseKeyboardPrimer } from '../utils/iosKeyboard';
+
+const MAX_ACTIVE_ITEMS = 300;
 
 const recommendations = [
   { icon: <FontAwesomeIcon icon="sack" className="text-gray-300" size="2xl"/>, name: 'Zucker', sub: 'Brauner' },
@@ -38,11 +40,17 @@ const SearchPage: React.FC = () => {
   const { searchResults, loading, error, searchProducts, clearSearch } = useProductSearch(300);
   
   // Use the product in list hook to check if products are already in the current list
-  const { isProductInList, refreshItems } = useProductInList();
+  const { isProductInList, items } = useProductInList();
   
   // Use the product actions hook to handle product clicks
   const { handleProductAction, currentListId, user } = useProductActions();
   const { showToast } = useToast();
+
+  const activeItemsCount = useMemo(() => {
+    if (!items) return 0;
+    return items.filter((i: any) => !i.is_completed).length;
+  }, [items]);
+  const isMaxActiveReached = activeItemsCount >= MAX_ACTIVE_ITEMS;
 
   useEffect(() => {
     dispatch(setHeader({
@@ -116,6 +124,12 @@ const SearchPage: React.FC = () => {
 
   // Handle product button click
   const handleProductClick = async (product: any) => {
+    const alreadyInList = isProductInList(product.title);
+    if (isMaxActiveReached && !alreadyInList) {
+      // Block adding new items when limit reached; show toast; editing existing items still allowed
+      showToast(`Maximal ${MAX_ACTIVE_ITEMS} aktive Produkte erlaubt.`, { type: 'info' });
+      return;
+    }
     if (!currentListId || !user) {
       console.error('No current list or user found');
       return;
@@ -126,6 +140,19 @@ const SearchPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Info banner when list is full */}
+      {isMaxActiveReached && (
+        <div className="w-full">
+          <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+            <div className="bg-orange-50 border border-orange-200 text-orange-800 rounded-lg px-4 py-3 flex items-start gap-3">
+              <FontAwesomeIcon icon="fa-circle-info" className="mt-0.5" />
+              <div className="text-sm">
+                Deine Einkaufsliste ist sehr groß. Es sind maximal {MAX_ACTIVE_ITEMS} aktive Produkte erlaubt. Bitte erledige oder lösche Produkte, bevor du weitere hinzufügst.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {showResults ? (
         <div className="w-full">
           <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2 flex items-center gap-2 text-gray-900 text-base font-semibold">
@@ -171,13 +198,15 @@ const SearchPage: React.FC = () => {
                           ({item.src === 'exact' ? 'Exakter Vorschlag' : item.src === 'fts' ? 'Exakte Suche' : 'Ähnliche Suche'})
                         </span>
                       </span>
-                      <span className="rounded-full border-2 border-orange-600 text-orange-600 w-8 h-8 flex items-center justify-center ml-2">
-                        <FontAwesomeIcon 
-                          icon={isInList ? 'fa-pen-circle' : 'fa-circle-plus'} 
-                          size="2xl" 
-                          style="regular"
-                        />
-                      </span>
+                      {(isInList || !isMaxActiveReached) && (
+                        <span className="rounded-full border-2 border-orange-600 text-orange-600 w-8 h-8 flex items-center justify-center ml-2">
+                          <FontAwesomeIcon 
+                            icon={isInList ? 'fa-pen-circle' : 'fa-circle-plus'} 
+                            size="2xl" 
+                            style="regular"
+                          />
+                        </span>
+                      )}
                     </button>
                   </div>
                 );

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { setHeader, resetHeader, resetBackClick, updateSelectedItem } from '../stores/store';
+import { setHeader, resetHeader, resetBackClick, updateSelectedItem, resetRightButtonClick } from '../stores/store';
 import type { RootState } from '../stores/store';
 import { useCategoriesDexie } from '../hooks/useCategoriesDexie';
 import { useUnitsDexie } from '../hooks/useUnitsDexie';
@@ -24,6 +24,11 @@ const ProductDetailPage: React.FC = () => {
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [notesValue, setNotesValue] = useState('');
   const [isSavingNotes, setIsSavingNotes] = useState(false);
+
+  // State for name editing modal
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [isRenaming, setIsRenaming] = useState(false);
   
   // State for quantity editing
   const [isEditingQuantity, setIsEditingQuantity] = useState(false);
@@ -57,6 +62,7 @@ const ProductDetailPage: React.FC = () => {
       title: item?.name || 'Produkt',
       showBack: true,
       background: '',
+      rightIcon: 'fa-pen',
     }));
     return () => { dispatch(resetHeader()); };
   }, [dispatch, item]);
@@ -70,6 +76,16 @@ const ProductDetailPage: React.FC = () => {
   }, [backClicked, navigate, dispatch, listId]);
 
   
+
+  // Handle top-right edit button to rename product
+  const rightClicked = useSelector((state: RootState) => state.events.rightButtonClicked);
+  useEffect(() => {
+    if (rightClicked && item) {
+      setNewName(item.name || '');
+      setShowRenameModal(true);
+      dispatch(resetRightButtonClick());
+    }
+  }, [rightClicked, item, dispatch]);
 
   // Handle notes editing
   const handleNotesEdit = () => {
@@ -192,6 +208,36 @@ const ProductDetailPage: React.FC = () => {
     setIsEditingQuantity(false);
   };
 
+  // Rename logic
+  const handleRenameSave = async () => {
+    if (!item) return;
+    const trimmed = newName.trim();
+    if (!trimmed) return;
+    setIsRenaming(true);
+    try {
+      const response = await shoppingItemsApi.updateItem(item.id, { name: trimmed });
+      if (response.error) {
+        console.error('Failed to rename item:', response.error);
+        showToast('Fehler beim Umbenennen', { type: 'error' });
+        return;
+      }
+      dispatch(updateSelectedItem({ name: trimmed }));
+      // Update header title immediately
+      dispatch(setHeader({ title: trimmed }));
+      setShowRenameModal(false);
+      showToast('Name aktualisiert', { type: 'success' });
+    } catch (error) {
+      console.error('Error renaming item:', error);
+      showToast('Fehler beim Umbenennen', { type: 'error' });
+    } finally {
+      setIsRenaming(false);
+    }
+  };
+  const handleRenameCancel = () => {
+    setNewName(item?.name || '');
+    setShowRenameModal(false);
+  };
+
   // If no item data is available, show a fallback
   if (!item) {
     return (
@@ -204,6 +250,48 @@ const ProductDetailPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        {/* Rename Modal */}
+        {showRenameModal && (
+          <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-lg">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-gray-900 text-lg font-semibold">Produkt umbenennen</h3>
+                <button
+                  onClick={handleRenameCancel}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <FontAwesomeIcon icon="fa-times" size="base" style="regular"/>
+                </button>
+              </div>
+              <div className="mb-4">
+                <input
+                  type="text"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="Neuen Namen eingeben"
+                  className="w-full bg-gray-50 border border-gray-400 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-500 hover:border-gray-500 focus:outline-none focus:border-orange-600 transition-colors"
+                  autoFocus
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleRenameCancel}
+                  className="flex-1 bg-gray-100 text-gray-900 font-semibold py-3 rounded-lg hover:bg-gray-200 transition-colors"
+                  disabled={isRenaming}
+                >
+                  Abbrechen
+                </button>
+                <button
+                  onClick={handleRenameSave}
+                  disabled={isRenaming || !newName.trim()}
+                  className="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isRenaming ? 'Speichern...' : 'Speichern'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         {/* TODO: Läden & Personen */}
         {/* Läden & Personen */}
         {/* <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">

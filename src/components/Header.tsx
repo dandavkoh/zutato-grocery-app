@@ -2,7 +2,7 @@ import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState } from '../stores/store';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { setSearch, triggerFilterClick, triggerBackClick } from '../stores/store';
+import { setSearch, triggerFilterClick, triggerBackClick, triggerRightButtonClick } from '../stores/store';
 import FontAwesomeIcon from './FontAwesomeIcon';
 import { isIOS, primeKeyboard } from '../utils/iosKeyboard';
 
@@ -22,6 +22,7 @@ const Header: React.FC = () => {
   const className = header.className || '';
   const showSearchBar = header.showSearchBar ?? false;
   const showFilterIcon = header.showFilterIcon ?? false;
+  const rightIcon = header.rightIcon;
   
   const isSearchPage = title === '';
   const searchPlaceholder = isSearchPage ? 'z.B. 100 g dunkle Schokolade' : 'Was brauchst du?';
@@ -94,6 +95,15 @@ const Header: React.FC = () => {
                 onClick={handleFilterClick}
               >
                 <FontAwesomeIcon icon="fa-filter" size="lg" />
+              </button>
+            )}
+            {rightIcon && (
+              <button
+                className="p-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100"
+                onClick={() => dispatch(triggerRightButtonClick())}
+                aria-label="Right action"
+              >
+                <FontAwesomeIcon icon={rightIcon} size="lg" style="regular" />
               </button>
             )}
           </div>

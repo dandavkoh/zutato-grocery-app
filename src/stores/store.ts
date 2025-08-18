@@ -37,6 +37,12 @@ const eventSlice = createSlice({
     resetBackClick: (state) => {
       state.backClicked = false;
     },
+    triggerRightButtonClick: (state) => {
+      state.rightButtonClicked = true;
+    },
+    resetRightButtonClick: (state) => {
+      state.rightButtonClicked = false;
+    },
     
   },
 });
@@ -50,6 +56,7 @@ export interface HeaderState {
   className?: string;
   showSearchBar?: boolean;
   showFilterIcon?: boolean;
+  rightIcon?: string;
   
 }
 const initialHeaderState: HeaderState = {
@@ -60,6 +67,7 @@ const initialHeaderState: HeaderState = {
   className: '',
   showSearchBar: false,
   showFilterIcon: false,
+  rightIcon: undefined,
   
 };
 const headerSlice = createSlice({
@@ -116,6 +124,8 @@ export const {
   resetFilterClick,
   triggerBackClick,
   resetBackClick,
+  triggerRightButtonClick,
+  resetRightButtonClick,
 } = eventSlice.actions;
 export const { setHeader, resetHeader } = headerSlice.actions;
 export const { setSelectedItem, updateSelectedItem, clearSelectedItem } = selectedItemSlice.actions;

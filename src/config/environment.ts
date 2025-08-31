@@ -4,6 +4,9 @@ export interface EnvironmentConfig {
   supabaseUrl: string;
   supabaseAnonKey: string;
   
+  // Site Configuration
+  siteUrl: string;
+  
   // API Configuration
   apiTimeout: number;
   
@@ -35,6 +38,9 @@ const developmentConfig: EnvironmentConfig = {
   supabaseUrl: import.meta.env.VITE_SUPABASE_API_URL,
   supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
   
+  // Site Configuration
+  siteUrl: import.meta.env.VITE_SITE_URL || 'http://localhost:3000',
+  
   // API Configuration
   apiTimeout: 5000,
   
@@ -65,6 +71,9 @@ const productionConfig: EnvironmentConfig = {
   // Supabase Configuration
   supabaseUrl: import.meta.env.VITE_SUPABASE_API_URL,
   supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+  
+  // Site Configuration
+  siteUrl: import.meta.env.VITE_SITE_URL || 'https://zutato.app',
   
   // API Configuration
   apiTimeout: 10000,
@@ -125,6 +134,10 @@ export const getSupabaseConfig = () => {
     url: environment.supabaseUrl,
     anonKey: environment.supabaseAnonKey,
   };
+};
+
+export const getSiteUrl = (): string => {
+  return environment.siteUrl;
 };
 
 export const logDebug = (message: string, data?: any): void => {

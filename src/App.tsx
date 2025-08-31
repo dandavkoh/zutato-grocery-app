@@ -11,6 +11,7 @@ import CreateListPage from './features/CreateListPage'
 import EditListPage from './features/EditListPage'
 import AccountPage from './features/AccountPage'
 import ResetPasswordPage from './features/ResetPasswordPage'
+import CookbookPage from './features/CookbookPage'
 import Header from './components/Header'
 import PWAUpdateBanner from './components/PWAUpdateBanner'
 import OfflineIndicator from './components/OfflineIndicator'
@@ -93,6 +94,11 @@ function App() {
         <Route path="/shopping-list/:listId/product/:productId/unit" element={
           <ProtectedRoute>
             <UnitSelectPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/shopping-list/:listId/cookbook" element={
+          <ProtectedRoute>
+            <CookbookPage />
           </ProtectedRoute>
         } />
       </Route>

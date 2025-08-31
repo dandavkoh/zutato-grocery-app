@@ -417,7 +417,7 @@ const ShoppingListPage: React.FC = () => {
           <FontAwesomeIcon icon="fa-square-poll-vertical" size="3xl" style="regular" className="mb-1"/>
           <span className="text-xs font-semibold">Einkaufsliste</span>
         </button>
-        <button className="flex flex-col items-center justify-center flex-1 py-2 text-gray-600" onClick={() => showToast('Kommt in einer zukünftigen Version', { type: 'info' })}>
+        <button className="flex flex-col items-center justify-center flex-1 py-2 text-gray-600" onClick={() => navigate(`/shopping-list/${listId}/cookbook`)}>
           <FontAwesomeIcon icon="fa-book" size="3xl" style="regular" className="mb-1"/>
           <span className="text-xs font-semibold">Kochbuch</span>
         </button>

@@ -255,7 +255,8 @@ const CookbookPage: React.FC = () => {
   useEffect(() => {
     dispatch(setHeader({
       title: 'Kochbuch',
-      showBack: true,
+      showBack: false,
+      showHomeIcon: true,
       showFilterIcon: false,
       background: 'bg-orange-500'
     }));

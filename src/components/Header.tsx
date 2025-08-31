@@ -22,6 +22,7 @@ const Header: React.FC = () => {
   const className = header.className || '';
   const showSearchBar = header.showSearchBar ?? false;
   const showFilterIcon = header.showFilterIcon ?? false;
+  const showHomeIcon = header.showHomeIcon ?? false;
   const rightIcon = header.rightIcon;
   
   const isSearchPage = title === '';
@@ -76,7 +77,7 @@ const Header: React.FC = () => {
                 <FontAwesomeIcon icon="fa-chevron-left" size="lg" style="regular"/>
               </button>
             )}
-            {!showBack && showFilterIcon && (
+            {!showBack && (showHomeIcon || showFilterIcon) && (
               <button 
                 className="p-2 rounded-full border border-gray-300 text-gray-700 hover:bg-gray-100"
                 onClick={() => navigate('/lists')}

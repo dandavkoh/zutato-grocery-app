@@ -56,6 +56,7 @@ export interface HeaderState {
   className?: string;
   showSearchBar?: boolean;
   showFilterIcon?: boolean;
+  showHomeIcon?: boolean;
   rightIcon?: string;
   
 }
@@ -67,6 +68,7 @@ const initialHeaderState: HeaderState = {
   className: '',
   showSearchBar: false,
   showFilterIcon: false,
+  showHomeIcon: false,
   rightIcon: undefined,
   
 };

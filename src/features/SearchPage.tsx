@@ -7,29 +7,14 @@ import FontAwesomeIcon from '../components/FontAwesomeIcon';
 import { useProductSearch } from '../hooks/useProductSearch';
 import { useProductInList } from '../hooks/useProductInList';
 import { useProductActions } from '../hooks/useProductActions';
+import { useShoppingItemsDexie } from '../hooks/useShoppingItemsDexie';
+import { useCategoriesDexie } from '../hooks/useCategoriesDexie';
 import type { ProductOrGroup } from '../api/supabaseApi';
 import { useToast } from '../contexts/ToastContext';
 import { isIOS, releaseKeyboardPrimer } from '../utils/iosKeyboard';
 import { environment } from '../config/environment';
 
 const MAX_ACTIVE_ITEMS = environment.shoppingListMaxActiveItems;
-
-const recommendations = [
-  { icon: <FontAwesomeIcon icon="sack" className="text-gray-300" size="2xl"/>, name: 'Zucker', sub: 'Brauner' },
-  { icon: <FontAwesomeIcon icon="bread-slice" className="text-gray-300" size="2xl"/>, name: 'Toast' },
-  { icon: <FontAwesomeIcon icon="bowl-spoon" className="text-gray-300" size="2xl"/>, name: 'Brei' },
-  { icon: <FontAwesomeIcon icon="cheese-swiss" className="text-gray-300" size="2xl"/>, name: 'Gouda' },
-  { icon: <FontAwesomeIcon icon="glass-citrus" className="text-gray-300" size="2xl"/>, name: 'Zitronensaft' },
-  { icon: <FontAwesomeIcon icon="pepper" className="text-gray-300" size="2xl"/>, name: 'Paprika' },
-  { icon: <FontAwesomeIcon icon="tomato" className="text-gray-300" size="2xl"/>, name: 'Tomaten', sub: 'Gehackte' },
-  { icon: <FontAwesomeIcon icon="leaf" className="text-gray-300" size="2xl"/>, name: 'Rucola' },
-];
-const seasonal = [
-  { icon: <FontAwesomeIcon icon="mushroom" className="text-gray-300" size="2xl"/>, name: 'Champignons' },
-  { icon: <FontAwesomeIcon icon="salad" className="text-gray-300" size="2xl"/>, name: 'Chicorée' },
-  { icon: <FontAwesomeIcon icon="carrot" className="text-gray-300" size="2xl"/>, name: 'Rote Bete' },
-  { icon: <FontAwesomeIcon icon="leafy-green" className="text-gray-300" size="2xl"/>, name: 'Weißkohl' },
-];
 
 const SearchPage: React.FC = () => {
   const navigate = useNavigate();
@@ -45,7 +30,72 @@ const SearchPage: React.FC = () => {
   
   // Use the product actions hook to handle product clicks
   const { handleProductAction, currentListId, user } = useProductActions();
+  
+  // Use shopping items hook to get completed items for recommendations
+  const { items: allItems } = useShoppingItemsDexie(listId || '');
+  
+  // Use categories hook to get category names
+  const { categories } = useCategoriesDexie();
+  
   const { showToast } = useToast();
+
+  // Get the last 20 completed products for recommendations
+  const completedRecommendations = useMemo(() => {
+    if (!allItems || !categories || !items) return [];
+    
+    // Get names of currently active items to filter them out
+    const activeItemNames = items
+      .filter(item => !item.is_completed && !item.is_deleted)
+      .map(item => item.name.toLowerCase().trim());
+    
+    const completedItems = allItems
+      .filter(item => 
+        item.is_completed && 
+        !item.is_deleted && 
+        !activeItemNames.includes(item.name.toLowerCase().trim())
+      )
+      .sort((a, b) => {
+        // Sort by updated_at descending (most recent first)
+        const dateA = a.updated_at ? new Date(a.updated_at).getTime() : 0;
+        const dateB = b.updated_at ? new Date(b.updated_at).getTime() : 0;
+        return dateB - dateA;
+      });
+    
+    // Remove duplicates by name, keeping the most recent one
+    const uniqueItems = completedItems.reduce((acc, item) => {
+      const existingIndex = acc.findIndex(existing => 
+        existing.name.toLowerCase().trim() === item.name.toLowerCase().trim()
+      );
+      
+      if (existingIndex === -1) {
+        // New unique item, add it
+        acc.push(item);
+      } else {
+        // Item with same name exists, keep the more recent one
+        const existing = acc[existingIndex];
+        const existingDate = existing.updated_at ? new Date(existing.updated_at).getTime() : 0;
+        const currentDate = item.updated_at ? new Date(item.updated_at).getTime() : 0;
+        
+        if (currentDate > existingDate) {
+          acc[existingIndex] = item; // Replace with more recent item
+        }
+      }
+      
+      return acc;
+    }, [] as typeof completedItems);
+    
+    return uniqueItems
+      .slice(0, 20) // Get last 20 unique items
+      .map(item => {
+        const category = categories.find(cat => cat.id === item.category_id);
+        return {
+          id: item.id,
+          icon: item.icon || 'basket-shopping',
+          name: item.name,
+          category: category?.name || 'Keine Kategorie'
+        };
+      });
+  }, [allItems, categories, items]);
 
   const activeItemsCount = useMemo(() => {
     if (!items) return 0;
@@ -266,41 +316,42 @@ const SearchPage: React.FC = () => {
         </div>
       ) : (
         <>
-          <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 mb-4">
-            <div className="p-4 rounded-xl border border-gray-200 bg-white shadow-sm flex flex-col relative overflow-hidden">
-              <div className="text-lg text-gray-900 font-semibold mb-1">Rezepte importieren</div>
-              <div className="text-gray-600 text-sm mb-4">Füge die Zutaten aus deinen online Lieblingsrezepten ganz einfach per Link hinzu.</div>
-              <button className="bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-full px-5 py-2 text-base w-fit">Dein Rezept hinzufügen</button>
-              <div className="absolute right-4 bottom-2 opacity-20 text-gray-400">
-                <svg width="100" height="60" viewBox="0 0 100 60" fill="none"><rect x="60" y="30" width="30" height="20" rx="4" stroke="currentColor" strokeWidth="2"/><rect x="10" y="10" width="20" height="20" rx="4" stroke="currentColor" strokeWidth="2"/><rect x="40" y="10" width="15" height="15" rx="3" stroke="currentColor" strokeWidth="2"/><rect x="80" y="10" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="2"/><rect x="10" y="40" width="15" height="15" rx="3" stroke="currentColor" strokeWidth="2"/><rect x="30" y="40" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="2"/><rect x="50" y="40" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="2"/><rect x="70" y="40" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="2"/><rect x="90" y="40" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="2"/><rect x="40" y="30" width="15" height="15" rx="3" stroke="currentColor" strokeWidth="2"/><rect x="20" y="30" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="2"/><rect x="60" y="10" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="2"/><rect x="80" y="30" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="2"/><rect x="90" y="10" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="2"/></svg>
-              </div>
-            </div>
-          </div>
-
-          <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 mb-2">
-            <div className="text-xs text-gray-500 font-semibold mb-1">Für dich empfohlen</div>
-            <div className="text-gray-600 text-xs mb-3">Aufgrund deiner Aktivitäten gehen wir davon aus, dass du diese Artikel bald benötigen wirst.</div>
-            <div className="grid grid-cols-2 gap-3">
-              {recommendations.map((rec, i) => (
-                <div key={i} className="flex items-center bg-white rounded-xl px-4 py-3 border border-gray-200 shadow-sm">
-                  <span className="mr-3 text-gray-600">{rec.icon}</span>
-                  <span className="text-base text-gray-900 flex-1">{rec.name} {rec.sub && <span className='text-gray-600 text-sm'>{rec.sub}</span>}</span>
+          <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 mb-2">
+            {completedRecommendations.length > 0 ? (
+              <>
+                <div className="text-xs text-gray-500 font-semibold mb-1">Für dich empfohlen</div>
+                <div className="text-gray-600 text-xs mb-3">Aufgrund deiner Aktivitäten gehen wir davon aus, dass du diese Artikel bald benötigen wirst.</div>
+                <div className="flex flex-wrap gap-3">
+                  {completedRecommendations.map((rec, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => handleProductClick({
+                        id: rec.id,
+                        title: rec.name,
+                        icon: rec.icon,
+                        category_id: ''
+                      })}
+                      className="flex items-center bg-white rounded-xl px-4 py-3 border border-gray-200 shadow-sm hover:bg-orange-50 transition-colors text-left w-[calc(50%-6px)]"
+                    >
+                      <span className="mr-3 text-gray-600">
+                        <FontAwesomeIcon icon={rec.icon} size="2xl" style="regular"/>
+                      </span>
+                      <span className="text-base text-gray-900 flex-1">{rec.name} {rec.category && <span className='text-gray-600 text-sm'>({rec.category})</span>}</span>
+                    </button>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 pb-24">
-            <div className="text-xs text-gray-500 font-semibold mb-1">Saisonale Produkte</div>
-            <div className="text-gray-600 text-xs mb-3">Aktuell sind diese Produkte in Saison.</div>
-            <div className="grid grid-cols-2 gap-3">
-              {seasonal.map((item, i) => (
-                <div key={i} className="flex items-center bg-white rounded-xl px-4 py-3 border border-gray-200 shadow-sm">
-                  <span className="mr-3 text-gray-600">{item.icon}</span>
-                  <span className="text-base text-gray-900 flex-1">{item.name}</span>
+              </>
+            ) : (
+              <>
+                <div className="text-xs text-gray-500 font-semibold mb-1">Willkommen!</div>
+                <div className="text-gray-600 text-xs mb-3">Sobald du Produkte von deiner Einkaufsliste abhakst, werden sie hier als Empfehlungen angezeigt.</div>
+                <div className="bg-gray-50 rounded-xl px-4 py-6 text-center">
+                  <FontAwesomeIcon icon="fa-lightbulb" className="text-gray-300 mb-2" size="3xl" style="regular"/>
+                  <div className="text-gray-500 text-sm">Beginne mit deiner ersten Einkaufsliste</div>
                 </div>
-              ))}
-            </div>
+              </>
+            )}
           </div>
         </>
       )}

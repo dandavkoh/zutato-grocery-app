@@ -96,13 +96,23 @@ const SearchPage: React.FC = () => {
 
   // Handle Enter key press from header search input
   useEffect(() => {
-    const handleSearchEnter = async (event: CustomEvent) => {
-      const searchTerm = event.detail.searchTerm;
+    const handleSearchEnter = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const searchTerm = customEvent.detail.searchTerm;
       
       // If we have search results, add the first available product
       if (searchResults.length > 0) {
         const firstProduct = searchResults[0];
-        await handleProductClick(firstProduct);
+        handleProductClick(firstProduct).then(() => {
+          // After adding the product, select the text in the header input
+          setTimeout(() => {
+            const headerInput = document.querySelector('header input');
+            if (headerInput instanceof HTMLInputElement) {
+              headerInput.focus();
+              headerInput.select();
+            }
+          }, 200);
+        });
       } else if (searchTerm && searchTerm.length >= 3) {
         // If no results but search term is valid, create exact suggestion and add it
         const exactSuggestion: ProductOrGroup = {
@@ -113,23 +123,23 @@ const SearchPage: React.FC = () => {
           icon: 'basket-shopping',
           category_id: ''
         };
-        await handleProductClick(exactSuggestion);
+        handleProductClick(exactSuggestion).then(() => {
+          // After adding the product, select the text in the header input
+          setTimeout(() => {
+            const headerInput = document.querySelector('header input');
+            if (headerInput instanceof HTMLInputElement) {
+              headerInput.focus();
+              headerInput.select();
+            }
+          }, 200);
+        });
       }
-      
-      // After adding the product, select the text in the header input
-      setTimeout(() => {
-        const headerInput = document.querySelector('header input');
-        if (headerInput instanceof HTMLInputElement) {
-          headerInput.focus();
-          headerInput.select();
-        }
-      }, 200);
     };
 
-    window.addEventListener('searchEnterPressed', handleSearchEnter as EventListener);
+    window.addEventListener('searchEnterPressed', handleSearchEnter);
     
     return () => {
-      window.removeEventListener('searchEnterPressed', handleSearchEnter as EventListener);
+      window.removeEventListener('searchEnterPressed', handleSearchEnter);
     };
   }, [searchResults]); // Re-run when searchResults change
 

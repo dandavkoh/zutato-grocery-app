@@ -13,9 +13,6 @@ import AccountPage from './features/AccountPage'
 import ResetPasswordPage from './features/ResetPasswordPage'
 import CookbookPage from './features/CookbookPage'
 import Header from './components/Header'
-import PWAUpdateBanner from './components/PWAUpdateBanner'
-
-import RealtimeStatus from './components/RealtimeStatus'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function Layout() {
@@ -26,10 +23,8 @@ function Layout() {
   return (
     <div className="min-h-screen bg-gray-50" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
 
-      <PWAUpdateBanner />
       <Header />
       <div className="w-full"><Outlet /></div>
-      <RealtimeStatus />
     </div>
   );
 }

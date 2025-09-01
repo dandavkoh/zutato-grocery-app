@@ -60,47 +60,76 @@ export const useCookbookRecipes = () => {
         setError(null);
 
         // Fetch user's cookbook recipes with recipe details
-        const { data, error: fetchError } = await supabase
+        console.log('Fetching cookbook recipes for user:', user.id);
+        
+        // First, get the user's cookbook entries
+        const { data: cookbookEntries, error: cookbookError } = await supabase
           .from('user_cookbook_recipes')
-          .select(`
-            recipe_id,
-            recipes (
-              id,
-              name,
-              description,
-              portions,
-              difficulty,
-              working_time_minutes,
-              cooking_time_minutes,
-              resting_time_minutes,
-              image_url,
-              created_at,
-              updated_at
-            )
-          `)
+          .select('recipe_id')
           .eq('user_id', user.id);
+        
+        console.log('Cookbook entries:', cookbookEntries, 'Error:', cookbookError);
+        
+        if (cookbookError) {
+          throw cookbookError;
+        }
+        
+        if (!cookbookEntries || cookbookEntries.length === 0) {
+          console.log('No cookbook entries found');
+          setRecipes([]);
+          return;
+        }
+        
+        // Then, fetch the actual recipe details
+        const recipeIds = cookbookEntries.map(entry => entry.recipe_id);
+        console.log('Recipe IDs to fetch:', recipeIds);
+        
+        const { data, error: fetchError } = await supabase
+          .from('recipes')
+          .select(`
+            id,
+            name,
+            description,
+            portions,
+            difficulty,
+            working_time_minutes,
+            cooking_time_minutes,
+            resting_time_minutes,
+            image_url,
+            created_at,
+            updated_at
+          `)
+          .in('id', recipeIds);
+
+        console.log('Supabase response:', { data, error: fetchError });
 
         if (fetchError) {
           throw fetchError;
         }
 
         // Transform the data to match our interface
+        console.log('Raw data structure:', data);
         const transformedRecipes: CookbookRecipe[] = data
-          ?.map(item => ({
-            id: item.recipes.id,
-            name: item.recipes.name,
-            description: item.recipes.description,
-            portions: item.recipes.portions,
-            difficulty: item.recipes.difficulty,
-            working_time_minutes: item.recipes.working_time_minutes,
-            cooking_time_minutes: item.recipes.cooking_time_minutes,
-            resting_time_minutes: item.recipes.resting_time_minutes,
-            image_url: item.recipes.image_url,
-            created_at: item.recipes.created_at,
-            updated_at: item.recipes.updated_at,
-          }))
-          .filter(recipe => recipe.name) // Filter out any invalid recipes
+          ?.map(item => {
+            console.log('Processing item:', item);
+            return {
+              id: item.id,
+              name: item.name,
+              description: item.description,
+              portions: item.portions,
+              difficulty: item.difficulty,
+              working_time_minutes: item.working_time_minutes,
+              cooking_time_minutes: item.cooking_time_minutes,
+              resting_time_minutes: item.resting_time_minutes,
+              image_url: item.image_url,
+              created_at: item.created_at,
+              updated_at: item.updated_at,
+            };
+          })
+          .filter(recipe => recipe.id && recipe.name) // Filter out any invalid recipes
           || [];
+        
+        console.log('Transformed recipes:', transformedRecipes);
 
         // Fetch ratings for each recipe
         const recipesWithRatings = await Promise.all(
@@ -278,11 +307,11 @@ export const useCookbookRecipes = () => {
               .eq('recipe_unit_id', ingredient.unit_id)
               .single();
 
-            if (conversionData) {
+            if (conversionData && conversionData.grocery_units && conversionData.grocery_units.length > 0) {
               groceryUnitInfo = {
-                grocery_unit_id: conversionData.grocery_units.id,
-                grocery_unit_name: conversionData.grocery_units.name,
-                grocery_unit_short_name: conversionData.grocery_units.short_name,
+                grocery_unit_id: conversionData.grocery_units[0]?.id,
+                grocery_unit_name: conversionData.grocery_units[0]?.name,
+                grocery_unit_short_name: conversionData.grocery_units[0]?.short_name,
                 conversion_factor: conversionData.conversion_factor,
                 converted_quantity: ingredient.quantity * conversionData.conversion_factor
               };
@@ -293,8 +322,8 @@ export const useCookbookRecipes = () => {
             id: ingredient.id,
             quantity: ingredient.quantity,
             unit_id: ingredient.unit_id,
-            unit_name: ingredient.recipe_units?.name,
-            unit_short_name: ingredient.recipe_units?.short_name,
+            unit_name: ingredient.recipe_units?.[0]?.name,
+            unit_short_name: ingredient.recipe_units?.[0]?.short_name,
             ingredient_name: ingredientName,
             selected: true,
             baseQuantity: ingredient.quantity,
@@ -394,14 +423,14 @@ export const useCookbookRecipes = () => {
           id: generateGuid(),
           name: finalName,
           category_id: categoryId,
-          icon: null,
+          icon: undefined,
           unit_id: finalUnitId,
           quantity: finalQuantity,
           listId: listId,
           createdBy: user.id,
-          notes: null,
-          store: null,
-          assignedTo: null
+          notes: undefined,
+          store: undefined,
+          assignedTo: undefined
         };
 
         const response = await shoppingItemsController.createItem(itemData);

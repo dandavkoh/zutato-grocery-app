@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setHeader, resetHeader, resetBackClick } from '../stores/store';
-import type { RootState } from '../store';
+import type { RootState } from '../stores/store';
 import { ListsController } from '../api/supabaseApi';
 import { useAuth } from '../contexts/AuthContext';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
@@ -91,6 +91,12 @@ const CreateListPage: React.FC = () => {
             type="text"
             value={listName}
             onChange={(e) => setListName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && listName.trim() && !hasReachedMaxLists) {
+                e.preventDefault();
+                handleCreateList();
+              }
+            }}
             placeholder="z.B. Wocheneinkauf"
             className="w-full bg-gray-50 border border-gray-400 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-500 hover:border-gray-500 focus:outline-none focus:border-orange-600 focus:ring-2 focus:ring-orange-500/40"
             autoFocus

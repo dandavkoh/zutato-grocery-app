@@ -127,6 +127,14 @@ const Header: React.FC = () => {
                               autoFocus: true, 
                               readOnly: false, 
                               onChange: (e: React.ChangeEvent<HTMLInputElement>) => dispatch(setSearch(e.target.value)),
+                              onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
+                                if (e.key === 'Enter' && searchValue.trim()) {
+                                  // Dispatch a custom event to handle Enter key in SearchPage
+                                  window.dispatchEvent(new CustomEvent('searchEnterPressed', { 
+                                    detail: { searchTerm: searchValue.trim() } 
+                                  }));
+                                }
+                              },
                               onClick: (e: React.MouseEvent<HTMLInputElement>) => {
                                 e.currentTarget.select();
                               },

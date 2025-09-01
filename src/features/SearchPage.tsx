@@ -94,6 +94,45 @@ const SearchPage: React.FC = () => {
     }
   }, [search]); // Remove searchProducts and clearSearch from dependencies
 
+  // Handle Enter key press from header search input
+  useEffect(() => {
+    const handleSearchEnter = async (event: CustomEvent) => {
+      const searchTerm = event.detail.searchTerm;
+      
+      // If we have search results, add the first available product
+      if (searchResults.length > 0) {
+        const firstProduct = searchResults[0];
+        await handleProductClick(firstProduct);
+      } else if (searchTerm && searchTerm.length >= 3) {
+        // If no results but search term is valid, create exact suggestion and add it
+        const exactSuggestion: ProductOrGroup = {
+          id: 'exact-suggestion',
+          title: searchTerm,
+          rank: 1.0,
+          src: 'exact',
+          icon: 'basket-shopping',
+          category_id: ''
+        };
+        await handleProductClick(exactSuggestion);
+      }
+      
+      // After adding the product, select the text in the header input
+      setTimeout(() => {
+        const headerInput = document.querySelector('header input');
+        if (headerInput instanceof HTMLInputElement) {
+          headerInput.focus();
+          headerInput.select();
+        }
+      }, 200);
+    };
+
+    window.addEventListener('searchEnterPressed', handleSearchEnter as EventListener);
+    
+    return () => {
+      window.removeEventListener('searchEnterPressed', handleSearchEnter as EventListener);
+    };
+  }, [searchResults]); // Re-run when searchResults change
+
   const showResults = search.length > 0;
 
   // Check if we should show the exact search term as a suggestion
@@ -258,11 +297,11 @@ const SearchPage: React.FC = () => {
 
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 flex justify-around items-center h-20 z-20">
-        <button className="flex flex-col items-center justify-center flex-1 py-2 text-orange-600">
+        <button className="flex flex-col items-center justify-center flex-1 py-2 text-orange-600" onClick={() => navigate(`/shopping-list/${listId}`)}>
           <FontAwesomeIcon icon="fa-square-poll-vertical" size="3xl" style="regular" className="mb-1"/>
           <span className="text-xs font-semibold">Einkaufsliste</span>
         </button>
-        <button className="flex flex-col items-center justify-center flex-1 py-2 text-gray-600" onClick={() => showToast('Kommt in einer zukünftigen Version', { type: 'info' })}>
+        <button className="flex flex-col items-center justify-center flex-1 py-2 text-gray-600" onClick={() => navigate(`/shopping-list/${listId}/cookbook`)}>
           <FontAwesomeIcon icon="fa-book" size="3xl" style="regular" className="mb-1"/>
           <span className="text-xs font-semibold">Kochbuch</span>
         </button>

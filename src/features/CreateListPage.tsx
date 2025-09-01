@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setHeader, resetHeader, resetBackClick } from '../stores/store';
-import type { RootState } from '../stores/store';
+import type { RootState } from '../store';
 import { ListsController } from '../api/supabaseApi';
 import { useAuth } from '../contexts/AuthContext';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
 import { generateGuid } from '../utils/guidUtils';
+import { environment } from '../config/environment';
+import { useListsDexie } from '../hooks/useListsDexie';
 
 const CreateListPage: React.FC = () => {
   const navigate = useNavigate();
@@ -15,6 +17,11 @@ const CreateListPage: React.FC = () => {
 
   const { user } = useAuth();
   const listsController = new ListsController();
+  const { lists } = useListsDexie();
+  
+  // Check if user has reached the maximum number of lists
+  const MAX_LISTS = environment.maxListsPerUser;
+  const hasReachedMaxLists = lists.length >= MAX_LISTS;
 
   // Watch for back button events
   const backClicked = useSelector((state: RootState) => state.events.backClicked);
@@ -35,6 +42,18 @@ const CreateListPage: React.FC = () => {
       dispatch(resetBackClick());
     }
   }, [backClicked, navigate, dispatch]);
+
+  // Redirect if user has reached the maximum number of lists
+  useEffect(() => {
+    if (hasReachedMaxLists) {
+      navigate('/lists');
+    }
+  }, [hasReachedMaxLists, navigate]);
+
+  // Don't render if user has reached the maximum number of lists
+  if (hasReachedMaxLists) {
+    return null;
+  }
 
   const handleCreateList = async () => {
     if (!listName.trim() || !user) {
@@ -80,11 +99,11 @@ const CreateListPage: React.FC = () => {
 
         <button
           onClick={handleCreateList}
-          disabled={!listName.trim()}
+          disabled={!listName.trim() || hasReachedMaxLists}
           className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 rounded-lg mb-4 flex items-center justify-center text-lg gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <FontAwesomeIcon icon="fa-plus" size="xl" style="regular"/>
-          Liste erstellen
+          {hasReachedMaxLists ? 'Listenlimit erreicht' : 'Liste erstellen'}
         </button>
       </div>
     </div>

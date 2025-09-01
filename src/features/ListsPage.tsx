@@ -6,6 +6,7 @@ import FontAwesomeIcon from '../components/FontAwesomeIcon';
 import { useListsDexie } from '../hooks/useListsDexie';
 import { useAuth } from '../contexts/AuthContext';
 import InvitationRedeem from '../components/InvitationRedeem';
+import { environment } from '../config/environment';
 
 const ListsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -14,6 +15,10 @@ const ListsPage: React.FC = () => {
   
   // Use the lists hook
   const { lists, loading, error, refetch } = useListsDexie();
+  
+  // Check if user has reached the maximum number of lists
+  const MAX_LISTS = environment.maxListsPerUser;
+  const hasReachedMaxLists = lists.length >= MAX_LISTS;
 
   useEffect(() => {
     dispatch(setHeader({
@@ -50,12 +55,29 @@ const ListsPage: React.FC = () => {
           </button>
         </div>
 
+        {/* Info banner when list limit is reached */}
+        {hasReachedMaxLists && (
+          <div className="mb-4">
+            <div className="bg-orange-50 border border-orange-200 text-orange-800 rounded-lg px-4 py-3 flex items-start gap-3">
+              <FontAwesomeIcon icon="fa-circle-info" className="mt-0.5" />
+              <div className="text-sm">
+                Du hast das Maximum von {MAX_LISTS} Einkaufslisten erreicht. Bitte lösche eine bestehende Liste, bevor du eine neue erstellst.
+              </div>
+            </div>
+          </div>
+        )}
+
         <button 
           onClick={() => navigate('/create-list')}
-          className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 rounded-lg mb-6 flex items-center justify-center text-lg gap-2"
+          disabled={hasReachedMaxLists}
+          className={`w-full font-semibold py-3 rounded-lg mb-6 flex items-center justify-center text-lg gap-2 ${
+            hasReachedMaxLists
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-orange-600 hover:bg-orange-700 text-white'
+          }`}
         >
           <FontAwesomeIcon icon="fa-plus" size="xl" style="regular"/>
-          Neue Einkaufsliste
+          {hasReachedMaxLists ? 'Listenlimit erreicht' : 'Neue Einkaufsliste'}
         </button>
         
         <InvitationRedeem onSuccess={() => {

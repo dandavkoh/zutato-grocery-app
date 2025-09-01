@@ -30,6 +30,9 @@ export interface EnvironmentConfig {
   // Shopping List Limits
   shoppingListMaxActiveItems: number;
   shoppingListMaxCompletedItems: number;
+  
+  // Lists Limits
+  maxListsPerUser: number;
 }
 
 // Development Environment
@@ -64,6 +67,9 @@ const developmentConfig: EnvironmentConfig = {
   // Shopping List Limits
   shoppingListMaxActiveItems: parseInt(import.meta.env.VITE_SHOPPINGLIST_MAX_ACTIVE_ITEMS || '300'),
   shoppingListMaxCompletedItems: parseInt(import.meta.env.VITE_SHOPPINGLIST_MAX_COMPLETED_ITEMS || '100'),
+  
+  // Lists Limits
+  maxListsPerUser: parseInt(import.meta.env.VITE_MAX_LISTS_PER_USER || '10'),
 };
 
 // Production Environment
@@ -98,6 +104,9 @@ const productionConfig: EnvironmentConfig = {
   // Shopping List Limits
   shoppingListMaxActiveItems: parseInt(import.meta.env.VITE_SHOPPINGLIST_MAX_ACTIVE_ITEMS || '300'),
   shoppingListMaxCompletedItems: parseInt(import.meta.env.VITE_SHOPPINGLIST_MAX_COMPLETED_ITEMS || '100'),
+  
+  // Lists Limits
+  maxListsPerUser: parseInt(import.meta.env.VITE_MAX_LISTS_PER_USER || '10'),
 };
 
 // Environment Detection

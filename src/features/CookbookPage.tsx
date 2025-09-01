@@ -247,7 +247,7 @@ const CookbookPage: React.FC = () => {
   const dispatch = useDispatch();
   const { listId } = useParams<{ listId: string }>();
   const { user } = useAuth();
-  const { recipes, loading, error, removeFromCookbook, addIngredientsToShoppingList } = useCookbookRecipes();
+  const { recipes, loading, error, addIngredientsToShoppingList } = useCookbookRecipes();
   const [selectedRecipe, setSelectedRecipe] = useState<CookbookRecipe | null>(null);
   const [showIngredientsDialog, setShowIngredientsDialog] = useState(false);
 
@@ -298,17 +298,10 @@ const CookbookPage: React.FC = () => {
   };
 
   const openSiteUrl = () => {
-    window.open(getSiteUrl(), '_blank');
+    window.open(`${getSiteUrl()}/alle-rezepte`, '_blank');
   };
 
-  const handleRemoveFromCookbook = async (recipeId: string, event: React.MouseEvent) => {
-    event.stopPropagation(); // Prevent opening the recipe
-    const success = await removeFromCookbook(recipeId);
-    if (success) {
-      // Recipe removed successfully
-      console.log('Recipe removed from cookbook');
-    }
-  };
+
 
   const handleAddIngredientsToShoppingList = async (ingredients: RecipeIngredient[], portions: number) => {
     if (!listId) {
@@ -437,18 +430,7 @@ const CookbookPage: React.FC = () => {
                 className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200 cursor-pointer relative group"
                 onClick={() => openRecipe(recipe)}
               >
-                {/* Remove button */}
-                <button
-                  onClick={(e) => handleRemoveFromCookbook(recipe.id, e)}
-                  className="absolute top-2 right-2 z-10 p-2 bg-white/80 hover:bg-white rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                  title="Aus Kochbuch entfernen"
-                >
-                  <FontAwesomeIcon 
-                    icon="fa-heart" 
-                    size="sm" 
-                    className="text-red-500"
-                  />
-                </button>
+
 
                 <div className="flex">
                   <div className="w-24 h-24 flex-shrink-0">

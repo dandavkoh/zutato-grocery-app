@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../config/supabase';
 import { ShoppingItemsController } from '../api/supabaseApi';
@@ -41,135 +41,214 @@ export interface RecipeIngredient {
   conversion_factor?: number;
 }
 
-export const useCookbookRecipes = () => {
+export const useCookbookRecipes = (pageSize: number = 10) => {
   const { user } = useAuth();
   const [recipes, setRecipes] = useState<CookbookRecipe[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [currentPage, setCurrentPage] = useState(0);
 
+  // Reset pagination when user changes
   useEffect(() => {
-    if (!user) {
-      setRecipes([]);
-      setLoading(false);
-      return;
-    }
+    setRecipes([]);
+    setCurrentPage(0);
+    setHasMore(true);
+  }, [user]);
 
-    const fetchCookbookRecipes = async () => {
-      try {
+  const fetchCookbookRecipes = useCallback(async (page: number = 0, append: boolean = false) => {
+    if (!user) return;
+
+    try {
+      if (page === 0) {
         setLoading(true);
-        setError(null);
+      } else {
+        setLoadingMore(true);
+      }
+      setError(null);
 
-        // Fetch user's cookbook recipes with recipe details
-        console.log('Fetching cookbook recipes for user:', user.id);
-        
-        // First, get the user's cookbook entries
-        const { data: cookbookEntries, error: cookbookError } = await supabase
-          .from('user_cookbook_recipes')
-          .select('recipe_id')
-          .eq('user_id', user.id);
-        
-        console.log('Cookbook entries:', cookbookEntries, 'Error:', cookbookError);
-        
-        if (cookbookError) {
-          throw cookbookError;
-        }
-        
-        if (!cookbookEntries || cookbookEntries.length === 0) {
+      // Fetch user's cookbook recipes with recipe details
+      console.log('Fetching cookbook recipes for user:', user.id, 'page:', page);
+      
+      // First, get the user's cookbook entries with pagination
+      // We need to get all entries first, then sort and paginate
+      const { data: allCookbookEntries, error: allEntriesError } = await supabase
+        .from('user_cookbook_recipes')
+        .select(`
+          recipe_id,
+          created_at
+        `)
+        .eq('user_id', user.id);
+
+      if (allEntriesError) {
+        throw allEntriesError;
+      }
+
+      if (!allCookbookEntries || allCookbookEntries.length === 0) {
+        if (page === 0) {
           console.log('No cookbook entries found');
           setRecipes([]);
-          return;
         }
-        
-        // Then, fetch the actual recipe details
-        const recipeIds = cookbookEntries.map(entry => entry.recipe_id);
-        console.log('Recipe IDs to fetch:', recipeIds);
-        
-        const { data, error: fetchError } = await supabase
-          .from('recipes')
-          .select(`
-            id,
-            name,
-            description,
-            portions,
-            difficulty,
-            working_time_minutes,
-            cooking_time_minutes,
-            resting_time_minutes,
-            image_url,
-            created_at,
-            updated_at
-          `)
-          .in('id', recipeIds);
-
-        console.log('Supabase response:', { data, error: fetchError });
-
-        if (fetchError) {
-          throw fetchError;
-        }
-
-        // Transform the data to match our interface
-        console.log('Raw data structure:', data);
-        const transformedRecipes: CookbookRecipe[] = data
-          ?.map(item => {
-            console.log('Processing item:', item);
-            return {
-              id: item.id,
-              name: item.name,
-              description: item.description,
-              portions: item.portions,
-              difficulty: item.difficulty,
-              working_time_minutes: item.working_time_minutes,
-              cooking_time_minutes: item.cooking_time_minutes,
-              resting_time_minutes: item.resting_time_minutes,
-              image_url: item.image_url,
-              created_at: item.created_at,
-              updated_at: item.updated_at,
-            };
-          })
-          .filter(recipe => recipe.id && recipe.name) // Filter out any invalid recipes
-          || [];
-        
-        console.log('Transformed recipes:', transformedRecipes);
-
-        // Fetch ratings for each recipe
-        const recipesWithRatings = await Promise.all(
-          transformedRecipes.map(async (recipe) => {
-            const { data: ratingData, error: ratingError } = await supabase
-              .from('recipe_ratings')
-              .select('rating')
-              .eq('recipe_id', recipe.id)
-              .eq('is_deleted', false);
-
-            if (ratingError) {
-              console.warn('Error fetching ratings for recipe:', recipe.id, ratingError);
-              return recipe;
-            }
-
-            if (ratingData && ratingData.length > 0) {
-              const ratings = ratingData.map(r => r.rating);
-              const avgRating = ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length;
-              return {
-                ...recipe,
-                rating: Math.round(avgRating * 10) / 10, // Round to 1 decimal place
-                rating_count: ratings.length
-              };
-            }
-
-            return recipe;
-          })
-        );
-
-        setRecipes(recipesWithRatings);
-      } catch (err) {
-        console.error('Error fetching cookbook recipes:', err);
-        setError(err instanceof Error ? err.message : 'Unknown error occurred');
-      } finally {
-        setLoading(false);
+        setHasMore(false);
+        return;
       }
-    };
 
-    fetchCookbookRecipes();
-  }, [user]);
+      // Sort by when the recipe was added to cookbook (most recent first)
+      const sortedEntries = allCookbookEntries.sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+
+      // Apply pagination
+      const startIndex = page * pageSize;
+      const endIndex = startIndex + pageSize;
+      const cookbookEntries = sortedEntries.slice(startIndex, endIndex);
+      
+      console.log('Cookbook entries:', cookbookEntries, 'Total entries:', allCookbookEntries.length);
+      
+      if (!cookbookEntries || cookbookEntries.length === 0) {
+        if (page === 0) {
+          console.log('No cookbook entries found');
+          setRecipes([]);
+        }
+        setHasMore(false);
+        return;
+      }
+      
+      // Check if we have more pages
+      const totalEntries = allCookbookEntries.length;
+      const hasMorePages = totalEntries > (page + 1) * pageSize;
+      console.log('Page check - total entries:', totalEntries, 'current page:', page, 'pageSize:', pageSize, 'hasMore:', hasMorePages);
+      setHasMore(hasMorePages);
+      
+      // Then, fetch the actual recipe details
+      const recipeIds = cookbookEntries.map(entry => entry.recipe_id);
+      console.log('Recipe IDs to fetch:', recipeIds);
+      
+      const { data, error: fetchError } = await supabase
+        .from('recipes')
+        .select(`
+          id,
+          name,
+          description,
+          portions,
+          difficulty,
+          working_time_minutes,
+          cooking_time_minutes,
+          resting_time_minutes,
+          image_url,
+          created_at,
+          updated_at
+        `)
+        .in('id', recipeIds);
+
+      console.log('Supabase response:', { data, error: fetchError });
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      // Transform the data to match our interface
+      console.log('Raw data structure:', data);
+      const transformedRecipes: CookbookRecipe[] = data
+        ?.map(item => {
+          console.log('Processing item:', item);
+          return {
+            id: item.id,
+            name: item.name,
+            description: item.description,
+            portions: item.portions,
+            difficulty: item.difficulty,
+            working_time_minutes: item.working_time_minutes,
+            cooking_time_minutes: item.cooking_time_minutes,
+            resting_time_minutes: item.resting_time_minutes,
+            image_url: item.image_url,
+            created_at: item.created_at,
+            updated_at: item.updated_at,
+          };
+        })
+        .filter(recipe => recipe.id && recipe.name) // Filter out any invalid recipes
+        || [];
+
+      // Sort the recipes according to the order they were added to cookbook
+      // We need to maintain the order from cookbookEntries
+      const sortedRecipes = transformedRecipes.sort((a, b) => {
+        const aIndex = cookbookEntries.findIndex(entry => entry.recipe_id === a.id);
+        const bIndex = cookbookEntries.findIndex(entry => entry.recipe_id === b.id);
+        return aIndex - bIndex; // Maintain the order from cookbookEntries
+      });
+      
+      console.log('Sorted recipes:', sortedRecipes);
+
+      // Fetch ratings for each recipe
+      const recipesWithRatings = await Promise.all(
+        sortedRecipes.map(async (recipe) => {
+          const { data: ratingData, error: ratingError } = await supabase
+            .from('recipe_ratings')
+            .select('rating')
+            .eq('recipe_id', recipe.id)
+            .eq('is_deleted', false);
+
+          if (ratingError) {
+            console.warn('Error fetching ratings for recipe:', recipe.id, ratingError);
+            return recipe;
+          }
+
+          if (ratingData && ratingData.length > 0) {
+            const ratings = ratingData.map(r => r.rating);
+            const avgRating = ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length;
+            return {
+              ...recipe,
+              rating: Math.round(avgRating * 10) / 10, // Round to 1 decimal place
+              rating_count: ratings.length
+            };
+          }
+
+          return recipe;
+        })
+      );
+
+      if (append) {
+        setRecipes(prev => [...prev, ...recipesWithRatings]);
+        console.log('Appended recipes. New total:', recipesWithRatings.length);
+      } else {
+        setRecipes(recipesWithRatings);
+        console.log('Set initial recipes:', recipesWithRatings.length);
+      }
+      
+      setCurrentPage(page);
+      console.log('Page loaded successfully:', { page, recipesCount: recipesWithRatings.length, hasMore, append });
+    } catch (err) {
+      console.error('Error fetching cookbook recipes:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error occurred');
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, [user, pageSize]);
+
+  // Initial load
+  useEffect(() => {
+    if (user) {
+      fetchCookbookRecipes(0, false);
+    } else {
+      setRecipes([]);
+      setLoading(false);
+      setHasMore(false);
+    }
+  }, [user, fetchCookbookRecipes]);
+
+      const loadMoreRecipes = useCallback(async () => {
+    console.log('loadMoreRecipes called:', { hasMore, loadingMore, currentPage, user: !!user });
+    if (!hasMore || loadingMore || !user) {
+      console.log('loadMoreRecipes early return:', { hasMore, loadingMore, user: !!user });
+      return;
+    }
+    
+    const nextPage = currentPage + 1;
+    console.log('Loading next page:', nextPage);
+    await fetchCookbookRecipes(nextPage, true);
+  }, [hasMore, loadingMore, currentPage, fetchCookbookRecipes, user]);
 
   const addToCookbook = async (recipeId: string): Promise<boolean> => {
     if (!user) return false;
@@ -186,28 +265,8 @@ export const useCookbookRecipes = () => {
         throw error;
       }
 
-      // Refresh the recipes list
-      const { data: newRecipe } = await supabase
-        .from('recipes')
-        .select('*')
-        .eq('id', recipeId)
-        .single();
-
-      if (newRecipe) {
-        setRecipes(prev => [...prev, {
-          id: newRecipe.id,
-          name: newRecipe.name,
-          description: newRecipe.description,
-          portions: newRecipe.portions,
-          difficulty: newRecipe.difficulty,
-          working_time_minutes: newRecipe.working_time_minutes,
-          cooking_time_minutes: newRecipe.cooking_time_minutes,
-          resting_time_minutes: newRecipe.resting_time_minutes,
-          image_url: newRecipe.image_url,
-          created_at: newRecipe.created_at,
-          updated_at: newRecipe.updated_at,
-        }]);
-      }
+      // Refresh the recipes list by refetching the first page
+      await fetchCookbookRecipes(0, false);
 
       return true;
     } catch (err) {
@@ -230,8 +289,8 @@ export const useCookbookRecipes = () => {
         throw error;
       }
 
-      // Remove from local state
-      setRecipes(prev => prev.filter(recipe => recipe.id !== recipeId));
+      // Refresh the recipes list by refetching the first page
+      await fetchCookbookRecipes(0, false);
       return true;
     } catch (err) {
       console.error('Error removing recipe from cookbook:', err);
@@ -450,15 +509,18 @@ export const useCookbookRecipes = () => {
   return {
     recipes,
     loading,
+    loadingMore,
     error,
+    hasMore,
+    currentPage,
+    loadMoreRecipes,
     addToCookbook,
     removeFromCookbook,
     isInCookbook,
     fetchRecipeIngredients,
     addIngredientsToShoppingList,
     refresh: () => {
-      setLoading(true);
-      // This will trigger the useEffect to refetch
+      fetchCookbookRecipes(0, false);
     }
   };
 };

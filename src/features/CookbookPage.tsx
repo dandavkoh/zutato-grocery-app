@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { setHeader } from '../stores/store';
@@ -247,9 +247,21 @@ const CookbookPage: React.FC = () => {
   const dispatch = useDispatch();
   const { listId } = useParams<{ listId: string }>();
   const { user } = useAuth();
-  const { recipes, loading, error, addIngredientsToShoppingList } = useCookbookRecipes();
+  const { 
+    recipes, 
+    loading, 
+    loadingMore,
+    error, 
+    hasMore,
+    addIngredientsToShoppingList,
+    loadMoreRecipes
+  } = useCookbookRecipes(10); // 10 Einträge pro Seite
   const [selectedRecipe, setSelectedRecipe] = useState<CookbookRecipe | null>(null);
   const [showIngredientsDialog, setShowIngredientsDialog] = useState(false);
+  
+  // Intersection Observer für Endless Scroll
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadingRef = useRef<HTMLDivElement>(null);
 
   // Set header
   useEffect(() => {
@@ -261,6 +273,71 @@ const CookbookPage: React.FC = () => {
       background: 'bg-orange-500'
     }));
   }, [dispatch]);
+
+  // Intersection Observer für Endless Scroll
+  useEffect(() => {
+    if (!hasMore || loadingMore) {
+      // Disconnect observer if we don't need it
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+        observerRef.current = null;
+        console.log('Observer disconnected - no more items or already loading');
+      }
+      return;
+    }
+
+    // Create new observer
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && hasMore && !loadingMore) {
+            console.log('Intersection Observer triggered - loading more recipes');
+            loadMoreRecipes();
+          }
+        });
+      },
+      { 
+        threshold: 0.1, 
+        rootMargin: '200px',
+        root: null
+      }
+    );
+
+    observerRef.current = observer;
+
+    // Observe the loading ref element
+    const currentLoadingRef = loadingRef.current;
+    if (currentLoadingRef) {
+      observer.observe(currentLoadingRef);
+      console.log('Observer attached to loadingRef');
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+        observerRef.current = null;
+        console.log('Observer disconnected in cleanup');
+      }
+    };
+  }, [hasMore, loadingMore, loadMoreRecipes]);
+
+  // Re-attach observer when recipes change (to ensure the ref element is available)
+  useEffect(() => {
+    console.log('Recipes changed:', { 
+      recipesLength: recipes.length, 
+      hasMore, 
+      loadingMore, 
+      observerExists: !!observerRef.current, 
+      loadingRefExists: !!loadingRef.current 
+    });
+    
+    if (hasMore && !loadingMore && observerRef.current && loadingRef.current) {
+      // Disconnect and reconnect to ensure we're observing the correct element
+      observerRef.current.disconnect();
+      observerRef.current.observe(loadingRef.current);
+      console.log('Observer re-attached after recipes change');
+    }
+  }, [recipes.length, hasMore, loadingMore]);
 
   // Redirect if no listId is provided
   useEffect(() => {
@@ -422,7 +499,7 @@ const CookbookPage: React.FC = () => {
             </div>
             
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Deine Lieblingsrezepte ({recipes.length})
+              Deine Lieblingsrezepte
             </h2>
             {recipes.map((recipe) => (
               <div 
@@ -484,6 +561,7 @@ const CookbookPage: React.FC = () => {
                             <span>Keine Bewertungen</span>
                           )}
                         </div>
+
                       </div>
                       <FontAwesomeIcon 
                         icon="fa-external-link-alt" 
@@ -505,6 +583,48 @@ const CookbookPage: React.FC = () => {
                 </button>
               </div>
             ))}
+            {loadingMore && (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
+                <p className="text-gray-600 mt-2">Lade weitere Rezepte...</p>
+              </div>
+            )}
+            
+            {/* End of list indicator for endless scroll */}
+            {!loadingMore && hasMore && recipes.length > 0 && (
+              <div ref={loadingRef} className="text-center py-8">
+                <div className="w-8 h-8 mx-auto mb-2">
+                  <FontAwesomeIcon 
+                    icon="fa-chevron-down" 
+                    size="lg" 
+                    className="text-gray-400 animate-bounce"
+                  />
+                </div>
+                <p className="text-gray-500 text-sm">
+                  Scrollen Sie nach unten für weitere Rezepte
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Bereits {recipes.length} Rezepte geladen
+                </p>
+              </div>
+            )}
+            
+            {/* End of list message */}
+            {!hasMore && recipes.length > 0 && (
+              <div className="text-center py-8">
+                <div className="w-12 h-12 mx-auto mb-3">
+                  <FontAwesomeIcon 
+                    icon="fa-check-circle" 
+                    size="2xl" 
+                    className="text-green-400"
+                  />
+                </div>
+                <p className="text-gray-600">Alle Rezepte wurden geladen</p>
+                <p className="text-sm text-gray-500 mt-2">
+                  Insgesamt {recipes.length} Rezepte in Ihrem Kochbuch
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>

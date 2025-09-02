@@ -26,7 +26,12 @@ const Header: React.FC = () => {
   const rightIcon = header.rightIcon;
   
   const isSearchPage = title === '';
-  const searchPlaceholder = isSearchPage ? 'z.B. 100 g dunkle Schokolade' : 'Was brauchst du?';
+  const isCookbook = location.pathname.includes('/cookbook');
+  const searchPlaceholder = isSearchPage 
+    ? 'z.B. 100 g dunkle Schokolade' 
+    : isCookbook 
+      ? 'Nach Rezepten suchen...' 
+      : 'Was brauchst du?';
 
   // Lokale Event-Handler
   const handleBackClick = () => {
@@ -122,17 +127,23 @@ const Header: React.FC = () => {
                         className="bg-transparent outline-none text-gray-900 placeholder-gray-500 flex-1 cursor-pointer"
                         placeholder={searchPlaceholder}
                         value={searchValue}
-                        {...(isSearchPage
+                        {...(isSearchPage || isCookbook
                           ? { 
-                              autoFocus: true, 
+                              autoFocus: isSearchPage, 
                               readOnly: false, 
                               onChange: (e: React.ChangeEvent<HTMLInputElement>) => dispatch(setSearch(e.target.value)),
                               onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
                                 if (e.key === 'Enter' && searchValue.trim()) {
-                                  // Dispatch a custom event to handle Enter key in SearchPage
-                                  window.dispatchEvent(new CustomEvent('searchEnterPressed', { 
-                                    detail: { searchTerm: searchValue.trim() } 
-                                  }));
+                                  if (isSearchPage) {
+                                    // Dispatch a custom event to handle Enter key in SearchPage
+                                    window.dispatchEvent(new CustomEvent('searchEnterPressed', { 
+                                      detail: { searchTerm: searchValue.trim() } 
+                                    }));
+                                  }
+                                  // In cookbook, Enter just clears the search
+                                  if (isCookbook) {
+                                    dispatch({ type: 'search/clearSearch' });
+                                  }
                                 }
                               },
                               onClick: (e: React.MouseEvent<HTMLInputElement>) => {
@@ -154,12 +165,15 @@ const Header: React.FC = () => {
                             }
                         )}
                       />
-                      {isSearchPage && (
+                      {(isSearchPage || isCookbook) && (
                         <span
                           className="ml-3 text-orange-600 font-semibold cursor-pointer select-none"
                           onClick={() => {
                             dispatch({ type: 'search/clearSearch' });
-                            navigateToParent();
+                            if (isSearchPage) {
+                              navigateToParent();
+                            }
+                            // In cookbook, just clear the search (no navigation needed)
                           }}
                         >
                           Fertig

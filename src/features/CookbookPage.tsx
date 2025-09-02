@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { setHeader } from '../stores/store';
+import type { RootState } from '../stores/store';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
 import { getSiteUrl } from '../config/environment';
 import { useCookbookRecipes, type CookbookRecipe, type RecipeIngredient } from '../hooks/useCookbookRecipes';
@@ -247,14 +248,19 @@ const CookbookPage: React.FC = () => {
   const dispatch = useDispatch();
   const { listId } = useParams<{ listId: string }>();
   const { user } = useAuth();
+  const searchValue = useSelector((state: RootState) => state.search.value);
   const { 
     recipes, 
     loading, 
     loadingMore,
     error, 
     hasMore,
+    isSearching,
+    searchTerm,
     addIngredientsToShoppingList,
-    loadMoreRecipes
+    loadMoreRecipes,
+    searchRecipes,
+    clearSearch
   } = useCookbookRecipes(10); // 10 Einträge pro Seite
   const [selectedRecipe, setSelectedRecipe] = useState<CookbookRecipe | null>(null);
   const [showIngredientsDialog, setShowIngredientsDialog] = useState(false);
@@ -270,19 +276,43 @@ const CookbookPage: React.FC = () => {
       showBack: false,
       showHomeIcon: true,
       showFilterIcon: false,
+      showSearchBar: true,
       background: 'bg-orange-500'
     }));
   }, [dispatch]);
 
+  // Handle search input changes with debounce
+  useEffect(() => {
+    if (!searchValue.trim()) {
+      // Clear search and return to normal cookbook view
+      if (isSearching) {
+        clearSearch();
+      }
+      return;
+    }
+
+    // Debounce search input
+    const timeoutId = setTimeout(() => {
+      console.log('Searching for:', searchValue);
+      searchRecipes(searchValue, 0, false);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchValue, isSearching, clearSearch, searchRecipes]);
+
   // Intersection Observer für Endless Scroll
   useEffect(() => {
+    console.log('Intersection Observer effect triggered:', { hasMore, loadingMore, recipesLength: recipes.length });
+    
+    // Always disconnect previous observer first
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+      observerRef.current = null;
+      console.log('Previous observer disconnected');
+    }
+
     if (!hasMore || loadingMore) {
-      // Disconnect observer if we don't need it
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-        observerRef.current = null;
-        console.log('Observer disconnected - no more items or already loading');
-      }
+      console.log('Observer not needed - no more items or already loading');
       return;
     }
 
@@ -290,6 +320,7 @@ const CookbookPage: React.FC = () => {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
+          console.log('Intersection Observer entry:', { isIntersecting: entry.isIntersecting, hasMore, loadingMore });
           if (entry.isIntersecting && hasMore && !loadingMore) {
             console.log('Intersection Observer triggered - loading more recipes');
             loadMoreRecipes();
@@ -298,19 +329,23 @@ const CookbookPage: React.FC = () => {
       },
       { 
         threshold: 0.1, 
-        rootMargin: '200px',
+        rootMargin: '200px', // Increased margin to trigger earlier
         root: null
       }
     );
 
     observerRef.current = observer;
 
-    // Observe the loading ref element
-    const currentLoadingRef = loadingRef.current;
-    if (currentLoadingRef) {
-      observer.observe(currentLoadingRef);
-      console.log('Observer attached to loadingRef');
-    }
+    // Use setTimeout to ensure the DOM element is available
+    setTimeout(() => {
+      const currentLoadingRef = loadingRef.current;
+      if (currentLoadingRef && observerRef.current) {
+        observerRef.current.observe(currentLoadingRef);
+        console.log('Observer attached to loadingRef successfully');
+      } else {
+        console.log('Warning: Cannot attach observer - loadingRef or observer not available');
+      }
+    }, 100);
 
     return () => {
       if (observerRef.current) {
@@ -319,25 +354,36 @@ const CookbookPage: React.FC = () => {
         console.log('Observer disconnected in cleanup');
       }
     };
-  }, [hasMore, loadingMore, loadMoreRecipes]);
+  }, [hasMore, loadingMore, loadMoreRecipes, recipes.length]);
 
-  // Re-attach observer when recipes change (to ensure the ref element is available)
+  // Re-attach observer when recipes change to ensure it's observing the correct element
   useEffect(() => {
-    console.log('Recipes changed:', { 
-      recipesLength: recipes.length, 
-      hasMore, 
-      loadingMore, 
-      observerExists: !!observerRef.current, 
-      loadingRefExists: !!loadingRef.current 
-    });
-    
     if (hasMore && !loadingMore && observerRef.current && loadingRef.current) {
-      // Disconnect and reconnect to ensure we're observing the correct element
+      console.log('Re-attaching observer after recipes change');
       observerRef.current.disconnect();
       observerRef.current.observe(loadingRef.current);
-      console.log('Observer re-attached after recipes change');
     }
   }, [recipes.length, hasMore, loadingMore]);
+
+  // Fallback scroll event listener for endless scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!hasMore || loadingMore) return;
+      
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      
+      // If user is near bottom (within 200px), load more
+      if (scrollTop + windowHeight >= documentHeight - 200) {
+        console.log('Scroll near bottom detected - loading more recipes');
+        loadMoreRecipes();
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [hasMore, loadingMore, loadMoreRecipes]);
 
   // Redirect if no listId is provided
   useEffect(() => {
@@ -377,8 +423,6 @@ const CookbookPage: React.FC = () => {
   const openSiteUrl = () => {
     window.open(`${getSiteUrl()}/alle-rezepte`, '_blank');
   };
-
-
 
   const handleAddIngredientsToShoppingList = async (ingredients: RecipeIngredient[], portions: number) => {
     if (!listId) {
@@ -457,7 +501,7 @@ const CookbookPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 pt-4 pb-24">
       <div className="max-w-4xl mx-auto px-4">
-        {recipes.length === 0 ? (
+        {recipes.length === 0 && !searchValue.trim() ? (
           <div className="text-center py-16">
             <div className="mb-6">
               <FontAwesomeIcon 
@@ -482,148 +526,199 @@ const CookbookPage: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="text-center py-6 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-lg border border-orange-100">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Entdecke weitere Rezepte in ZUTATO
-              </h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Finde neue Lieblingsrezepte und erweitere dein Kochbuch
-              </p>
-              <button
-                onClick={openSiteUrl}
-                className="inline-flex items-center space-x-2 bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
-              >
-                <FontAwesomeIcon icon="fa-external-link-alt" size="sm" />
-                <span>Zu ZUTATO</span>
-              </button>
-            </div>
+            {!searchValue.trim() && (
+              <div className="text-center py-6 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-lg border border-orange-100">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Entdecke weitere Rezepte in ZUTATO
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Finde neue Lieblingsrezepte und erweitere dein Kochbuch
+                </p>
+                <button
+                  onClick={openSiteUrl}
+                  className="inline-flex items-center space-x-2 bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+                >
+                  <FontAwesomeIcon icon="fa-external-link-alt" size="sm" />
+                  <span>Zu ZUTATO</span>
+                </button>
+              </div>
+            )}
             
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
               Deine Lieblingsrezepte
+              {searchValue.trim() ? (
+                <span className="text-sm font-normal text-gray-600 ml-2">
+                  - Suche: "{searchValue}" ({recipes.length} Ergebnisse)
+                </span>
+              ) : (
+                <span className="text-sm font-normal text-gray-600 ml-2">
+                  ({recipes.length})
+                </span>
+              )}
             </h2>
-            {recipes.map((recipe) => (
-              <div 
-                key={recipe.id}
-                className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200 cursor-pointer relative group"
-                onClick={() => openRecipe(recipe)}
-              >
-
-
-                <div className="flex">
-                  <div className="w-24 h-24 flex-shrink-0">
-                    {recipe.image_url ? (
-                      <img 
-                        src={recipe.image_url} 
-                        alt={recipe.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                        <FontAwesomeIcon 
-                          icon="fa-utensils" 
-                          size="xl" 
-                          className="text-gray-400"
-                        />
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 p-4">
-                    <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
-                      {recipe.name}
-                    </h3>
-                    <div className="flex items-center justify-between text-sm text-gray-600">
-                      <div className="flex items-center space-x-4">
-                        <div className="flex items-center">
-                          <FontAwesomeIcon 
-                            icon="fa-clock" 
-                            size="sm" 
-                            className="mr-1"
-                          />
-                          <span>{formatTime(getTotalTime(recipe))}</span>
-                        </div>
-                        <div className="flex items-center">
-                          <FontAwesomeIcon 
-                            icon="fa-chart-bar" 
-                            size="sm" 
-                            className="mr-1"
-                          />
-                          <span className="capitalize">{recipe.difficulty}</span>
-                        </div>
-                        <div className="flex items-center">
-                          <FontAwesomeIcon 
-                            icon="fa-star" 
-                            size="sm" 
-                            className="text-yellow-400 mr-1"
-                          />
-                          {recipe.rating ? (
-                            <span>{recipe.rating.toFixed(1)}/5 ({recipe.rating_count})</span>
-                          ) : (
-                            <span>Keine Bewertungen</span>
-                          )}
-                        </div>
-
-                      </div>
-                      <FontAwesomeIcon 
-                        icon="fa-external-link-alt" 
-                        size="sm" 
-                        className="text-gray-400"
-                      />
-                    </div>
-                  </div>
+            
+            {recipes.length === 0 && searchValue.trim() ? (
+              <div className="text-center py-16">
+                <div className="mb-6">
+                  <FontAwesomeIcon 
+                    icon="fa-search" 
+                    size="4xl" 
+                    className="text-gray-300 mx-auto"
+                  />
                 </div>
-
-                {/* Add ingredients button */}
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                  Keine Rezepte gefunden
+                </h3>
+                <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                  Keine Rezepte gefunden, die "{searchValue}" enthalten.
+                </p>
                 <button
-                  onClick={(e) => openIngredientsDialog(recipe, e)}
-                  className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2"
-                  style={{ borderRadius: 'unset' }}
+                  onClick={() => dispatch({ type: 'search/clearSearch' })}
+                  className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
                 >
-                  <FontAwesomeIcon icon="fa-plus" size="sm" />
-                  <span>Zutaten zur Einkaufsliste hinzufügen</span>
+                  Suche löschen
                 </button>
               </div>
-            ))}
-            {loadingMore && (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
-                <p className="text-gray-600 mt-2">Lade weitere Rezepte...</p>
-              </div>
-            )}
-            
-            {/* End of list indicator for endless scroll */}
-            {!loadingMore && hasMore && recipes.length > 0 && (
-              <div ref={loadingRef} className="text-center py-8">
-                <div className="w-8 h-8 mx-auto mb-2">
-                  <FontAwesomeIcon 
-                    icon="fa-chevron-down" 
-                    size="lg" 
-                    className="text-gray-400 animate-bounce"
-                  />
-                </div>
-                <p className="text-gray-500 text-sm">
-                  Scrollen Sie nach unten für weitere Rezepte
-                </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  Bereits {recipes.length} Rezepte geladen
-                </p>
-              </div>
-            )}
-            
-            {/* End of list message */}
-            {!hasMore && recipes.length > 0 && (
-              <div className="text-center py-8">
-                <div className="w-12 h-12 mx-auto mb-3">
-                  <FontAwesomeIcon 
-                    icon="fa-check-circle" 
-                    size="2xl" 
-                    className="text-green-400"
-                  />
-                </div>
-                <p className="text-gray-600">Alle Rezepte wurden geladen</p>
-                <p className="text-sm text-gray-500 mt-2">
-                  Insgesamt {recipes.length} Rezepte in deinem Kochbuch
-                </p>
-              </div>
+            ) : (
+              <>
+                {recipes.map((recipe) => (
+                  <div 
+                    key={recipe.id}
+                    className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200 cursor-pointer relative group"
+                    onClick={() => openRecipe(recipe)}
+                  >
+                    <div className="flex">
+                      <div className="w-24 h-24 flex-shrink-0">
+                        {recipe.image_url ? (
+                          <img 
+                            src={recipe.image_url} 
+                            alt={recipe.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                            <FontAwesomeIcon 
+                              icon="fa-utensils" 
+                              size="xl" 
+                              className="text-gray-400"
+                            />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 p-4">
+                        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
+                          {recipe.name}
+                        </h3>
+                        <div className="flex items-center justify-between text-sm text-gray-600">
+                          <div className="flex items-center space-x-4">
+                            <div className="flex items-center">
+                              <FontAwesomeIcon 
+                                icon="fa-clock" 
+                                size="sm" 
+                                className="mr-1"
+                              />
+                              <span>{formatTime(getTotalTime(recipe))}</span>
+                            </div>
+                            <div className="flex items-center">
+                              <FontAwesomeIcon 
+                                icon="fa-chart-bar" 
+                                size="sm" 
+                                className="mr-1"
+                              />
+                              <span className="capitalize">{recipe.difficulty}</span>
+                            </div>
+                            <div className="flex items-center">
+                              <FontAwesomeIcon 
+                                icon="fa-star" 
+                                size="sm" 
+                                className="text-yellow-400 mr-1"
+                              />
+                              {recipe.rating ? (
+                                <span>{recipe.rating.toFixed(1)}/5 ({recipe.rating_count})</span>
+                              ) : (
+                                <span>Keine Bewertungen</span>
+                              )}
+                            </div>
+                          </div>
+                          <FontAwesomeIcon 
+                            icon="fa-external-link-alt" 
+                            size="sm" 
+                            className="text-gray-400"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Add ingredients button */}
+                    <button
+                      onClick={(e) => openIngredientsDialog(recipe, e)}
+                      className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2"
+                      style={{ borderRadius: 'unset' }}
+                    >
+                      <FontAwesomeIcon icon="fa-plus" size="sm" />
+                      <span>Zutaten zur Einkaufsliste hinzufügen</span>
+                    </button>
+                  </div>
+                ))}
+
+                {/* Loading indicator for more recipes */}
+                {loadingMore && (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
+                    <p className="text-gray-600 mt-2">Lade weitere Rezepte...</p>
+                  </div>
+                )}
+                
+                {/* End of list indicator for endless scroll */}
+                {!loadingMore && hasMore && !searchValue.trim() && (
+                  <div ref={loadingRef} className="text-center py-8">
+                    <div className="w-8 h-8 mx-auto mb-2">
+                      <FontAwesomeIcon 
+                        icon="fa-chevron-down" 
+                        size="lg" 
+                        className="text-gray-400 animate-bounce"
+                      />
+                    </div>
+                    <p className="text-gray-500 text-sm">
+                      Scrollen Sie nach unten für weitere Rezepte
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Bereits {recipes.length} Rezepte geladen
+                    </p>
+                    {/* Debug info */}
+                    <div className="text-xs text-gray-300 mt-2">
+                      Debug: hasMore={hasMore.toString()}, loadingMore={loadingMore.toString()}, pageSize=5
+                    </div>
+                    {/* Manual load button for testing */}
+                    <button
+                      onClick={() => {
+                        console.log('Manual load button clicked');
+                        loadMoreRecipes();
+                      }}
+                      className="mt-4 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+                    >
+                      Manuell mehr laden (Test)
+                    </button>
+                  </div>
+                )}
+                
+                {/* End of list message */}
+                {!hasMore && recipes.length > 0 && !searchValue.trim() && (
+                  <div className="text-center py-8">
+                    <div className="w-12 h-12 mx-auto mb-3">
+                      <FontAwesomeIcon 
+                        icon="fa-check-circle" 
+                        size="2xl" 
+                        className="text-green-400"
+                      />
+                    </div>
+                    <p className="text-gray-600">Alle Rezepte wurden geladen</p>
+                    <p className="text-sm text-gray-500 mt-2">
+                      Insgesamt {recipes.length} Rezepte in deinem Kochbuch
+                    </p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}

@@ -223,18 +223,6 @@ export const useCookbookRecipes = (pageSize: number = 10) => {
     }
   }, [user, loadCookbookRecipes]);
 
-  // Load more recipes
-  const loadMoreRecipes = useCallback(async () => {
-    if (!hasMore || loadingMore || !user) {
-      console.log('Cannot load more:', { hasMore, loadingMore, user: !!user });
-      return;
-    }
-    
-    const nextPage = currentPage + 1;
-    console.log('Loading more recipes - next page:', nextPage);
-    await loadCookbookRecipes(nextPage, true);
-  }, [hasMore, loadingMore, currentPage, loadCookbookRecipes, user]);
-
   // Search recipes in database with pagination
   const searchRecipes = useCallback(async (term: string, page: number = 0, append: boolean = false) => {
     if (!user || !term.trim()) return;
@@ -341,6 +329,24 @@ export const useCookbookRecipes = (pageSize: number = 10) => {
       setLoadingMore(false);
     }
   }, [user, pageSize]);
+
+  // Load more recipes
+  const loadMoreRecipes = useCallback(async () => {
+    if (!hasMore || loadingMore || !user) {
+      console.log('Cannot load more:', { hasMore, loadingMore, user: !!user });
+      return;
+    }
+    
+    const nextPage = currentPage + 1;
+    console.log('Loading more recipes - next page:', nextPage, 'isSearching:', isSearching, 'searchTerm:', searchTerm);
+    
+    // If we're searching, load more search results, otherwise load more cookbook recipes
+    if (isSearching && searchTerm) {
+      await searchRecipes(searchTerm, nextPage, true);
+    } else {
+      await loadCookbookRecipes(nextPage, true);
+    }
+  }, [hasMore, loadingMore, currentPage, loadCookbookRecipes, user, isSearching, searchTerm, searchRecipes]);
 
   // Clear search and return to normal view
   const clearSearch = useCallback(() => {

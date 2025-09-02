@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { setHeader, resetHeader } from '../stores/store';
@@ -20,6 +20,13 @@ const ListsPage: React.FC = () => {
   const MAX_LISTS = environment.maxListsPerUser;
   const hasReachedMaxLists = lists.length >= MAX_LISTS;
 
+  // Pull-to-refresh state
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [pullDistance, setPullDistance] = useState(0);
+  const [startY, setStartY] = useState(0);
+  const [isPulling, setIsPulling] = useState(false);
+  const pullThreshold = 80; // Distance in pixels to trigger refresh
+
   useEffect(() => {
     dispatch(setHeader({
       title: 'Meine Listen',
@@ -30,9 +37,131 @@ const ListsPage: React.FC = () => {
     return () => { dispatch(resetHeader()); };
   }, [dispatch]);
 
+  // Pull-to-refresh handlers
+  const handleTouchStart = useCallback((e: TouchEvent) => {
+    // Only track touch start if we're at the very top of the page
+    if (window.scrollY === 0) {
+      setStartY(e.touches[0].clientY);
+      // Don't set isPulling to true yet - wait for actual downward movement
+    }
+  }, []);
+
+  const handleTouchMove = useCallback((e: TouchEvent) => {
+    // Only handle pull-to-refresh if we're at the top and have a start position
+    if (window.scrollY > 0 || startY === 0) return;
+    
+    const currentY = e.touches[0].clientY;
+    const distance = currentY - startY;
+    
+    // Only activate pull-to-refresh for downward pulls (positive distance)
+    // And only if the distance is significant enough (more than 10px)
+    if (distance > 10) {
+      if (!isPulling) {
+        setIsPulling(true); // Only set pulling state when actually pulling down
+      }
+      e.preventDefault();
+      setPullDistance(Math.min(distance * 0.5, pullThreshold * 1.5)); // Dampen the pull
+    } else if (distance < -10) {
+      // If pulling up significantly (negative distance), reset pull state
+      setPullDistance(0);
+      setIsPulling(false);
+    }
+  }, [isPulling, startY, pullThreshold]);
+
+  const handleTouchEnd = useCallback(async () => {
+    if (!isPulling) {
+      // Reset start position if we weren't pulling
+      setStartY(0);
+      return;
+    }
+    
+    if (pullDistance >= pullThreshold) {
+      // Trigger refresh
+      setIsRefreshing(true);
+      setPullDistance(0);
+      
+      try {
+        // Use the refetch function to refresh lists from Supabase
+        await refetch();
+        
+        // Wait a bit to show the refresh animation
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+      } catch (error) {
+        console.error('Error refreshing:', error);
+      } finally {
+        setIsRefreshing(false);
+      }
+    } else {
+      // Reset pull state
+      setPullDistance(0);
+    }
+    
+    setIsPulling(false);
+    setStartY(0); // Reset start position
+  }, [isPulling, pullDistance, pullThreshold, refetch]);
+
+  // Add touch event listeners
+  useEffect(() => {
+    document.addEventListener('touchstart', handleTouchStart, { passive: false });
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd, { passive: false });
+
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [handleTouchStart, handleTouchMove, handleTouchEnd]);
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      {/* Pull-to-Refresh Container - includes ALL content */}
+      <div 
+        className="transition-all duration-200"
+        style={{ 
+          transform: `translateY(${pullDistance}px)`,
+        }}
+      >
+        {/* Pull-to-Refresh Indicator - only visible when pulling */}
+        {isPulling && (
+          <div 
+            className="flex items-center justify-center py-4 bg-gray-50"
+            style={{ 
+              opacity: Math.min(pullDistance / pullThreshold, 1)
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <div 
+                className="text-orange-600"
+                style={{ 
+                  transform: `rotate(${Math.min(pullDistance / pullThreshold, 1) * 180}deg)`,
+                  transition: 'transform 0.2s ease'
+                }}
+              >
+                <FontAwesomeIcon 
+                  icon="fa-arrow-down" 
+                  size="lg"
+                />
+              </div>
+              <span className="text-orange-600 text-sm font-medium">
+                {pullDistance >= pullThreshold ? 'Loslassen zum Aktualisieren' : 'Ziehen zum Aktualisieren'}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Refresh Loading Indicator */}
+        {isRefreshing && (
+          <div className="flex items-center justify-center py-4 bg-gray-50">
+            <div className="flex items-center gap-3">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-600"></div>
+              <span className="text-orange-600 text-sm font-medium">Aktualisiere...</span>
+            </div>
+          </div>
+        )}
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <p className="text-gray-600 mb-3">Listen anzeigen für</p>
         <div className="flex items-center bg-white rounded-xl p-4 mb-6 border border-gray-200 shadow-sm">
           <div className="w-12 h-12 rounded-full mr-4 border-2 border-orange-500 bg-orange-500 flex items-center justify-center">
@@ -145,6 +274,7 @@ const ListsPage: React.FC = () => {
             <div className="text-gray-500">Keine Listen gefunden</div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

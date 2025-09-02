@@ -88,6 +88,22 @@ export const useShoppingItemsDexie = (listId: string) => {
     }
   }, []);
 
+  // Refresh items from Supabase
+  const refreshItems = useCallback(async () => {
+    try {
+      console.log('Refreshing shopping items from Supabase...');
+      const response = await shoppingItemsController.getItems(listId);
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      console.log('Shopping items refreshed successfully');
+      return response.data;
+    } catch (err) {
+      console.error('Error refreshing items:', err);
+      throw err;
+    }
+  }, [listId]);
+
   return {
     items,
     loading: items === undefined, // Live Query loading state
@@ -96,5 +112,6 @@ export const useShoppingItemsDexie = (listId: string) => {
     updateItem,
     deleteItem,
     setItemCompletion,
+    refreshItems,
   };
 }; 

@@ -26,6 +26,13 @@ const ShoppingListPage: React.FC = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const dispatch = useDispatch();
   
+  // Pull-to-refresh state
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [pullDistance, setPullDistance] = useState(0);
+  const [startY, setStartY] = useState(0);
+  const [isPulling, setIsPulling] = useState(false);
+  const pullThreshold = 80; // Distance in pixels to trigger refresh
+  
   // Set current list in global store
   useEffect(() => {
     if (listId) {
@@ -48,7 +55,7 @@ const ShoppingListPage: React.FC = () => {
   }
   
   // Use the shopping items hook
-  const { items, loading, error, setItemCompletion, deleteItem } = useShoppingItemsDexie(listId);
+  const { items, loading, error, setItemCompletion, deleteItem, refreshItems } = useShoppingItemsDexie(listId);
   
   // Use the list hook to get the list name
   const { list, loading: listLoading } = useListDexie(listId);
@@ -65,6 +72,90 @@ const ShoppingListPage: React.FC = () => {
     // The useShoppingItemsDexie hook will automatically reload from Supabase
     console.log('Realtime update received, triggering refresh');
   });
+
+  // Pull-to-refresh handlers
+  const handleTouchStart = useCallback((e: TouchEvent) => {
+    // Only track touch start if we're at the very top of the page
+    if (window.scrollY === 0) {
+      setStartY(e.touches[0].clientY);
+      // Don't set isPulling to true yet - wait for actual downward movement
+    }
+  }, []);
+
+  const handleTouchMove = useCallback((e: TouchEvent) => {
+    // Only handle pull-to-refresh if we're at the top and have a start position
+    if (window.scrollY > 0 || startY === 0) return;
+    
+    const currentY = e.touches[0].clientY;
+    const distance = currentY - startY;
+    
+    // Only activate pull-to-refresh for downward pulls (positive distance)
+    // And only if the distance is significant enough (more than 10px)
+    if (distance > 10) {
+      if (!isPulling) {
+        setIsPulling(true); // Only set pulling state when actually pulling down
+      }
+      e.preventDefault();
+      setPullDistance(Math.min(distance * 0.5, pullThreshold * 1.5)); // Dampen the pull
+    } else if (distance < -10) {
+      // If pulling up significantly (negative distance), reset pull state
+      setPullDistance(0);
+      setIsPulling(false);
+    }
+  }, [isPulling, startY, pullThreshold]);
+
+  const handleTouchEnd = useCallback(async () => {
+    if (!isPulling) {
+      // Reset start position if we weren't pulling
+      setStartY(0);
+      return;
+    }
+    
+    if (pullDistance >= pullThreshold) {
+      // Trigger refresh
+      setIsRefreshing(true);
+      setPullDistance(0);
+      
+      try {
+        // Force refresh of shopping items from the database
+        console.log('Pull-to-refresh triggered - refreshing shopping list data');
+        
+        // Trigger a refresh of the shopping items data
+        // This will reload the data from Supabase and update the local state
+        if (listId) {
+          // Use the refreshItems function from the hook to reload data from Supabase
+          await refreshItems();
+          
+          // Wait a bit to show the refresh animation
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+      } catch (error) {
+        console.error('Error refreshing:', error);
+      } finally {
+        setIsRefreshing(false);
+      }
+    } else {
+      // Reset pull state
+      setPullDistance(0);
+    }
+    
+    setIsPulling(false);
+    setStartY(0); // Reset start position
+  }, [isPulling, pullDistance, pullThreshold]);
+
+  // Add touch event listeners
+  useEffect(() => {
+    document.addEventListener('touchstart', handleTouchStart, { passive: false });
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd, { passive: false });
+
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [handleTouchStart, handleTouchMove, handleTouchEnd]);
   
   // Group items by category and separate completed items
   const { completed, incomplete } = separateCompletedItems(items as any);
@@ -249,14 +340,61 @@ const ShoppingListPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Info-Box */}
-      <div className="bg-white border border-gray-200 shadow-sm flex items-center gap-3 px-4 py-3 mt-2 mb-2">
-        <FontAwesomeIcon icon="bell" className="text-orange-600" size="2xl"/>
-        <span className="text-gray-900 text-sm flex-1">ZUTATO - Testversion</span>
-      </div>
 
-      {/* Kategorien & Produkte */}
-      <div className="flex-1 overflow-y-auto pb-32">
+
+      {/* Pull-to-Refresh Container - includes ALL content */}
+      <div 
+        className="transition-all duration-200"
+        style={{ 
+          transform: `translateY(${pullDistance}px)`,
+        }}
+      >
+        {/* Pull-to-Refresh Indicator - only visible when pulling */}
+        {isPulling && (
+          <div 
+            className="flex items-center justify-center py-4 bg-gray-50"
+            style={{ 
+              opacity: Math.min(pullDistance / pullThreshold, 1)
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <div 
+                className="text-orange-600"
+                style={{ 
+                  transform: `rotate(${Math.min(pullDistance / pullThreshold, 1) * 180}deg)`,
+                  transition: 'transform 0.2s ease'
+                }}
+              >
+                <FontAwesomeIcon 
+                  icon="fa-arrow-down" 
+                  size="lg"
+                />
+              </div>
+              <span className="text-orange-600 text-sm font-medium">
+                {pullDistance >= pullThreshold ? 'Loslassen zum Aktualisieren' : 'Ziehen zum Aktualisieren'}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Refresh Loading Indicator */}
+        {isRefreshing && (
+          <div className="flex items-center justify-center py-4 bg-gray-50">
+            <div className="flex items-center gap-3">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-600"></div>
+              <span className="text-orange-600 text-sm font-medium">Aktualisiere...</span>
+            </div>
+          </div>
+        )}
+
+        {/* Info-Box */}
+        <div className="bg-white border border-gray-200 shadow-sm flex items-center gap-3 px-4 py-3 mt-2 mb-2">
+          <FontAwesomeIcon icon="bell" className="text-orange-600" size="2xl"/>
+          <span className="text-gray-900 text-sm flex-1">ZUTATO - Testversion</span>
+        </div>
+
+        {/* Kategorien & Produkte */}
+        <div className="flex-1 overflow-y-auto pb-32">
         <div className="divide-y divide-gray-200">
           {openSortMode === 'category' && groupedIncompleteItems && (
             Object.entries(groupedIncompleteItems).map(([categoryName, categoryData]) => (
@@ -410,6 +548,7 @@ const ShoppingListPage: React.FC = () => {
             </div>
           )}
         </div>
+      </div>
 
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 flex justify-around items-center h-20 z-20">

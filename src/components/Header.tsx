@@ -165,7 +165,7 @@ const Header: React.FC = () => {
                             }
                         )}
                       />
-                      {(isSearchPage || isCookbook) && (
+                      {(isSearchPage || (isCookbook && searchValue.trim())) && (
                         <span
                           className="ml-3 text-orange-600 font-semibold cursor-pointer select-none"
                           onClick={() => {

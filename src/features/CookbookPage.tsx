@@ -546,15 +546,6 @@ const CookbookPage: React.FC = () => {
             
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
               Deine Lieblingsrezepte
-              {searchValue.trim() ? (
-                <span className="text-sm font-normal text-gray-600 ml-2">
-                  - Suche: "{searchValue}" ({recipes.length} Ergebnisse)
-                </span>
-              ) : (
-                <span className="text-sm font-normal text-gray-600 ml-2">
-                  ({recipes.length})
-                </span>
-              )}
             </h2>
             
             {recipes.length === 0 && searchValue.trim() ? (

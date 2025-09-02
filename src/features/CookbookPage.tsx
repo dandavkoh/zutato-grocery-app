@@ -621,7 +621,7 @@ const CookbookPage: React.FC = () => {
                 </div>
                 <p className="text-gray-600">Alle Rezepte wurden geladen</p>
                 <p className="text-sm text-gray-500 mt-2">
-                  Insgesamt {recipes.length} Rezepte in Ihrem Kochbuch
+                  Insgesamt {recipes.length} Rezepte in deinem Kochbuch
                 </p>
               </div>
             )}

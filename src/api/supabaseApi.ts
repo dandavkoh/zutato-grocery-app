@@ -1373,7 +1373,7 @@ export const authService = {
         return { 
           user: data.user, 
           error: null,
-          message: 'Profil aktualisiert. Bitte bestätigen Sie die E-Mail-Änderung in Ihrem Posteingang.'
+          message: 'Profil aktualisiert. Bitte bestätige die E-Mail-Änderung in deinem Posteingang.'
         };
       }
       

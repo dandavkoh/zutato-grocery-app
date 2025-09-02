@@ -60,11 +60,17 @@ const ListsPage: React.FC = () => {
         setIsPulling(true); // Only set pulling state when actually pulling down
       }
       e.preventDefault();
-      setPullDistance(Math.min(distance * 0.5, pullThreshold * 1.5)); // Dampen the pull
+      
+      // Use requestAnimationFrame for smoother updates
+      requestAnimationFrame(() => {
+        setPullDistance(Math.min(distance * 0.5, pullThreshold * 1.5)); // Dampen the pull
+      });
     } else if (distance < -10) {
       // If pulling up significantly (negative distance), reset pull state
-      setPullDistance(0);
-      setIsPulling(false);
+      requestAnimationFrame(() => {
+        setPullDistance(0);
+        setIsPulling(false);
+      });
     }
   }, [isPulling, startY, pullThreshold]);
 
@@ -75,10 +81,14 @@ const ListsPage: React.FC = () => {
       return;
     }
     
+    // Immediately reset pulling state and distance
+    setIsPulling(false);
+    setPullDistance(0);
+    setStartY(0);
+    
     if (pullDistance >= pullThreshold) {
       // Trigger refresh
       setIsRefreshing(true);
-      setPullDistance(0);
       
       try {
         // Use the refetch function to refresh lists from Supabase
@@ -92,39 +102,50 @@ const ListsPage: React.FC = () => {
       } finally {
         setIsRefreshing(false);
       }
-    } else {
-      // Reset pull state
-      setPullDistance(0);
     }
     
-    setIsPulling(false);
-    setStartY(0); // Reset start position
+    // Multiple safety resets to ensure pullDistance is always 0
+    setTimeout(() => setPullDistance(0), 10);
+    setTimeout(() => setPullDistance(0), 50);
+    setTimeout(() => setPullDistance(0), 100);
+    setTimeout(() => setPullDistance(0), 200);
   }, [isPulling, pullDistance, pullThreshold, refetch]);
 
   // Add touch event listeners
   useEffect(() => {
-    document.addEventListener('touchstart', handleTouchStart, { passive: false });
-    document.addEventListener('touchmove', handleTouchMove, { passive: false });
-    document.addEventListener('touchend', handleTouchEnd, { passive: false });
+    const options = { passive: false, capture: false };
+    
+    document.addEventListener('touchstart', handleTouchStart, options);
+    document.addEventListener('touchmove', handleTouchMove, options);
+    document.addEventListener('touchend', handleTouchEnd, options);
 
     return () => {
-      document.removeEventListener('touchstart', handleTouchStart);
-      document.removeEventListener('touchmove', handleTouchMove);
-      document.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('touchstart', handleTouchStart, options);
+      document.removeEventListener('touchmove', handleTouchMove, options);
+      document.removeEventListener('touchend', handleTouchEnd, options);
     };
   }, [handleTouchStart, handleTouchMove, handleTouchEnd]);
+
+  // Safety effect to ensure pullDistance is always correct
+  useEffect(() => {
+    // If we're not pulling and not refreshing, ensure pullDistance is 0
+    if (!isPulling && !isRefreshing && pullDistance !== 0) {
+      setPullDistance(0);
+    }
+  }, [isPulling, isRefreshing, pullDistance]);
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Pull-to-Refresh Container - includes ALL content */}
       <div 
-        className="transition-all duration-200"
+        className="will-change-transform"
         style={{ 
-          transform: `translateY(${pullDistance}px)`,
+          transform: `translate3d(0, ${pullDistance}px, 0)`,
+          transition: isPulling ? 'none' : 'transform 0.2s ease-out'
         }}
       >
         {/* Pull-to-Refresh Indicator - only visible when pulling */}
-        {isPulling && (
+        {isPulling && !isRefreshing && (
           <div 
             className="flex items-center justify-center py-4 bg-gray-50"
             style={{ 

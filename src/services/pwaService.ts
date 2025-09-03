@@ -25,6 +25,7 @@ class PWAService {
   private readonly REQUEST_TIMEOUT = 1500; // 1.5 seconds
   private static instance: PWAService | null = null;
   private static isInitialized = false;
+  private updateAvailable = false; // Track if update is available
 
   constructor() {
     if (PWAService.instance) {
@@ -60,17 +61,10 @@ class PWAService {
     this.updateSW = registerSW({
       onNeedRefresh: () => {
         console.log('🔄 PWA: Update available');
-        this.notifyUpdate({
-          type: 'update',
-          message: 'Eine neue Version ist verfügbar. Klicke hier, um zu aktualisieren.'
-        });
+        this.updateAvailable = true;
       },
       onOfflineReady: () => {
         console.log('📱 PWA: App ist offline bereit');
-        this.notifyUpdate({
-          type: 'offline',
-          message: 'App ist jetzt offline verfügbar'
-        });
       },
       onRegistered: (swRegistration: ServiceWorkerRegistration) => {
         console.log('✅ PWA: Service Worker registriert', swRegistration);
@@ -98,10 +92,6 @@ class PWAService {
       },
       onRegisterError: (error: Error) => {
         console.error('❌ PWA: Service Worker Registrierung fehlgeschlagen', error);
-        this.notifyUpdate({
-          type: 'error',
-          message: 'Service Worker Registrierung fehlgeschlagen'
-        });
       },
       onUpdateFound: () => {
         console.log('🔄 PWA: Service Worker update found');
@@ -111,19 +101,11 @@ class PWAService {
     // Listen for online/offline events
     window.addEventListener('online', () => {
       console.log('🌐 PWA: Online');
-      this.notifyUpdate({
-        type: 'online',
-        message: 'Verbindung wiederhergestellt'
-      });
       this.processQueuedRequestsInternal();
     });
 
     window.addEventListener('offline', () => {
       console.log('📴 PWA: Offline');
-      this.notifyUpdate({
-        type: 'offline',
-        message: 'Keine Internetverbindung'
-      });
     });
 
     // Intercept fetch requests for offline functionality
@@ -390,12 +372,7 @@ class PWAService {
     this.queueStatus.isProcessing = false;
     this.isProcessingQueue = false;
     
-    // Notify about processed queue
-    this.notifyUpdate({
-      type: 'queue_processed',
-      message: `${successCount} von ${itemsToProcess.length} Offline-Requests wurden verarbeitet${errorCount > 0 ? ` (${errorCount} Fehler)` : ''}`,
-      data: { successCount, errorCount, totalCount: itemsToProcess.length }
-    });
+    // Queue processing completed (no notification)
   }
 
   private async logDatabaseStats(): Promise<void> {
@@ -1181,11 +1158,6 @@ class PWAService {
     return { queueLength, isProcessing: this.queueStatus.isProcessing };
   }
 
-  public async hasQueuedRequests(): Promise<boolean> {
-    const queueLength = await dexieService.getQueuedRequestsCount();
-    return queueLength > 0;
-  }
-
   public setUpdateCallback(callback: (event: PWAUpdateEvent) => void) {
     this.updateCallback = callback;
   }
@@ -1203,16 +1175,16 @@ class PWAService {
         console.log('✅ PWA: App erfolgreich aktualisiert');
       } catch (error) {
         console.error('❌ PWA: Update fehlgeschlagen', error);
-        this.notifyUpdate({
-          type: 'error',
-          message: 'App-Update fehlgeschlagen'
-        });
       }
     }
   }
 
   public isOnline(): boolean {
     return navigator.onLine;
+  }
+
+  public isUpdateAvailable(): boolean {
+    return this.updateAvailable;
   }
 
   public async getServiceWorkerStatus(): Promise<{

@@ -22,6 +22,7 @@ class PWAService {
   private queueStatus: QueueStatus = { queueLength: 0, isProcessing: false };
   private isProcessingQueue = false;
   private readonly MAX_QUEUE_SIZE = 1000;
+  private readonly REQUEST_TIMEOUT = 1000; // 1 second
   private static instance: PWAService | null = null;
   private static isInitialized = false;
 
@@ -38,6 +39,20 @@ class PWAService {
     PWAService.isInitialized = true;
     this.initialize();
     this.loadQueueFromDexie();
+  }
+
+  /**
+   * Executes a fetch request with a timeout
+   * @param fetchFn - The fetch function to execute
+   * @param args - Arguments to pass to the fetch function
+   * @returns Promise that resolves with the response or rejects with timeout error
+   */
+  private async executeWithTimeout(fetchFn: (...args: any[]) => Promise<Response>, ...args: any[]): Promise<Response> {
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Request timeout')), this.REQUEST_TIMEOUT);
+    });
+    
+    return Promise.race([fetchFn(...args), timeoutPromise]);
   }
 
   private initialize() {
@@ -543,7 +558,7 @@ class PWAService {
           // Ensure args is properly structured
           if (!Array.isArray(args) || args.length < 1) {
             console.error('❌ [PWA] Invalid args structure:', args);
-            return originalSupabaseFetch(...args);
+            return originalSupabaseFetch(...args); //return this.executeWithTimeout(originalSupabaseFetch, ...args);
           }
           
           const [url, options] = args;
@@ -585,7 +600,7 @@ class PWAService {
             if (navigator.onLine) {
               // Try network first when online
               try {
-                const response = await originalSupabaseFetch(...args);
+                const response = await this.executeWithTimeout(originalSupabaseFetch, ...args);
                 if (response.ok) {
                   // Parse and sync response to Dexie
                   const responseData = await response.clone().json();
@@ -600,7 +615,11 @@ class PWAService {
                   return response;
                 }
               } catch (error) {
-                console.log(`📴 [PWA] Network failed, trying Dexie: ${url}`);
+                if (error instanceof Error && error.message === 'Request timeout') {
+                  console.log(`⏰ [PWA] Request timeout (${this.REQUEST_TIMEOUT}ms), trying Dexie: ${url}`);
+                } else {
+                  console.log(`📴 [PWA] Network failed, trying Dexie: ${url}`);
+                }
               }
             } else {
               console.log(`📴 [PWA] Offline, trying Dexie: ${url}`);
@@ -629,7 +648,7 @@ class PWAService {
             if (navigator.onLine) {
               // Try network first when online
               try {
-                const response = await originalSupabaseFetch(...args);
+                const response = await this.executeWithTimeout(originalSupabaseFetch, ...args);
                 if (response.ok) {
                   // Parse and sync response to Dexie
                   const responseData = await response.clone().json();
@@ -644,7 +663,11 @@ class PWAService {
                   return response;
                 }
               } catch (error) {
-                console.log(`📴 [PWA] Network failed, trying Dexie for lists: ${url}`);
+                if (error instanceof Error && error.message === 'Request timeout') {
+                  console.log(`⏰ [PWA] Request timeout (${this.REQUEST_TIMEOUT}ms), trying Dexie for lists: ${url}`);
+                } else {
+                  console.log(`📴 [PWA] Network failed, trying Dexie for lists: ${url}`);
+                }
               }
             } else {
               console.log(`📴 [PWA] Offline, trying Dexie for lists: ${url}`);
@@ -672,7 +695,7 @@ class PWAService {
             if (navigator.onLine) {
               // Try network first when online
               try {
-                const response = await originalSupabaseFetch(...args);
+                const response = await this.executeWithTimeout(originalSupabaseFetch, ...args);
                 if (response.ok) {
                   // Parse and sync response to Dexie
                   const responseData = await response.clone().json();
@@ -687,7 +710,11 @@ class PWAService {
                   return response;
                 }
               } catch (error) {
-                console.log(`📴 [PWA] Network failed, trying Dexie for categories: ${url}`);
+                if (error instanceof Error && error.message === 'Request timeout') {
+                  console.log(`⏰ [PWA] Request timeout (${this.REQUEST_TIMEOUT}ms), trying Dexie for categories: ${url}`);
+                } else {
+                  console.log(`📴 [PWA] Network failed, trying Dexie for categories: ${url}`);
+                }
               }
             } else {
               console.log(`📴 [PWA] Offline, trying Dexie for categories: ${url}`);
@@ -712,7 +739,7 @@ class PWAService {
             if (navigator.onLine) {
               // Try network first when online
               try {
-                const response = await originalSupabaseFetch(...args);
+                const response = await this.executeWithTimeout(originalSupabaseFetch, ...args);
                 if (response.ok) {
                   // Parse and sync response to Dexie
                   const responseData = await response.clone().json();
@@ -727,7 +754,11 @@ class PWAService {
                   return response;
                 }
               } catch (error) {
-                console.log(`📴 [PWA] Network failed, trying Dexie for units: ${url}`);
+                if (error instanceof Error && error.message === 'Request timeout') {
+                  console.log(`⏰ [PWA] Request timeout (${this.REQUEST_TIMEOUT}ms), trying Dexie for units: ${url}`);
+                } else {
+                  console.log(`📴 [PWA] Network failed, trying Dexie for units: ${url}`);
+                }
               }
             } else {
               console.log(`📴 [PWA] Offline, trying Dexie for units: ${url}`);
@@ -799,7 +830,7 @@ class PWAService {
             // Check if we're online
             if (navigator.onLine) {
               try {
-                const response = await originalSupabaseFetch(...args);
+                const response = await this.executeWithTimeout(originalSupabaseFetch, ...args);
                 if (response.ok) {
                   // Parse the response and update Dexie with server data
                   const responseData = await response.clone().json();
@@ -816,7 +847,11 @@ class PWAService {
                   return response;
                 }
               } catch (error) {
-                console.log(`📴 [PWA] Network failed, queuing POST request: ${url}`);
+                if (error instanceof Error && error.message === 'Request timeout') {
+                  console.log(`⏰ [PWA] Request timeout (${this.REQUEST_TIMEOUT}ms), queuing POST request: ${url}`);
+                } else {
+                  console.log(`📴 [PWA] Network failed, queuing POST request: ${url}`);
+                }
               }
             } else {
               console.log(`📴 [PWA] Offline, queuing POST request: ${url}`);
@@ -902,7 +937,7 @@ class PWAService {
             // Check if we're online
             if (navigator.onLine) {
               try {
-                const response = await originalSupabaseFetch(...args);
+                const response = await this.executeWithTimeout(originalSupabaseFetch, ...args);
                 if (response.ok) {
                   // INFO: We don't need to sync the response to Dexie here, because the list is already in the database
                   // INFO: Also the request does NOT contain JSON data, so we can't parse it
@@ -921,7 +956,11 @@ class PWAService {
                   return response;
                 }
               } catch (error) {
-                console.log(`📴 [PWA] Network failed, queuing POST request for lists: ${url}`);
+                if (error instanceof Error && error.message === 'Request timeout') {
+                  console.log(`⏰ [PWA] Request timeout (${this.REQUEST_TIMEOUT}ms), queuing POST request for lists: ${url}`);
+                } else {
+                  console.log(`📴 [PWA] Network failed, queuing POST request for lists: ${url}`);
+                }
               }
             } else {
               console.log(`📴 [PWA] Offline, queuing POST request for lists: ${url}`);
@@ -975,13 +1014,17 @@ class PWAService {
             // Check if we're online
             if (navigator.onLine) {
               try {
-                const response = await originalSupabaseFetch(...args);
+                const response = await this.executeWithTimeout(originalSupabaseFetch, ...args);
                 if (response.ok) {
                   console.log(`✅ [PWA] Supabase PATCH successful: ${url}`);
                   return response;
                 }
               } catch (error) {
-                console.log(`📴 [PWA] Network failed, queuing PATCH request: ${url}`);
+                if (error instanceof Error && error.message === 'Request timeout') {
+                  console.log(`⏰ [PWA] Request timeout (${this.REQUEST_TIMEOUT}ms), queuing PATCH request: ${url}`);
+                } else {
+                  console.log(`📴 [PWA] Network failed, queuing PATCH request: ${url}`);
+                }
               }
             } else {
               console.log(`📴 [PWA] Offline, queuing PATCH request: ${url}`);
@@ -1029,13 +1072,17 @@ class PWAService {
             // Check if we're online
             if (navigator.onLine) {
               try {
-                const response = await originalSupabaseFetch(...args);
+                const response = await this.executeWithTimeout(originalSupabaseFetch, ...args);
                 if (response.ok) {
                   console.log(`✅ [PWA] Supabase PATCH for lists successful: ${url}`);
                   return response;
                 }
               } catch (error) {
-                console.log(`📴 [PWA] Network failed, queuing PATCH request for lists: ${url}`);
+                if (error instanceof Error && error.message === 'Request timeout') {
+                  console.log(`⏰ [PWA] Request timeout (${this.REQUEST_TIMEOUT}ms), queuing PATCH request for lists: ${url}`);
+                } else {
+                  console.log(`📴 [PWA] Network failed, queuing PATCH request for lists: ${url}`);
+                }
               }
             } else {
               console.log(`📴 [PWA] Offline, queuing PATCH request for lists: ${url}`);
@@ -1060,20 +1107,35 @@ class PWAService {
           }
           
           // For other requests, just make the original request
-          const response = await originalSupabaseFetch(...args);
-          if (response.ok && isShoppingItemsRequest && options?.method === 'GET') {
-            // Parse and sync response to Dexie
-            const responseData = await response.clone().json();
-            
-            // Check if response is an array or single object
-            if (Array.isArray(responseData)) {
-              await dexieService.syncShoppingItems(responseData);
-              console.log(`✅ [PWA] Synced Supabase response to Dexie: ${responseData.length} items`);
-            } else {
-              console.log(`⚠️ [PWA] Shopping items response is not an array, skipping Dexie sync: ${url}`);
+          try {
+            const response = await this.executeWithTimeout(originalSupabaseFetch, ...args);
+            if (response.ok && isShoppingItemsRequest && options?.method === 'GET') {
+              // Parse and sync response to Dexie
+              const responseData = await response.clone().json();
+              
+              // Check if response is an array or single object
+              if (Array.isArray(responseData)) {
+                await dexieService.syncShoppingItems(responseData);
+                console.log(`✅ [PWA] Synced Supabase response to Dexie: ${responseData.length} items`);
+              } else {
+                console.log(`⚠️ [PWA] Shopping items response is not an array, skipping Dexie sync: ${url}`);
+              }
             }
+            return response;
+          } catch (error) {
+            if (error instanceof Error && error.message === 'Request timeout') {
+              console.log(`⏰ [PWA] Request timeout (${this.REQUEST_TIMEOUT}ms) for request: ${url}`);
+              // Return a timeout error response
+              return new Response(JSON.stringify({ 
+                error: 'Request timeout',
+                message: `Request timed out after ${this.REQUEST_TIMEOUT}ms`
+              }), {
+                status: 408,
+                headers: { 'Content-Type': 'application/json' }
+              });
+            }
+            throw error; // Re-throw other errors
           }
-          return response;
         };
         
         console.log('✅ [PWA] Supabase client interceptor installed');

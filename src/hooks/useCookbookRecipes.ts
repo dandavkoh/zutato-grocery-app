@@ -27,6 +27,7 @@ export interface RecipeIngredient {
   unit_name?: string;
   unit_short_name?: string;
   ingredient_name: string;
+  icon?: string;
   selected: boolean;
   baseQuantity: number;
   // Recipe ingredient linking
@@ -457,6 +458,31 @@ export const useCookbookRecipes = (pageSize: number = 10) => {
             ingredientName = ingredient.custom_ingredient_name || 'Unbekannte Zutat';
           }
 
+          // Get ingredient icon
+          let ingredientIcon = 'basket-shopping'; // default icon
+          if (ingredient.product_group_id) {
+            const { data: productGroup } = await supabase
+              .from('product_groups')
+              .select('title, default_icon')
+              .eq('id', ingredient.product_group_id)
+              .single();
+            
+            if (productGroup?.default_icon) {
+              ingredientIcon = productGroup.default_icon;
+            }
+          } else if (ingredient.product_id) {
+            const { data: product } = await supabase
+              .from('products')
+              .select('title, default_icon')
+              .eq('id', ingredient.product_id)
+              .single();
+            
+            if (product?.default_icon) {
+              ingredientIcon = product.default_icon;
+            }
+          }
+          // If no product_group_id or product_id, keep default icon
+
           // Fetch unit information separately
           let unitName = '';
           let unitShortName = '';
@@ -520,6 +546,7 @@ export const useCookbookRecipes = (pageSize: number = 10) => {
             unit_name: unitName,
             unit_short_name: unitShortName,
             ingredient_name: ingredientName,
+            icon: ingredientIcon,
             selected: true,
             baseQuantity: ingredient.quantity,
             product_group_id: ingredient.product_group_id,
@@ -621,7 +648,7 @@ export const useCookbookRecipes = (pageSize: number = 10) => {
           id: generateGuid(),
           name: finalName,
           category_id: categoryId,
-          icon: undefined,
+          icon: ingredient.icon || undefined,
           unit_id: finalUnitId,
           quantity: finalQuantity,
           listId: listId,

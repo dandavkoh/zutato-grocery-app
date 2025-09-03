@@ -414,7 +414,7 @@ export const useCookbookRecipes = (pageSize: number = 10) => {
   // Function to fetch recipe ingredients with unit conversion
   const fetchRecipeIngredients = async (recipeId: string): Promise<RecipeIngredient[]> => {
     try {
-      // Fetch recipe ingredients with unit information
+      // Fetch recipe ingredients
       const { data: ingredientsData, error: ingredientsError } = await supabase
         .from('recipe_ingredients')
         .select(`
@@ -423,11 +423,7 @@ export const useCookbookRecipes = (pageSize: number = 10) => {
           unit_id,
           product_group_id,
           product_id,
-          custom_ingredient_name,
-          recipe_units (
-            name,
-            short_name
-          )
+          custom_ingredient_name
         `)
         .eq('recipe_id', recipeId);
 
@@ -436,6 +432,8 @@ export const useCookbookRecipes = (pageSize: number = 10) => {
       }
 
       if (!ingredientsData) return [];
+
+
 
       // Transform ingredients and fetch unit conversions
       const ingredients: RecipeIngredient[] = await Promise.all(
@@ -459,39 +457,68 @@ export const useCookbookRecipes = (pageSize: number = 10) => {
             ingredientName = ingredient.custom_ingredient_name || 'Unbekannte Zutat';
           }
 
-          // Get unit conversion if unit_id exists
-          let groceryUnitInfo = {};
+          // Fetch unit information separately
+          let unitName = '';
+          let unitShortName = '';
           if (ingredient.unit_id) {
-            const { data: conversionData } = await supabase
-              .from('recipe_units_to_grocery_units_map')
-              .select(`
-                conversion_factor,
-                grocery_units (
-                  id,
-                  name,
-                  short_name
-                )
-              `)
-              .eq('recipe_unit_id', ingredient.unit_id)
+            const { data: unitData } = await supabase
+              .from('recipe_units')
+              .select('name, short_name')
+              .eq('id', ingredient.unit_id)
               .single();
-
-            if (conversionData && conversionData.grocery_units && conversionData.grocery_units.length > 0) {
-              groceryUnitInfo = {
-                grocery_unit_id: conversionData.grocery_units[0]?.id,
-                grocery_unit_name: conversionData.grocery_units[0]?.name,
-                grocery_unit_short_name: conversionData.grocery_units[0]?.short_name,
-                conversion_factor: conversionData.conversion_factor,
-                converted_quantity: ingredient.quantity * conversionData.conversion_factor
-              };
+            
+            if (unitData) {
+              unitName = unitData.name;
+              unitShortName = unitData.short_name;
             }
           }
 
-          return {
+          // Get unit conversion if unit_id exists
+          let groceryUnitInfo = {};
+          if (ingredient.unit_id) {
+            console.log('🔍 [Cookbook] Fetching conversion for unit_id:', ingredient.unit_id);
+            
+            // Try separate queries instead of join
+            const { data: conversionData, error: conversionError } = await supabase
+              .from('recipe_units_to_grocery_units_map')
+              .select('conversion_factor, grocery_unit_id')
+              .eq('recipe_unit_id', ingredient.unit_id)
+              .single();
+
+            console.log('🔍 [Cookbook] Conversion data:', conversionData);
+            console.log('🔍 [Cookbook] Conversion error:', conversionError);
+
+            if (conversionData && conversionData.grocery_unit_id) {
+              // Fetch grocery unit details separately
+              const { data: groceryUnitData } = await supabase
+                .from('grocery_units')
+                .select('id, name, short_name')
+                .eq('id', conversionData.grocery_unit_id)
+                .single();
+
+              console.log('🔍 [Cookbook] Grocery unit data:', groceryUnitData);
+
+              if (groceryUnitData) {
+                groceryUnitInfo = {
+                  grocery_unit_id: groceryUnitData.id,
+                  grocery_unit_name: groceryUnitData.name,
+                  grocery_unit_short_name: groceryUnitData.short_name,
+                  conversion_factor: conversionData.conversion_factor,
+                  converted_quantity: ingredient.quantity * conversionData.conversion_factor
+                };
+                console.log('🔍 [Cookbook] Grocery unit info:', groceryUnitInfo);
+              }
+            } else {
+              console.log('🔍 [Cookbook] No conversion data found for unit_id:', ingredient.unit_id);
+            }
+          }
+
+          const finalIngredient = {
             id: ingredient.id,
             quantity: ingredient.quantity,
             unit_id: ingredient.unit_id,
-            unit_name: ingredient.recipe_units?.[0]?.name,
-            unit_short_name: ingredient.recipe_units?.[0]?.short_name,
+            unit_name: unitName,
+            unit_short_name: unitShortName,
             ingredient_name: ingredientName,
             selected: true,
             baseQuantity: ingredient.quantity,
@@ -500,6 +527,9 @@ export const useCookbookRecipes = (pageSize: number = 10) => {
             custom_ingredient_name: ingredient.custom_ingredient_name,
             ...groceryUnitInfo
           };
+
+
+          return finalIngredient;
         })
       );
 

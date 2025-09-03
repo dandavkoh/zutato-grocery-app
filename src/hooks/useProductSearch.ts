@@ -41,8 +41,20 @@ export const useProductSearch = (debounceMs: number = 300): UseProductSearchRetu
           const response = await productGroupsApi.searchProductGroups(term);
           
           if (response.error) {
-            setError(response.error);
-            setSearchResults([]);
+
+            if (!response.error.includes('Request timed out')) {
+              setError(response.error);
+            }
+            // Even if there's an error, show exact suggestion
+            const exactSuggestion: ProductOrGroup = {
+              id: 'exact-suggestion',
+              title: term,
+              rank: 1.0,
+              src: 'exact',
+              icon: 'basket-shopping',
+              category_id: ''
+            };
+            setSearchResults([exactSuggestion]);
           } else {
             setSearchResults(response.data || []);
           }

@@ -22,7 +22,7 @@ class PWAService {
   private queueStatus: QueueStatus = { queueLength: 0, isProcessing: false };
   private isProcessingQueue = false;
   private readonly MAX_QUEUE_SIZE = 1000;
-  private readonly REQUEST_TIMEOUT = 1000; // 1 second
+  private readonly REQUEST_TIMEOUT = 1500; // 1.5 seconds
   private static instance: PWAService | null = null;
   private static isInitialized = false;
 

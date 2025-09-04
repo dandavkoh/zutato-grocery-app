@@ -10,6 +10,7 @@ const SwipeAction: React.FC<SwipeActionProps> = ({ children, onDelete, className
   const [isOpen, setIsOpen] = useState(false);
   const [translateX, setTranslateX] = useState(0);
   const [startX, setStartX] = useState(0);
+  const [startY, setStartY] = useState(0);
   const [currentX, setCurrentX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -21,6 +22,7 @@ const SwipeAction: React.FC<SwipeActionProps> = ({ children, onDelete, className
   const handleTouchStart = (e: React.TouchEvent) => {
     const touch = e.touches[0];
     setStartX(touch.clientX);
+    setStartY(touch.clientY);
     setCurrentX(touch.clientX);
     setIsDragging(true);
   };
@@ -30,6 +32,16 @@ const SwipeAction: React.FC<SwipeActionProps> = ({ children, onDelete, className
     
     const touch = e.touches[0];
     const deltaX = touch.clientX - startX;
+    const deltaY = touch.clientY - startY;
+    
+    // Check if this is primarily a horizontal gesture
+    const isHorizontalGesture = Math.abs(deltaX) > Math.abs(deltaY);
+    
+    if (isHorizontalGesture) {
+      // Prevent default scrolling behavior during horizontal swipe
+      e.preventDefault();
+      e.stopPropagation();
+    }
     
     // Nur nach links swipen erlauben (negative Werte)
     const newTranslateX = Math.min(0, Math.max(-MAX_SWIPE, deltaX));
@@ -82,7 +94,7 @@ const SwipeAction: React.FC<SwipeActionProps> = ({ children, onDelete, className
     <div 
       ref={containerRef}
       className={`relative overflow-hidden bg-white ${className}`}
-      style={{ touchAction: 'pan-y' }}
+      style={{ touchAction: isDragging ? 'none' : 'pan-y' }}
     >
       {/* Hintergrund-Action */}
       <div 
@@ -104,7 +116,7 @@ const SwipeAction: React.FC<SwipeActionProps> = ({ children, onDelete, className
         className="relative bg-white w-full z-10 transition-transform duration-200 ease-out"
         style={{
           transform: `translateX(${translateX}px)`,
-          touchAction: 'pan-y',
+          touchAction: isDragging ? 'none' : 'pan-y',
         }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}

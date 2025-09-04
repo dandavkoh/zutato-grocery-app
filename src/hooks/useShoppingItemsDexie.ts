@@ -28,7 +28,7 @@ export const useShoppingItemsDexie = (listId: string) => {
     }
   }, [listId]);
 
-  // Note: Online status handling is now done in useRealtimeSync hook
+  // Note: Online status handling is now done in GlobalRealtimeProvider
   // to avoid circular imports
 
   // Create item

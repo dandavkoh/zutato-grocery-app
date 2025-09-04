@@ -463,7 +463,7 @@ export class ShoppingItemsController {
       
       // Broadcast update to all subscribers
       await realtimeService.broadcastUpdate(data.list_id, {
-        type: 'item_completed',
+        type: 'item_updated',
         listId: data.list_id,
         itemId: id
       });

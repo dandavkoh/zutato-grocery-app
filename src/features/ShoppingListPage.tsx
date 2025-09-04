@@ -7,7 +7,6 @@ import { useShoppingItemsDexie } from '../hooks/useShoppingItemsDexie';
 import { useListDexie } from '../hooks/useListsDexie';
 import { useCategoriesDexie } from '../hooks/useCategoriesDexie';
 import { useUnitsDexie } from '../hooks/useUnitsDexie';
-import { useRealtimeSync } from '../hooks/useRealtimeSync';
 import { groupItemsByCategory, separateCompletedItems, getUnitShortNameById } from '../api/supabaseApi';
 import type { ShoppingItem } from '../api/supabaseApi';
 import { sortItems, SortModes } from '../utils/sortUtils';
@@ -66,12 +65,7 @@ const ShoppingListPage: React.FC = () => {
   // Use the units hook to get units
   const { units, loading: unitsLoading } = useUnitsDexie();
 
-  // Set up realtime sync for this list
-  const { isConnected } = useRealtimeSync(listId, () => {
-    // Force a refresh of the shopping items when we receive an update
-    // The useShoppingItemsDexie hook will automatically reload from Supabase
-    console.log('Realtime update received, triggering refresh');
-  });
+  // Note: Realtime sync is now handled globally by GlobalRealtimeProvider
 
   // Pull-to-refresh handlers
   const handleTouchStart = useCallback((e: TouchEvent) => {

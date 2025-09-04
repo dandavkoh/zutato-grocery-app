@@ -16,10 +16,11 @@ Die Realtime-Integration ermöglicht es, dass Änderungen an Einkaufslisten in E
    - Implementiert Reconnection-Logik mit Exponential Backoff
    - Verwaltet Offline-Queue für ausstehende Aktionen
 
-2. **useRealtimeSync Hook** (`src/hooks/useRealtimeSync.ts`)
-   - React Hook für die Integration in Komponenten
-   - Automatische Subscription/Unsubscription
+2. **GlobalRealtimeProvider** (`src/services/globalRealtimeService.ts`)
+   - Globaler Provider für Realtime-Synchronisation
+   - Automatische Route-basierte Subscription/Unsubscription
    - Handhabt Online/Offline-Status-Änderungen
+   - Erkennt automatisch List-ID aus der aktuellen Route
 
 3. **RealtimeStatus Component** (`src/components/RealtimeStatus.tsx`)
    - UI-Indikator für den Verbindungsstatus
@@ -28,10 +29,10 @@ Die Realtime-Integration ermöglicht es, dass Änderungen an Einkaufslisten in E
 ### Datenfluss
 
 ```
-ShoppingListPage
+App (Layout)
     ↓
-useRealtimeSync Hook
-    ↓
+GlobalRealtimeProvider
+    ↓ (Route Detection)
 RealtimeService
     ↓
 Supabase Realtime Channel
@@ -43,7 +44,8 @@ Supabase Realtime Channel
 
 - Jede Einkaufsliste hat ihren eigenen Channel (`list-{listId}`)
 - Nur Benutzer mit der Liste geöffnet erhalten Updates
-- Channel wird automatisch beim Öffnen der Liste abonniert
+- Channel wird automatisch beim Navigieren zu Shopping-List-Routen abonniert
+- Automatische Unsubscription beim Verlassen der Shopping-List-Routen
 
 ### 2. Automatische Reconnection
 
@@ -64,7 +66,24 @@ Folgende Aktionen werden automatisch an alle Subscriber gesendet:
 - `item_created` - Neues Item erstellt
 - `item_updated` - Item bearbeitet
 - `item_deleted` - Item gelöscht
-- `item_completed` - Item als erledigt markiert
+
+## Globale Realtime-Verwaltung
+
+### Route-basierte Subscriptions
+
+Der `GlobalRealtimeProvider` überwacht automatisch Route-Änderungen und:
+
+1. **Erkennt Shopping-List-Routen**: Automatische Erkennung von Routen wie `/shopping-list/:listId`
+2. **Subscribed automatisch**: Beim Betreten einer Shopping-List-Route wird automatisch der entsprechende Channel subscribed
+3. **Unsubscribed automatisch**: Beim Verlassen der Shopping-List-Route wird der Channel unsubscribed
+4. **Channel-Wechsel**: Beim Wechseln zwischen verschiedenen Listen wird der alte Channel unsubscribed und der neue subscribed
+
+### Vorteile der globalen Verwaltung
+
+- **Keine lokalen Handler**: Keine Notwendigkeit, in jeder Komponente Realtime-Sync zu implementieren
+- **Automatische Route-Erkennung**: Funktioniert auch bei direktem Aufruf von URLs
+- **Konsistente Subscriptions**: Verhindert doppelte Subscriptions oder vergessene Unsubscriptions
+- **Bessere Performance**: Nur ein globaler Handler statt mehrerer lokaler Handler
 
 ## Verwendung
 

@@ -77,30 +77,30 @@ class RealtimeService {
     // Create new channel with both broadcast and DB change listeners
     const channel = supabase
       .channel(`list-${listId}`)
-      // .on('broadcast', { event: 'shopping_list_update' }, (payload) => {
-      //   logDebug('Received realtime update', { listId, payload });
-      //   this.handleRealtimeUpdate(listId, payload);
-      // })
-      // Listen to database changes for cross-device sync without explicit broadcast
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'shopping_items', filter: `list_id=eq.${listId}` }, (payload: any) => {
-        try {
-          logDebug('Received DB change event', { listId, eventType: payload?.eventType, payload });
-          const mappedType: RealtimeMessage['type'] = payload?.eventType === 'INSERT'
-            ? 'item_created'
-            : payload?.eventType === 'DELETE'
-              ? 'item_deleted'
-              : 'item_updated';
-          const synthetic = {
-            type: mappedType,
-            listId,
-            itemId: payload?.new?.id || payload?.old?.id,
-            timestamp: new Date().toISOString()
-          } satisfies RealtimeMessage;
-          this.handleRealtimeUpdate(listId, { payload: synthetic });
-        } catch (e) {
-          logError('Error handling DB change event', { listId, error: e });
-        }
+      .on('broadcast', { event: 'shopping_list_update' }, (payload) => {
+        logDebug('Received realtime update', { listId, payload });
+        this.handleRealtimeUpdate(listId, payload);
       })
+      // // Listen to database changes for cross-device sync without explicit broadcast
+      // .on('postgres_changes', { event: '*', schema: 'public', table: 'shopping_items', filter: `list_id=eq.${listId}` }, (payload: any) => {
+      //   try {
+      //     logDebug('Received DB change event', { listId, eventType: payload?.eventType, payload });
+      //     const mappedType: RealtimeMessage['type'] = payload?.eventType === 'INSERT'
+      //       ? 'item_created'
+      //       : payload?.eventType === 'DELETE'
+      //         ? 'item_deleted'
+      //         : 'item_updated';
+      //     const synthetic = {
+      //       type: mappedType,
+      //       listId,
+      //       itemId: payload?.new?.id || payload?.old?.id,
+      //       timestamp: new Date().toISOString()
+      //     } satisfies RealtimeMessage;
+      //     this.handleRealtimeUpdate(listId, { payload: synthetic });
+      //   } catch (e) {
+      //     logError('Error handling DB change event', { listId, error: e });
+      //   }
+      // })
       .on('presence', { event: 'sync' }, () => {
         logDebug('Presence sync', { listId });
       })

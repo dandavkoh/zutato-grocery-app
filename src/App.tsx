@@ -14,6 +14,7 @@ import ResetPasswordPage from './features/ResetPasswordPage'
 import CookbookPage from './features/CookbookPage'
 import Header from './components/Header'
 import ProtectedRoute from './components/ProtectedRoute'
+import { GlobalRealtimeProvider } from './services/globalRealtimeService'
 
 function Layout() {
   const location = useLocation();
@@ -22,9 +23,10 @@ function Layout() {
   // const hideHeader = location.pathname === '/';
   return (
     <div className="min-h-screen bg-gray-50" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-
-      <Header />
-      <div className="w-full"><Outlet /></div>
+      <GlobalRealtimeProvider>
+        <Header />
+        <div className="w-full"><Outlet /></div>
+      </GlobalRealtimeProvider>
     </div>
   );
 }

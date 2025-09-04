@@ -99,7 +99,9 @@ class QueueService {
 
         console.log(`🔄 [Queue] Replaying request: ${item.method} ${item.url} with body: ${item.body}`);
 
-        const response = await fetch(request);
+        // Use original fetch to bypass interceptor
+        const originalFetch = (window as any)._originalFetch || window.fetch;
+        const response = await originalFetch(request);
         
         if (response.ok) {
           // Handle successful PATCH requests by syncing to Dexie
@@ -117,8 +119,24 @@ class QueueService {
           successCount++;
           console.log(`✅ [Queue] Queued request successful: ${item.method} ${item.url}`);
         } else {
+          // Check for specific error codes that should remove the item from queue
+          if (response.status === 409) {
+            try {
+              const errorData = await response.clone().json();
+              if (errorData.code === '23505') {
+                // Duplicate key constraint violation - remove from queue as item already exists
+                await dexieService.removeQueuedRequest(item.id);
+                successCount++;
+                console.log(`✅ [Queue] Removed duplicate item from queue (23505): ${item.method} ${item.url}`);
+                return; // Skip error counting
+              }
+            } catch (parseError) {
+              console.error('❌ [Queue] Failed to parse error response:', parseError);
+            }
+          }
+          
           errorCount++;
-          console.warn(`⚠️ [Queue] Queued request failed: ${item.method} ${item.url}`);
+          console.warn(`⚠️ [Queue] Queued request failed: ${item.method} ${item.url} (Status: ${response.status})`);
         }
       } catch (error) {
         errorCount++;

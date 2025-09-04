@@ -9,6 +9,7 @@ import {
   validatePassword
 } from '../utils/authUtils';
 import { useAuth } from '../contexts/AuthContext';
+import { sentryErrorService } from '../services/sentryErrorService';
 
 interface RegisterFormData {
   email: string;
@@ -112,6 +113,10 @@ const RegisterPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Registration error:', error);
+      sentryErrorService.reportApiError(error, {
+        url: 'register-page',
+        method: 'POST',
+      });
       setErrors({ email: 'Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut.' });
     } finally {
       setIsLoading(false);

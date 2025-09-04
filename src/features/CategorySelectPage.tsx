@@ -8,6 +8,7 @@ import { getCategoryNameById } from '../api/supabaseApi';
 import { shoppingItemsApi } from '../api/supabaseApi';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
 import type { ShoppingItem } from '../api/supabaseApi';
+import { sentryErrorService } from '../services/sentryErrorService';
 
 const CategorySelectPage: React.FC = () => {
   const navigate = useNavigate();
@@ -70,6 +71,10 @@ const CategorySelectPage: React.FC = () => {
       navigate(`/shopping-list/${listId}/product/${productId}`);
     } catch (error) {
       console.error('Error updating category:', error);
+      sentryErrorService.reportApiError(error, {
+        url: 'category-select-update',
+        method: 'PUT',
+      });
       // Optionally show an error message to the user
     }
   };

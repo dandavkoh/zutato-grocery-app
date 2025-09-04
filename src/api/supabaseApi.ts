@@ -2,6 +2,7 @@ import { supabase } from '../config/supabase';
 import { logDebug, logError, logInfo, environment } from '../config/environment';
 import type { AuthError } from '@supabase/supabase-js';
 import { realtimeService } from '../services/realtimeService';
+import { sentryErrorService } from '../services/sentryErrorService';
 
 // Initialize PWA service when Supabase API is imported
 if (typeof window !== 'undefined') {
@@ -201,6 +202,14 @@ export class ShoppingItemsController {
 
       if (error) {
         logError('Failed to fetch items from Supabase', error);
+        
+        // Report to Sentry
+        sentryErrorService.reportSupabaseError(error, {
+          operation: 'getItems',
+          table: 'shopping_items',
+          listId: listId,
+        });
+        
         return {
           data: null,
           error: error.message,
@@ -216,6 +225,14 @@ export class ShoppingItemsController {
       };
     } catch (error) {
       logError('Unexpected error fetching items', error);
+      
+      // Report to Sentry
+      sentryErrorService.reportSupabaseError(error, {
+        operation: 'getItems',
+        table: 'shopping_items',
+        listId: listId,
+      });
+      
       return {
         data: null,
         error: 'Internal server error',
@@ -253,6 +270,14 @@ export class ShoppingItemsController {
       
       if (error) {
         logError('Failed to create item in Supabase', error);
+        
+        // Report to Sentry
+        sentryErrorService.reportSupabaseError(error, {
+          operation: 'createItem',
+          table: 'shopping_items',
+          listId: itemData.listId,
+        });
+        
         return {
           data: null,
           error: error.message,
@@ -295,6 +320,14 @@ export class ShoppingItemsController {
       };
     } catch (error) {
       logError('Unexpected error creating item', error);
+      
+      // Report to Sentry
+      sentryErrorService.reportSupabaseError(error, {
+        operation: 'createItem',
+        table: 'shopping_items',
+        listId: itemData.listId,
+      });
+      
       return {
         data: null,
         error: 'Internal server error',
@@ -320,6 +353,13 @@ export class ShoppingItemsController {
       
       if (error) {
         logError('Failed to update item in Supabase', error);
+        // Report to Sentry
+        sentryErrorService.reportSupabaseError(error, {
+          operation: 'updateItem',
+          table: 'shopping_items',
+          itemId: id,
+        });
+        
         return {
           data: null,
           error: error.message,
@@ -362,6 +402,13 @@ export class ShoppingItemsController {
       };
     } catch (error) {
       logError('Unexpected error updating item', error);
+      // Report to Sentry
+      sentryErrorService.reportSupabaseError(error, {
+        operation: 'updateItem',
+        table: 'shopping_items',
+        itemId: id,
+      });
+      
       return {
         data: null,
         error: 'Internal server error',
@@ -385,6 +432,14 @@ export class ShoppingItemsController {
       
       if (error) {
         logError('Failed to delete item in Supabase', error);
+        // Report to Sentry
+        sentryErrorService.reportSupabaseError(error, {
+          operation: 'deleteItem',
+          table: 'shopping_items',
+          itemId: id,
+          listId: listId,
+        });
+        
         return {
           data: null,
           error: error.message,
@@ -408,6 +463,14 @@ export class ShoppingItemsController {
       };
     } catch (error) {
       logError('Unexpected error deleting item', error);
+      // Report to Sentry
+      sentryErrorService.reportSupabaseError(error, {
+        operation: 'deleteItem',
+        table: 'shopping_items',
+        itemId: id,
+        listId: listId,
+      });
+      
       return {
         data: null,
         error: 'Internal server error',
@@ -433,6 +496,14 @@ export class ShoppingItemsController {
       
       if (error) {
         logError('Failed to set item completion status in Supabase', error);
+        
+        // Report to Sentry
+        sentryErrorService.reportSupabaseError(error, {
+          operation: 'setItemCompletion',
+          table: 'shopping_items',
+          itemId: id,
+        });
+        
         return {
           data: null,
           error: error.message,
@@ -475,6 +546,14 @@ export class ShoppingItemsController {
       };
     } catch (error) {
       logError('Unexpected error setting item completion status', error);
+      
+      // Report to Sentry
+      sentryErrorService.reportSupabaseError(error, {
+        operation: 'setItemCompletion',
+        table: 'shopping_items',
+        itemId: id,
+      });
+      
       return {
         data: null,
         error: 'Internal server error',
@@ -500,6 +579,14 @@ export class ShoppingItemsController {
       
       if (error) {
         logError('Failed to search items in Supabase', error);
+        
+        // Report to Sentry
+        sentryErrorService.reportSupabaseError(error, {
+          operation: 'searchItems',
+          table: 'shopping_items',
+          listId: listId,
+        });
+        
         return {
           data: null,
           error: error.message,
@@ -515,6 +602,14 @@ export class ShoppingItemsController {
       };
     } catch (error) {
       logError('Unexpected error searching items', error);
+      
+      // Report to Sentry
+      sentryErrorService.reportSupabaseError(error, {
+        operation: 'searchItems',
+        table: 'shopping_items',
+        listId: listId,
+      });
+      
       return {
         data: null,
         error: 'Internal server error',
@@ -542,6 +637,12 @@ export class ListsController {
       
       if (error) {
         logError('Failed to fetch lists from Supabase', error);
+        // Report to Sentry
+        sentryErrorService.reportSupabaseError(error, {
+          operation: 'getLists',
+          table: 'lists',
+        });
+        
         return {
           data: null,
           error: error.message,
@@ -557,6 +658,12 @@ export class ListsController {
       };
     } catch (error) {
       logError('Unexpected error fetching lists', error);
+      // Report to Sentry
+      sentryErrorService.reportSupabaseError(error, {
+        operation: 'getLists',
+        table: 'lists',
+      });
+      
       return {
         data: null,
         error: 'Internal server error',
@@ -579,6 +686,14 @@ export class ListsController {
       
       if (error) {
         logError('Failed to fetch list from Supabase', error);
+        
+        // Report to Sentry
+        sentryErrorService.reportSupabaseError(error, {
+          operation: 'getList',
+          table: 'lists',
+          listId: id,
+        });
+        
         return {
           data: null,
           error: error.message,
@@ -594,6 +709,14 @@ export class ListsController {
       };
     } catch (error) {
       logError('Unexpected error fetching list', error);
+      
+      // Report to Sentry
+      sentryErrorService.reportSupabaseError(error, {
+        operation: 'getList',
+        table: 'lists',
+        listId: id,
+      });
+      
       return {
         data: null,
         error: 'Internal server error',
@@ -669,6 +792,13 @@ export class ListsController {
       };
     } catch (error) {
       logError('Unexpected error creating list', error);
+      
+      // Report to Sentry
+      sentryErrorService.reportSupabaseError(error, {
+        operation: 'createList',
+        table: 'lists',
+      });
+      
       return {
         data: null,
         error: 'Internal server error',
@@ -694,6 +824,14 @@ export class ListsController {
       
       if (error) {
         logError('Failed to update list in Supabase', error);
+        
+        // Report to Sentry
+        sentryErrorService.reportSupabaseError(error, {
+          operation: 'updateList',
+          table: 'lists',
+          listId: id,
+        });
+        
         return {
           data: null,
           error: error.message,
@@ -709,6 +847,14 @@ export class ListsController {
       };
     } catch (error) {
       logError('Unexpected error updating list', error);
+      
+      // Report to Sentry
+      sentryErrorService.reportSupabaseError(error, {
+        operation: 'updateList',
+        table: 'lists',
+        listId: id,
+      });
+      
       return {
         data: null,
         error: 'Internal server error',
@@ -732,6 +878,14 @@ export class ListsController {
       
       if (error) {
         logError('Failed to delete list in Supabase', error);
+        
+        // Report to Sentry
+        sentryErrorService.reportSupabaseError(error, {
+          operation: 'deleteList',
+          table: 'lists',
+          listId: id,
+        });
+        
         return {
           data: null,
           error: error.message,
@@ -747,6 +901,14 @@ export class ListsController {
       };
     } catch (error) {
       logError('Unexpected error deleting list', error);
+      
+      // Report to Sentry
+      sentryErrorService.reportSupabaseError(error, {
+        operation: 'deleteList',
+        table: 'lists',
+        listId: id,
+      });
+      
       return {
         data: null,
         error: 'Internal server error',
@@ -768,6 +930,14 @@ export class ListsController {
       
       if (error) {
         logError('Failed to fetch list members from Supabase', error);
+        
+        // Report to Sentry
+        sentryErrorService.reportSupabaseError(error, {
+          operation: 'getListMembers',
+          table: 'list_members',
+          listId: listId,
+        });
+        
         return {
           data: null,
           error: error.message,
@@ -783,6 +953,14 @@ export class ListsController {
       };
     } catch (error) {
       logError('Unexpected error fetching list members', error);
+      
+      // Report to Sentry
+      sentryErrorService.reportSupabaseError(error, {
+        operation: 'getListMembers',
+        table: 'list_members',
+        listId: listId,
+      });
+      
       return {
         data: null,
         error: 'Internal server error',
@@ -808,6 +986,15 @@ export class ListsController {
       
       if (error) {
         logError('Failed to add member to list in Supabase', error);
+        
+        // Report to Sentry
+        sentryErrorService.reportSupabaseError(error, {
+          operation: 'addListMember',
+          table: 'list_members',
+          listId: listId,
+          userId: userId,
+        });
+        
         return {
           data: null,
           error: error.message,
@@ -823,6 +1010,15 @@ export class ListsController {
       };
     } catch (error) {
       logError('Unexpected error adding member to list', error);
+      
+      // Report to Sentry
+      sentryErrorService.reportSupabaseError(error, {
+        operation: 'addListMember',
+        table: 'list_members',
+        listId: listId,
+        userId: userId,
+      });
+      
       return {
         data: null,
         error: 'Internal server error',
@@ -844,6 +1040,15 @@ export class ListsController {
       
       if (error) {
         logError('Failed to remove member from list in Supabase', error);
+        
+        // Report to Sentry
+        sentryErrorService.reportSupabaseError(error, {
+          operation: 'removeListMember',
+          table: 'list_members',
+          listId: listId,
+          userId: userId,
+        });
+        
         return {
           data: null,
           error: error.message,
@@ -859,6 +1064,15 @@ export class ListsController {
       };
     } catch (error) {
       logError('Unexpected error removing member from list', error);
+      
+      // Report to Sentry
+      sentryErrorService.reportSupabaseError(error, {
+        operation: 'removeListMember',
+        table: 'list_members',
+        listId: listId,
+        userId: userId,
+      });
+      
       return {
         data: null,
         error: 'Internal server error',
@@ -880,6 +1094,14 @@ export class InvitationController {
       
       if (error) {
         logError('Failed to create invitation from Supabase', error);
+        
+        // Report to Sentry
+        sentryErrorService.reportSupabaseError(error, {
+          operation: 'createInvitation',
+          table: 'list_invitations',
+          listId: listId,
+        });
+        
         return {
           data: null,
           error: error.message,
@@ -895,6 +1117,14 @@ export class InvitationController {
       };
     } catch (error) {
       logError('Unexpected error creating invitation', error);
+      
+      // Report to Sentry
+      sentryErrorService.reportSupabaseError(error, {
+        operation: 'createInvitation',
+        table: 'list_invitations',
+        listId: listId,
+      });
+      
       return {
         data: null,
         error: 'Internal server error',
@@ -913,6 +1143,13 @@ export class InvitationController {
       
       if (error) {
         logError('Failed to redeem invitation code from Supabase', error);
+        
+        // Report to Sentry
+        sentryErrorService.reportSupabaseError(error, {
+          operation: 'redeemInvitationCode',
+          table: 'list_invitations',
+        });
+        
         return {
           data: null,
           error: error.message,
@@ -928,6 +1165,13 @@ export class InvitationController {
       };
     } catch (error) {
       logError('Unexpected error redeeming invitation code', error);
+      
+      // Report to Sentry
+      sentryErrorService.reportSupabaseError(error, {
+        operation: 'redeemInvitationCode',
+        table: 'list_invitations',
+      });
+      
       return {
         data: null,
         error: 'Internal server error',
@@ -946,6 +1190,14 @@ export class InvitationController {
       
       if (error) {
         logError('Failed to fetch list invitations from Supabase', error);
+        
+        // Report to Sentry
+        sentryErrorService.reportSupabaseError(error, {
+          operation: 'getListInvitations',
+          table: 'list_invitations',
+          listId: listId,
+        });
+        
         return {
           data: null,
           error: error.message,
@@ -961,6 +1213,14 @@ export class InvitationController {
       };
     } catch (error) {
       logError('Unexpected error fetching list invitations', error);
+      
+      // Report to Sentry
+      sentryErrorService.reportSupabaseError(error, {
+        operation: 'getListInvitations',
+        table: 'list_invitations',
+        listId: listId,
+      });
+      
       return {
         data: null,
         error: 'Internal server error',
@@ -979,6 +1239,13 @@ export class InvitationController {
       
       if (error) {
         logError('Failed to invalidate invitation from Supabase', error);
+        
+        // Report to Sentry
+        sentryErrorService.reportSupabaseError(error, {
+          operation: 'invalidateInvitation',
+          table: 'list_invitations',
+        });
+        
         return {
           data: null,
           error: error.message,
@@ -994,6 +1261,13 @@ export class InvitationController {
       };
     } catch (error) {
       logError('Unexpected error invalidating invitation', error);
+      
+      // Report to Sentry
+      sentryErrorService.reportSupabaseError(error, {
+        operation: 'invalidateInvitation',
+        table: 'list_invitations',
+      });
+      
       return {
         data: null,
         error: 'Internal server error',
@@ -1012,6 +1286,13 @@ export class InvitationController {
       
       if (error) {
         logError('Failed to delete invitation from Supabase', error);
+        
+        // Report to Sentry
+        sentryErrorService.reportSupabaseError(error, {
+          operation: 'deleteInvitation',
+          table: 'list_invitations',
+        });
+        
         return {
           data: null,
           error: error.message,
@@ -1027,6 +1308,13 @@ export class InvitationController {
       };
     } catch (error) {
       logError('Unexpected error deleting invitation', error);
+      
+      // Report to Sentry
+      sentryErrorService.reportSupabaseError(error, {
+        operation: 'deleteInvitation',
+        table: 'list_invitations',
+      });
+      
       return {
         data: null,
         error: 'Internal server error',
@@ -1050,6 +1338,12 @@ export class CategoryController {
       
       if (error) {
         logError('Failed to fetch grocery_categories from Supabase', error);
+        // Report to Sentry
+        sentryErrorService.reportSupabaseError(error, {
+          operation: 'getCategories',
+          table: 'grocery_categories',
+        });
+        
         return {
           data: null,
           error: error.message,
@@ -1065,6 +1359,12 @@ export class CategoryController {
       };
     } catch (error) {
       logError('Unexpected error fetching grocery_categories', error);
+      // Report to Sentry
+      sentryErrorService.reportSupabaseError(error, {
+        operation: 'getCategories',
+        table: 'grocery_categories',
+      });
+      
       return {
         data: null,
         error: 'Internal server error',
@@ -1086,6 +1386,13 @@ export class CategoryController {
       
       if (error) {
         logError('Failed to fetch grocery_category by ID from Supabase', error);
+        
+        // Report to Sentry
+        sentryErrorService.reportSupabaseError(error, {
+          operation: 'getCategoryById',
+          table: 'grocery_categories',
+        });
+        
         return {
           data: null,
           error: error.message,
@@ -1101,6 +1408,13 @@ export class CategoryController {
       };
     } catch (error) {
       logError('Unexpected error fetching grocery_category by ID', error);
+      
+      // Report to Sentry
+      sentryErrorService.reportSupabaseError(error, {
+        operation: 'getCategoryById',
+        table: 'grocery_categories',
+      });
+      
       return {
         data: null,
         error: 'Internal server error',
@@ -1123,6 +1437,12 @@ export class UnitController {
       
       if (error) {
         logError('Error fetching grocery_units:', error);
+        // Report to Sentry
+        sentryErrorService.reportSupabaseError(error, {
+          operation: 'getUnits',
+          table: 'grocery_units',
+        });
+        
         return {
           data: null,
           error: error.message,
@@ -1138,9 +1458,15 @@ export class UnitController {
       };
     } catch (error) {
       logError('Unexpected error fetching grocery_units:', error);
+      // Report to Sentry
+      sentryErrorService.reportSupabaseError(error, {
+        operation: 'getUnits',
+        table: 'grocery_units',
+      });
+      
       return {
         data: null,
-        error: 'Unexpected error occurred',
+        error: 'Internal server error',
         status: 500
       };
     }
@@ -1158,6 +1484,13 @@ export class UnitController {
       
       if (error) {
         logError('Error fetching grocery_units by ID:', error);
+        
+        // Report to Sentry
+        sentryErrorService.reportSupabaseError(error, {
+          operation: 'getUnitById',
+          table: 'grocery_units',
+        });
+        
         return {
           data: null,
           error: error.message,
@@ -1173,6 +1506,13 @@ export class UnitController {
       };
     } catch (error) {
       logError('Unexpected error fetching unit by ID:', error);
+      
+      // Report to Sentry
+      sentryErrorService.reportSupabaseError(error, {
+        operation: 'getUnitById',
+        table: 'grocery_units',
+      });
+      
       return {
         data: null,
         error: 'Unexpected error occurred',
@@ -1200,6 +1540,13 @@ export class ProductGroupController {
       
       if (error) {
         logError('Error searching product groups:', error);
+        
+        // Report to Sentry
+        sentryErrorService.reportSupabaseError(error, {
+          operation: 'searchProductGroups',
+          table: 'product_groups',
+        });
+        
         return {
           data: null,
           error: error.message,
@@ -1215,6 +1562,13 @@ export class ProductGroupController {
       };
     } catch (error) {
       logError('Unexpected error searching product groups:', error);
+      
+      // Report to Sentry
+      sentryErrorService.reportSupabaseError(error, {
+        operation: 'searchProductGroups',
+        table: 'product_groups',
+      });
+      
       return {
         data: null,
         error: 'Unexpected error occurred',
@@ -1248,6 +1602,12 @@ export const authService = {
       if (error) throw error;
       return { user: data.user, error: null };
     } catch (error) {
+      // Report auth error to Sentry
+      sentryErrorService.reportApiError(error, {
+        url: '/auth/register',
+        method: 'POST',
+        requestBody: { email, userData },
+      });
       return { user: null, error };
     }
   },
@@ -1261,6 +1621,12 @@ export const authService = {
       if (error) throw error;
       return { user: data.user, error: null };
     } catch (error) {
+      // Report auth error to Sentry
+      sentryErrorService.reportApiError(error, {
+        url: '/auth/login',
+        method: 'POST',
+        requestBody: { email },
+      });
       return { user: null, error };
     }
   },
@@ -1271,6 +1637,11 @@ export const authService = {
       if (error) throw error;
     } catch (error) {
       console.error('Logout error:', error);
+      // Report auth error to Sentry
+      sentryErrorService.reportApiError(error, {
+        url: '/auth/logout',
+        method: 'POST',
+      });
     }
   },
 
@@ -1295,6 +1666,11 @@ export const authService = {
       return null;
     } catch (error) {
       logError('Unexpected error getting current user', error);
+      // Report auth error to Sentry
+      sentryErrorService.reportApiError(error, {
+        url: '/auth/user',
+        method: 'GET',
+      });
       return null;
     }
   },
@@ -1305,6 +1681,11 @@ export const authService = {
       return !error && !!user;
     } catch (error) {
       console.error('Auth check failed:', error);
+      // Report auth error to Sentry
+      sentryErrorService.reportApiError(error, {
+        url: '/auth/check',
+        method: 'GET',
+      });
       return false;
     }
   },
@@ -1339,6 +1720,11 @@ export const authService = {
       if (error) throw error;
       return { error: null };
     } catch (error) {
+      // Report auth error to Sentry
+      sentryErrorService.reportApiError(error, {
+        url: '/auth/reset-password',
+        method: 'POST',
+      });
       return { error };
     }
   },
@@ -1379,6 +1765,11 @@ export const authService = {
       
       return { user: data.user, error: null };
     } catch (error) {
+      // Report auth error to Sentry
+      sentryErrorService.reportApiError(error, {
+        url: '/auth/update-profile',
+        method: 'PUT',
+      });
       return { user: null, error };
     }
   },
@@ -1402,6 +1793,11 @@ export const authService = {
       if (error) throw error;
       return { user: data.user, error: null };
     } catch (error) {
+      // Report auth error to Sentry
+      sentryErrorService.reportApiError(error, {
+        url: '/auth/update-password',
+        method: 'PUT',
+      });
       return { user: null, error };
     }
   },
@@ -1490,12 +1886,22 @@ export const getUnitById = async (unitId: string): Promise<Unit | null> => {
     
     if (error) {
       logError('Failed to fetch unit', error);
+      // Report to Sentry
+      sentryErrorService.reportSupabaseError(error, {
+        operation: 'getUnit',
+        table: 'grocery_units',
+      });
       return null;
     }
     
     return data;
   } catch (error) {
     logError('Unexpected error fetching unit', error);
+    // Report to Sentry
+    sentryErrorService.reportSupabaseError(error, {
+      operation: 'getUnit',
+      table: 'grocery_units',
+    });
     return null;
   }
 }; 

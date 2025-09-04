@@ -9,6 +9,7 @@ import { useCookbookRecipes, type CookbookRecipe, type RecipeIngredient } from '
 import { slugify } from '../utils/slugify';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../config/supabase';
+import { sentryErrorService } from '../services/sentryErrorService';
 
 interface AddIngredientsDialogProps {
   isOpen: boolean;
@@ -41,13 +42,12 @@ const AddIngredientsDialog: React.FC<AddIngredientsDialogProps> = ({
       setIngredients(recipeIngredients);
     } catch (error) {
       console.error('Error loading recipe ingredients:', error);
-      // Fallback to mock data if loading fails
-      setIngredients([
-        { id: '1', quantity: 200, unit_name: 'g', ingredient_name: 'Mehl', selected: true, baseQuantity: 200 },
-        { id: '2', quantity: 100, unit_name: 'g', ingredient_name: 'Zucker', selected: true, baseQuantity: 100 },
-        { id: '3', quantity: 2, unit_name: 'Stück', ingredient_name: 'Eier', selected: true, baseQuantity: 2 },
-        { id: '4', quantity: 1, unit_name: 'Prise', ingredient_name: 'Salz', selected: true, baseQuantity: 1 },
-      ]);
+      sentryErrorService.reportApiError(error, {
+        url: 'recipe-ingredients-dialog',
+        method: 'GET',
+      });
+      // Fallback to empty data if loading fails
+      setIngredients([]);
     }
   };
 
@@ -105,6 +105,10 @@ const AddIngredientsDialog: React.FC<AddIngredientsDialogProps> = ({
       onClose();
     } catch (error) {
       console.error('Error adding ingredients to shopping list:', error);
+      sentryErrorService.reportApiError(error, {
+        url: 'add-ingredients-dialog',
+        method: 'POST',
+      });
     } finally {
       setLoading(false);
     }
@@ -444,6 +448,10 @@ const CookbookPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Error adding ingredients to shopping list:', error);
+      sentryErrorService.reportApiError(error, {
+        url: 'add-ingredients-main',
+        method: 'POST',
+      });
       alert('Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.');
     }
   };

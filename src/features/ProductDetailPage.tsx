@@ -9,6 +9,7 @@ import { getCategoryNameById, getCategoryIconById, getUnitNameById, shoppingItem
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
 import { useToast } from '../contexts/ToastContext';
 import type { ShoppingItem } from '../api/supabaseApi';
+import { sentryErrorService } from '../services/sentryErrorService';
 
 const ProductDetailPage: React.FC = () => {
   const navigate = useNavigate();
@@ -126,6 +127,10 @@ const ProductDetailPage: React.FC = () => {
       setIsEditingNotes(false);
     } catch (error) {
       console.error('Error updating notes:', error);
+      sentryErrorService.reportApiError(error, {
+        url: 'product-detail-notes',
+        method: 'PUT',
+      });
     } finally {
       setIsSavingNotes(false);
     }
@@ -198,6 +203,10 @@ const ProductDetailPage: React.FC = () => {
       setIsEditingQuantity(false);
     } catch (error) {
       console.error('Error updating quantity:', error);
+      sentryErrorService.reportApiError(error, {
+        url: 'product-detail-quantity',
+        method: 'PUT',
+      });
     } finally {
       setIsSavingQuantity(false);
     }
@@ -228,6 +237,10 @@ const ProductDetailPage: React.FC = () => {
       showToast('Name aktualisiert', { type: 'success' });
     } catch (error) {
       console.error('Error renaming item:', error);
+      sentryErrorService.reportApiError(error, {
+        url: 'product-detail-rename',
+        method: 'PUT',
+      });
       showToast('Fehler beim Umbenennen', { type: 'error' });
     } finally {
       setIsRenaming(false);

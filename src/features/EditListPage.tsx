@@ -8,6 +8,7 @@ import type { List, ListMember } from '../api/supabaseApi';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
 import InvitationManager from '../components/InvitationManager';
 import { useAuth } from '../contexts/AuthContext';
+import { sentryErrorService } from '../services/sentryErrorService';
 
 
 
@@ -89,6 +90,10 @@ const EditListPage: React.FC = () => {
       setOriginalListName(listName.trim());
     } catch (error) {
       console.error('Unexpected error saving list name:', error);
+      sentryErrorService.reportApiError(error, {
+        url: 'edit-list-save',
+        method: 'PUT',
+      });
     }
   };
 
@@ -115,6 +120,10 @@ const EditListPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Unexpected error loading members:', error);
+      sentryErrorService.reportApiError(error, {
+        url: 'edit-list-members',
+        method: 'GET',
+      });
     } finally {
       setMembersLoading(false);
     }
@@ -160,6 +169,10 @@ const EditListPage: React.FC = () => {
         }
       } catch (error) {
         console.error('Unexpected error deleting list:', error);
+        sentryErrorService.reportApiError(error, {
+          url: 'edit-list-delete',
+          method: 'DELETE',
+        });
         alert('Unerwarteter Fehler beim Löschen der Liste');
       }
     } else {

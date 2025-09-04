@@ -5,6 +5,7 @@ import { setHeader } from '../stores/store';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
 import { validateLoginForm, validateEmail } from '../utils/authUtils';
 import { useAuth } from '../contexts/AuthContext';
+import { sentryErrorService } from '../services/sentryErrorService';
 
 interface LoginFormData {
   email: string;
@@ -103,6 +104,10 @@ const LoginPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Login error:', error);
+      sentryErrorService.reportApiError(error, {
+        url: 'login-page',
+        method: 'POST',
+      });
       setErrors({ general: 'Anmeldung fehlgeschlagen. Bitte überprüfen Sie Ihre E-Mail und Ihr Passwort.' });
     } finally {
       setIsLoading(false);
@@ -127,6 +132,10 @@ const LoginPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Password reset error:', error);
+      sentryErrorService.reportApiError(error, {
+        url: 'login-page-reset',
+        method: 'POST',
+      });
       setErrors({ general: 'Fehler beim Senden der Passwort-Reset-E-Mail. Bitte versuchen Sie es erneut.' });
     } finally {
       setIsLoading(false);

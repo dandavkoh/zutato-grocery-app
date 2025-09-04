@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import InvitationRedeem from '../components/InvitationRedeem';
 import PWADebugInfo from '../components/PWADebugInfo';
 import { environment } from '../config/environment';
+import { sentryErrorService } from '../services/sentryErrorService';
 
 const ListsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -104,6 +105,10 @@ const ListsPage: React.FC = () => {
         
       } catch (error) {
         console.error('Error refreshing:', error);
+        sentryErrorService.reportApiError(error, {
+          url: 'lists-page-refresh',
+          method: 'GET',
+        });
       } finally {
         setIsRefreshing(false);
       }

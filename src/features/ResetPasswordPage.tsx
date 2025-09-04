@@ -5,6 +5,7 @@ import { setHeader, resetHeader } from '../stores/store';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
 import { validatePassword, getPasswordStrength } from '../utils/authUtils';
 import { supabase } from '../config/supabase';
+import { sentryErrorService } from '../services/sentryErrorService';
 
 interface ResetPasswordFormData {
   password: string;
@@ -147,6 +148,10 @@ const ResetPasswordPage: React.FC = () => {
 
     } catch (error) {
       console.error('Password reset error:', error);
+      sentryErrorService.reportApiError(error, {
+        url: 'reset-password-page',
+        method: 'POST',
+      });
       setErrors({ 
         general: error instanceof Error ? error.message : 'Fehler beim Zurücksetzen des Passworts. Bitte versuchen Sie es erneut.' 
       });

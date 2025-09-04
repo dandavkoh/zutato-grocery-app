@@ -1,5 +1,6 @@
 import { dexieService, type ShoppingItem, type List, type Category, type Unit } from './dexieService';
 import { queueService } from './queueService';
+import { sentryErrorService } from './sentryErrorService';
 
 class InterceptorService {
   private readonly REQUEST_TIMEOUT = 1500; // 1.5 seconds
@@ -98,6 +99,10 @@ class InterceptorService {
         }
       } catch (error) {
         console.log(`📴 [Interceptor] Network failed, trying Offline: ${request.method} ${request.url}`);
+        sentryErrorService.reportApiError(error, {
+          url: request.url,
+          method: request.method,
+        });
       }
     } else {
       console.log(`📴 [Interceptor] Offline, trying Offline: ${request.method} ${request.url}`);
@@ -151,6 +156,10 @@ class InterceptorService {
         }
       } catch (error) {
         console.log(`📴 [Interceptor] Network failed, queuing request: ${request.method} ${request.url}`);
+        sentryErrorService.reportApiError(error, {
+          url: request.url,
+          method: request.method,
+        });
       }
     } else {
       console.log(`📴 [Interceptor] Offline, queuing request: ${request.method} ${request.url}`);
@@ -249,8 +258,17 @@ class InterceptorService {
               } catch (error) {
                 if (error instanceof Error && error.message === 'Request timeout') {
                   console.log(`⏰ [Interceptor] Request timeout (${this.REQUEST_TIMEOUT}ms), trying Dexie: ${url}`);
+                  sentryErrorService.reportTimeoutError({
+                    url: url,
+                    method: 'GET',
+                    timeout: this.REQUEST_TIMEOUT,
+                  });
                 } else {
                   console.log(`📴 [Interceptor] Network failed, trying Dexie: ${url}`);
+                  sentryErrorService.reportApiError(error, {
+                    url: url,
+                    method: 'GET',
+                  });
                 }
               }
             } else {
@@ -271,6 +289,11 @@ class InterceptorService {
               }
             } catch (error) {
               console.error('❌ [Interceptor] Error getting items from Dexie:', error);
+              sentryErrorService.reportApiError(error, {
+                url: url,
+                method: 'GET',
+                status: 500,
+              });
             }
           }
           
@@ -297,8 +320,17 @@ class InterceptorService {
               } catch (error) {
                 if (error instanceof Error && error.message === 'Request timeout') {
                   console.log(`⏰ [Interceptor] Request timeout (${this.REQUEST_TIMEOUT}ms), trying Dexie for lists: ${url}`);
+                  sentryErrorService.reportTimeoutError({
+                    url: url,
+                    method: 'GET',
+                    timeout: this.REQUEST_TIMEOUT,
+                  });
                 } else {
                   console.log(`📴 [Interceptor] Network failed, trying Dexie for lists: ${url}`);
+                  sentryErrorService.reportApiError(error, {
+                    url: url,
+                    method: 'GET',
+                  });
                 }
               }
             } else {
@@ -318,6 +350,11 @@ class InterceptorService {
               });
             } catch (error) {
               console.error('❌ [Interceptor] Error getting lists from Dexie:', error);
+              sentryErrorService.reportApiError(error, {
+                url: url,
+                method: 'GET',
+                status: 500,
+              });
             }
           }
           
@@ -344,8 +381,17 @@ class InterceptorService {
               } catch (error) {
                 if (error instanceof Error && error.message === 'Request timeout') {
                   console.log(`⏰ [Interceptor] Request timeout (${this.REQUEST_TIMEOUT}ms), trying Dexie for categories: ${url}`);
+                  sentryErrorService.reportTimeoutError({
+                    url: url,
+                    method: 'GET',
+                    timeout: this.REQUEST_TIMEOUT,
+                  });
                 } else {
                   console.log(`📴 [Interceptor] Network failed, trying Dexie for categories: ${url}`);
+                  sentryErrorService.reportApiError(error, {
+                    url: url,
+                    method: 'GET',
+                  });
                 }
               }
             } else {
@@ -362,6 +408,11 @@ class InterceptorService {
               });
             } catch (error) {
               console.error('❌ [Interceptor] Error getting categories from Dexie:', error);
+              sentryErrorService.reportApiError(error, {
+                url: url,
+                method: 'GET',
+                status: 500,
+              });
             }
           }
           
@@ -388,8 +439,17 @@ class InterceptorService {
               } catch (error) {
                 if (error instanceof Error && error.message === 'Request timeout') {
                   console.log(`⏰ [Interceptor] Request timeout (${this.REQUEST_TIMEOUT}ms), trying Dexie for units: ${url}`);
+                  sentryErrorService.reportTimeoutError({
+                    url: url,
+                    method: 'GET',
+                    timeout: this.REQUEST_TIMEOUT,
+                  });
                 } else {
                   console.log(`📴 [Interceptor] Network failed, trying Dexie for units: ${url}`);
+                  sentryErrorService.reportApiError(error, {
+                    url: url,
+                    method: 'GET',
+                  });
                 }
               }
             } else {
@@ -406,6 +466,11 @@ class InterceptorService {
               });
             } catch (error) {
               console.error('❌ [Interceptor] Error getting units from Dexie:', error);
+              sentryErrorService.reportApiError(error, {
+                url: url,
+                method: 'GET',
+                status: 500,
+              });
             }
           }
           
@@ -425,6 +490,11 @@ class InterceptorService {
               }
             } catch (error) {
               console.error('❌ [Interceptor] Failed to parse POST request body:', error);
+              sentryErrorService.reportApiError(error, {
+                url: url,
+                method: 'POST',
+                requestBody: options.body,
+              });
             }
             
             // Create item optimistically in Dexie (for immediate UI updates)
@@ -456,6 +526,11 @@ class InterceptorService {
                 console.log(`⚡ [Interceptor] Created item optimistically in Dexie: ${optimisticItem.id}`);
               } catch (error) {
                 console.error('❌ [Interceptor] Error creating item optimistically:', error);
+                sentryErrorService.reportApiError(error, {
+                  url: url,
+                  method: 'POST',
+                  requestBody: newItemData,
+                });
               }
             }
             
@@ -481,8 +556,17 @@ class InterceptorService {
               } catch (error) {
                 if (error instanceof Error && error.message === 'Request timeout') {
                   console.log(`⏰ [Interceptor] Request timeout (${this.REQUEST_TIMEOUT}ms), queuing POST request: ${url}`);
+                  sentryErrorService.reportTimeoutError({
+                    url: url,
+                    method: 'POST',
+                    timeout: this.REQUEST_TIMEOUT,
+                  });
                 } else {
                   console.log(`📴 [Interceptor] Network failed, queuing POST request: ${url}`);
+                  sentryErrorService.reportApiError(error, {
+                    url: url,
+                    method: 'POST',
+                  });
                 }
               }
             } else {
@@ -541,6 +625,11 @@ class InterceptorService {
               }
             } catch (error) {
               console.error('❌ [Interceptor] Failed to parse POST request body for lists:', error);
+              sentryErrorService.reportApiError(error, {
+                url: url,
+                method: 'POST',
+                requestBody: options.body,
+              });
             }
             
             // Create list optimistically in Dexie (for immediate UI updates)
@@ -563,6 +652,11 @@ class InterceptorService {
 
               } catch (error) {
                 console.error('❌ [Interceptor] Error creating list optimistically:', error);
+                sentryErrorService.reportApiError(error, {
+                  url: url,
+                  method: 'POST',
+                  requestBody: newListData,
+                });
               }
             }
             
@@ -590,8 +684,17 @@ class InterceptorService {
               } catch (error) {
                 if (error instanceof Error && error.message === 'Request timeout') {
                   console.log(`⏰ [Interceptor] Request timeout (${this.REQUEST_TIMEOUT}ms), queuing POST request for lists: ${url}`);
+                  sentryErrorService.reportTimeoutError({
+                    url: url,
+                    method: 'POST',
+                    timeout: this.REQUEST_TIMEOUT,
+                  });
                 } else {
                   console.log(`📴 [Interceptor] Network failed, queuing POST request for lists: ${url}`);
+                  sentryErrorService.reportApiError(error, {
+                    url: url,
+                    method: 'POST',
+                  });
                 }
               }
             } else {
@@ -641,6 +744,11 @@ class InterceptorService {
               }
             } catch (error) {
               console.error('❌ [Interceptor] Error optimistically updating item:', error);
+              sentryErrorService.reportApiError(error, {
+                url: url,
+                method: 'PATCH',
+                requestBody: options.body,
+              });
             }
             
             // Check if we're online
@@ -654,8 +762,17 @@ class InterceptorService {
               } catch (error) {
                 if (error instanceof Error && error.message === 'Request timeout') {
                   console.log(`⏰ [Interceptor] Request timeout (${this.REQUEST_TIMEOUT}ms), queuing PATCH request: ${url}`);
+                  sentryErrorService.reportTimeoutError({
+                    url: url,
+                    method: 'PATCH',
+                    timeout: this.REQUEST_TIMEOUT,
+                  });
                 } else {
                   console.log(`📴 [Interceptor] Network failed, queuing PATCH request: ${url}`);
+                  sentryErrorService.reportApiError(error, {
+                    url: url,
+                    method: 'PATCH',
+                  });
                 }
               }
             } else {
@@ -699,6 +816,11 @@ class InterceptorService {
               }
             } catch (error) {
               console.error('❌ [Interceptor] Error optimistically updating list:', error);
+              sentryErrorService.reportApiError(error, {
+                url: url,
+                method: 'PATCH',
+                requestBody: options.body,
+              });
             }
             
             // Check if we're online
@@ -712,8 +834,17 @@ class InterceptorService {
               } catch (error) {
                 if (error instanceof Error && error.message === 'Request timeout') {
                   console.log(`⏰ [Interceptor] Request timeout (${this.REQUEST_TIMEOUT}ms), queuing PATCH request for lists: ${url}`);
+                  sentryErrorService.reportTimeoutError({
+                    url: url,
+                    method: 'PATCH',
+                    timeout: this.REQUEST_TIMEOUT,
+                  });
                 } else {
                   console.log(`📴 [Interceptor] Network failed, queuing PATCH request for lists: ${url}`);
+                  sentryErrorService.reportApiError(error, {
+                    url: url,
+                    method: 'PATCH',
+                  });
                 }
               }
             } else {
@@ -757,6 +888,14 @@ class InterceptorService {
           } catch (error) {
             if (error instanceof Error && error.message === 'Request timeout') {
               console.log(`⏰ [Interceptor] Request timeout (${this.REQUEST_TIMEOUT}ms) for request: ${url}`);
+              
+              // Report timeout to Sentry
+              sentryErrorService.reportTimeoutError({
+                url: url,
+                method: options?.method || 'GET',
+                timeout: this.REQUEST_TIMEOUT,
+              });
+              
               // Return a timeout error response
               return new Response(JSON.stringify({ 
                 error: 'Request timeout',
@@ -766,6 +905,14 @@ class InterceptorService {
                 headers: { 'Content-Type': 'application/json' }
               });
             }
+            
+            // Report other errors to Sentry
+            sentryErrorService.reportApiError(error, {
+              url: url,
+              method: options?.method || 'GET',
+              requestBody: options?.body,
+            });
+            
             throw error; // Re-throw other errors
           }
         };

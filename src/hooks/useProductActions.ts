@@ -8,6 +8,7 @@ import { shoppingItemsApi } from '../api/supabaseApi';
 import { generateGuid } from '../utils/guidUtils';
 import type { ProductOrGroup, ShoppingItem } from '../api/supabaseApi';
 import { useToast } from '../contexts/ToastContext';
+import { sentryErrorService } from '../services/sentryErrorService';
 
 export const useProductActions = () => {
   const navigate = useNavigate();
@@ -69,6 +70,10 @@ export const useProductActions = () => {
       }
     } catch (error) {
       console.error('Error handling product action:', error);
+      sentryErrorService.reportApiError(error, {
+        url: 'product-action',
+        method: 'POST',
+      });
     }
   }, [currentListId, user, navigate, dispatch]);
 

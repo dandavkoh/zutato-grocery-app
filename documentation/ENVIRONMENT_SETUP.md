@@ -53,6 +53,13 @@ enableNotifications: boolean;    // Push-Notifications
 enableBackgroundSync: boolean;   // Background Sync
 ```
 
+### **Sentry Configuration**
+```typescript
+sentryDsn: string;              // Sentry DSN für Error Tracking
+sentryEnvironment: string;      // Environment (development/production)
+sentryEnabled: boolean;         // Sentry aktiviert/deaktiviert
+```
+
 ### **Debug Configuration**
 ```typescript
 enableDebugLogs: boolean;        // Debug-Logs
@@ -77,6 +84,11 @@ enablePerformanceMonitoring: boolean; // Performance Monitoring
   maxQueueSize: 50,
   cacheDuration: 5 * 60 * 1000, // 5 Minuten
   cacheCleanupInterval: 2 * 60 * 1000, // 2 Minuten
+  
+  // Sentry Configuration
+  sentryDsn: '',
+  sentryEnvironment: 'development',
+  sentryEnabled: false,
   
   // Feature Flags
   enableOfflineMode: true,
@@ -114,6 +126,11 @@ enablePerformanceMonitoring: boolean; // Performance Monitoring
   cacheDuration: 24 * 60 * 60 * 1000, // 24 Stunden
   cacheCleanupInterval: 60 * 60 * 1000, // 1 Stunde
   
+  // Sentry Configuration
+  sentryDsn: 'https://your-sentry-dsn@sentry.io/project-id',
+  sentryEnvironment: 'production',
+  sentryEnabled: true,
+  
   // Feature Flags
   enableOfflineMode: true,
   enableNotifications: true,
@@ -130,6 +147,7 @@ enablePerformanceMonitoring: boolean; // Performance Monitoring
 - ✅ **Größere Queue** für bessere Offline-Erfahrung
 - ✅ **Notifications aktiviert**
 - ✅ **Background Sync aktiviert**
+- ✅ **Sentry Error Tracking** aktiviert
 - ❌ **Debug-Logs deaktiviert** (Performance)
 
 ## 📋 Verwendung
@@ -274,4 +292,45 @@ if (environment.enablePerformanceMonitoring) {
 1. Erstelle Supabase-Projekt auf [supabase.com](https://supabase.com)
 2. Kopiere Project URL und API Keys
 3. Ersetze Platzhalter in `env.production`
-4. Konfiguriere Row Level Security (RLS) Policies 
+4. Konfiguriere Row Level Security (RLS) Policies
+
+## 🐛 Sentry Setup
+
+### **Environment Variables**
+Erstelle eine `.env.local` Datei mit folgenden Variablen:
+
+```bash
+# Sentry Configuration
+VITE_SENTRY_DSN=https://c4ed272861a39ed3b6751b3f9c82b6fc@o4509962378346496.ingest.de.sentry.io/4509962381623376
+VITE_SENTRY_ENABLED=true
+```
+
+### **Development**
+- `VITE_SENTRY_ENABLED=false` - Sentry deaktiviert für Development
+- Oder `VITE_SENTRY_ENABLED=true` - Sentry aktiviert für Testing
+
+### **Production**
+- `VITE_SENTRY_ENABLED=true` - Sentry aktiviert für Error Tracking
+- `VITE_SENTRY_DSN` - Deine Sentry DSN URL
+
+### **Features**
+- ✅ **Error Boundary** - Fängt React-Fehler ab
+- ✅ **Performance Monitoring** - Überwacht App-Performance
+- ✅ **Session Replay** - Zeichnet User-Sessions auf
+- ✅ **Automatic Error Reporting** - Sendet Fehler automatisch an Sentry
+- ✅ **Environment Detection** - Unterscheidet zwischen Dev/Prod
+- ✅ **Custom Error UI** - Benutzerfreundliche Fehlerseite
+
+### **Verwendung**
+```typescript
+import * as Sentry from '@sentry/react';
+
+// Manueller Error Report
+Sentry.captureException(new Error('Something went wrong'));
+
+// Custom Message
+Sentry.captureMessage('User performed action', 'info');
+
+// Set User Context
+Sentry.setUser({ id: '123', email: 'user@example.com' });
+``` 

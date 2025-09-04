@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../config/supabase';
 import { ShoppingItemsController } from '../api/supabaseApi';
 import { generateGuid } from '../utils/guidUtils';
+import { sentryErrorService } from '../services/sentryErrorService';
 
 export interface CookbookRecipe {
   id: string;
@@ -206,6 +207,10 @@ export const useCookbookRecipes = (pageSize: number = 10) => {
 
     } catch (err) {
       console.error('Error loading cookbook recipes:', err);
+      sentryErrorService.reportApiError(err, {
+        url: 'cookbook-recipes',
+        method: 'GET',
+      });
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
     } finally {
       setLoading(false);
@@ -324,6 +329,10 @@ export const useCookbookRecipes = (pageSize: number = 10) => {
       console.log('Search completed:', { page, resultsCount: recipesWithRatings.length, hasMore: hasMorePages });
     } catch (err) {
       console.error('Error searching recipes:', err);
+      sentryErrorService.reportApiError(err, {
+        url: 'cookbook-search',
+        method: 'GET',
+      });
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
     } finally {
       setLoading(false);
@@ -379,6 +388,10 @@ export const useCookbookRecipes = (pageSize: number = 10) => {
       return true;
     } catch (err) {
       console.error('Error adding recipe to cookbook:', err);
+      sentryErrorService.reportApiError(err, {
+        url: 'cookbook-add',
+        method: 'POST',
+      });
       return false;
     }
   };
@@ -403,6 +416,10 @@ export const useCookbookRecipes = (pageSize: number = 10) => {
       return true;
     } catch (err) {
       console.error('Error removing recipe from cookbook:', err);
+      sentryErrorService.reportApiError(err, {
+        url: 'cookbook-remove',
+        method: 'DELETE',
+      });
       return false;
     }
   };
@@ -563,6 +580,10 @@ export const useCookbookRecipes = (pageSize: number = 10) => {
       return ingredients;
     } catch (err) {
       console.error('Error fetching recipe ingredients:', err);
+      sentryErrorService.reportApiError(err, {
+        url: 'recipe-ingredients',
+        method: 'GET',
+      });
       return [];
     }
   };
@@ -668,6 +689,10 @@ export const useCookbookRecipes = (pageSize: number = 10) => {
       return true;
     } catch (err) {
       console.error('Error adding ingredients to shopping list:', err);
+      sentryErrorService.reportApiError(err, {
+        url: 'add-ingredients',
+        method: 'POST',
+      });
       return false;
     }
   };

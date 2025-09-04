@@ -8,6 +8,7 @@ import { getUnitNameById } from '../api/supabaseApi';
 import { shoppingItemsApi } from '../api/supabaseApi';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
 import type { ShoppingItem, Unit } from '../api/supabaseApi';
+import { sentryErrorService } from '../services/sentryErrorService';
 
 const UnitSelectPage: React.FC = () => {
   const navigate = useNavigate();
@@ -70,6 +71,10 @@ const UnitSelectPage: React.FC = () => {
       navigate(`/shopping-list/${listId}/product/${productId}`);
     } catch (error) {
       console.error('Error updating unit:', error);
+      sentryErrorService.reportApiError(error, {
+        url: 'unit-select-update',
+        method: 'PUT',
+      });
       // Optionally show an error message to the user
     }
   };

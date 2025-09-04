@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { productGroupsApi, type ProductOrGroup } from '../api/supabaseApi';
+import { sentryErrorService } from '../services/sentryErrorService';
 
 interface UseProductSearchReturn {
   searchResults: ProductOrGroup[];
@@ -74,6 +75,12 @@ export const useProductSearch = (debounceMs: number = 300): UseProductSearchRetu
         }
       } catch (err) {
         console.error('❌ [Search] Search error:', err);
+        
+        // Report to Sentry
+        sentryErrorService.reportApiError(err, {
+          url: 'product-search',
+          method: 'GET',
+        });
         
         // Even if there's an error, show exact suggestion
         const exactSuggestion: ProductOrGroup = {

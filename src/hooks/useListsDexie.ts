@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useCallback, useEffect } from 'react';
 import { db, type List } from '../services/dexieService';
 import { ListsController } from '../api/supabaseApi';
+import { sentryErrorService } from '../services/sentryErrorService';
 
 const listsController = new ListsController();
 
@@ -29,6 +30,10 @@ export const useListsDexie = () => {
       await listsController.getLists();
     } catch (error) {
       console.error('Manual Supabase sync failed:', error);
+      sentryErrorService.reportApiError(error, {
+        url: 'lists-dexie-sync',
+        method: 'GET',
+      });
     }
   }, []);
 

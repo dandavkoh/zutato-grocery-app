@@ -1,4 +1,5 @@
 import { dexieService, type QueuedRequest } from './dexieService';
+import { sentryErrorService } from './sentryErrorService';
 
 export interface QueueStatus {
   queueLength: number;
@@ -141,6 +142,14 @@ class QueueService {
       } catch (error) {
         errorCount++;
         console.error(`❌ [Queue] Queued request error: ${item.method} ${item.url}`, error);
+        
+        // Report queue error to Sentry
+        sentryErrorService.reportQueueError(error, {
+          queueLength: this.queueStatus.queueLength,
+          requestUrl: item.url,
+          requestMethod: item.method,
+          retryCount: 0, // This is a queued request, not a retry
+        });
       }
     }
 
@@ -182,6 +191,10 @@ class QueueService {
       return headers;
     } catch (error) {
       console.error('❌ [Queue] Failed to get Supabase headers:', error);
+      sentryErrorService.reportApiError(error, {
+        url: 'supabase-headers',
+        method: 'GET',
+      });
       return null;
     }
   }
@@ -241,6 +254,10 @@ class QueueService {
       }
     } catch (error) {
       console.error('❌ [Queue] Failed to clone body:', error);
+      sentryErrorService.reportApiError(error, {
+        url: 'body-clone',
+        method: 'POST',
+      });
       return null;
     }
   }
@@ -252,6 +269,10 @@ class QueueService {
       console.log(`📊 [Queue] Loaded ${queueCount} queued requests from Dexie`);
     } catch (error) {
       console.error('❌ [Queue] Failed to load queue from Dexie:', error);
+      sentryErrorService.reportApiError(error, {
+        url: 'queue-load',
+        method: 'GET',
+      });
       this.queueStatus.queueLength = 0;
     }
   }

@@ -17,6 +17,11 @@ export interface EnvironmentConfig {
   pwaThemeColor: string;
   pwaBackgroundColor: string;
   
+  // Sentry Configuration
+  sentryDsn: string;
+  sentryEnvironment: string;
+  sentryEnabled: boolean;
+  
   // Offline Configuration
   
   // Feature Flags
@@ -54,6 +59,11 @@ const developmentConfig: EnvironmentConfig = {
   pwaThemeColor: '#fbbf24',
   pwaBackgroundColor: '#000000',
   
+  // Sentry Configuration
+  sentryDsn: import.meta.env.VITE_SENTRY_DSN || '',
+  sentryEnvironment: 'development',
+  sentryEnabled: import.meta.env.VITE_SENTRY_ENABLED === 'true' || false,
+  
   // Offline Configuration
   
   // Feature Flags
@@ -90,6 +100,11 @@ const productionConfig: EnvironmentConfig = {
   pwaDescription: 'Deine intelligente Einkaufsliste für den Haushalt',
   pwaThemeColor: '#fbbf24',
   pwaBackgroundColor: '#000000',
+  
+  // Sentry Configuration
+  sentryDsn: import.meta.env.VITE_SENTRY_DSN || '',
+  sentryEnvironment: 'production',
+  sentryEnabled: import.meta.env.VITE_SENTRY_ENABLED === 'true' || true,
   
   // Offline Configuration
   
@@ -147,6 +162,14 @@ export const getSupabaseConfig = () => {
 
 export const getSiteUrl = (): string => {
   return environment.siteUrl;
+};
+
+export const getSentryConfig = () => {
+  return {
+    dsn: environment.sentryDsn,
+    environment: environment.sentryEnvironment,
+    enabled: environment.sentryEnabled,
+  };
 };
 
 export const logDebug = (message: string, data?: any): void => {

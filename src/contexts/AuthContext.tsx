@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { authService, authStorage } from '../utils/authUtils';
 import type { AuthUser } from '../api/supabaseApi';
+import { setSentryUser } from '../utils/sentryUtils';
+import { sentryErrorService } from '../services/sentryErrorService';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -34,9 +36,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (currentUser) {
           setUser(currentUser);
           authStorage.setUser(currentUser);
+          setSentryUser(currentUser);
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
+        sentryErrorService.reportApiError(error, {
+          url: 'auth-initialization',
+          method: 'GET',
+        });
         // Clear any invalid cached data
         authStorage.clear();
       } finally {
@@ -47,6 +54,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Listen to auth state changes
     const { data: { subscription } } = authService.onAuthStateChange((user) => {
       setUser(user);
+      setSentryUser(user);
       if (user) {
         authStorage.setUser(user);
       } else {
@@ -85,12 +93,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         };
         setUser(authUser);
         authStorage.setUser(authUser);
+        setSentryUser(authUser);
         return { success: true };
       }
       
       return { success: false, error: 'Anmeldung fehlgeschlagen' };
     } catch (error) {
       console.error('Login error:', error);
+      sentryErrorService.reportApiError(error, {
+        url: 'auth-login-context',
+        method: 'POST',
+      });
       return { success: false, error: 'Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.' };
     }
   };
@@ -109,6 +122,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return { success: true };
     } catch (error) {
       console.error('Registration error:', error);
+      sentryErrorService.reportApiError(error, {
+        url: 'auth-register-context',
+        method: 'POST',
+      });
       return { success: false, error: 'Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut.' };
     }
   };
@@ -118,11 +135,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await authService.logout();
       setUser(null);
       authStorage.clear();
+      setSentryUser(null);
     } catch (error) {
       console.error('Logout error:', error);
+      sentryErrorService.reportApiError(error, {
+        url: 'auth-logout-context',
+        method: 'POST',
+      });
       // Still clear local state even if server logout fails
       setUser(null);
       authStorage.clear();
+      setSentryUser(null);
     }
   };
 
@@ -138,6 +161,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return { success: true };
     } catch (error) {
       console.error('Password reset error:', error);
+      sentryErrorService.reportApiError(error, {
+        url: 'auth-reset-password-context',
+        method: 'POST',
+      });
       return { success: false, error: 'Fehler beim Senden der Passwort-Reset-E-Mail. Bitte versuchen Sie es erneut.' };
     }
   };
@@ -169,6 +196,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return { success: false, error: 'Profil-Update fehlgeschlagen' };
     } catch (error) {
       console.error('Update profile error:', error);
+      sentryErrorService.reportApiError(error, {
+        url: 'auth-update-profile-context',
+        method: 'PUT',
+      });
       return { success: false, error: 'Profil-Update fehlgeschlagen. Bitte versuchen Sie es erneut.' };
     }
   };
@@ -187,6 +218,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return { success: true };
     } catch (error) {
       console.error('Update password error:', error);
+      sentryErrorService.reportApiError(error, {
+        url: 'auth-update-password-context',
+        method: 'PUT',
+      });
       return { success: false, error: 'Passwort-Update fehlgeschlagen. Bitte versuchen Sie es erneut.' };
     }
   };

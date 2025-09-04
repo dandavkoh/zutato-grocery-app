@@ -13,6 +13,7 @@ import { sortItems, SortModes } from '../utils/sortUtils';
 import SwipeAction from '../components/SwipeAction';
 import FontAwesomeIcon from '../components/FontAwesomeIcon';
 import { useToast } from '../contexts/ToastContext';
+import { sentryErrorService } from '../services/sentryErrorService';
 
 const ShoppingListPage: React.FC = () => {
   const [sortSheetOpen, setSortSheetOpen] = useState(false);
@@ -140,6 +141,10 @@ const ShoppingListPage: React.FC = () => {
         
       } catch (error) {
         console.error('Error refreshing:', error);
+        sentryErrorService.reportApiError(error, {
+          url: 'shopping-list-refresh',
+          method: 'GET',
+        });
       } finally {
         setIsRefreshing(false);
       }

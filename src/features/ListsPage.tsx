@@ -60,7 +60,11 @@ const ListsPage: React.FC = () => {
       if (!isPulling) {
         setIsPulling(true); // Only set pulling state when actually pulling down
       }
-      e.preventDefault();
+      
+      // Only prevent default if the event is cancelable
+      if (e.cancelable) {
+        e.preventDefault();
+      }
       
       // Use requestAnimationFrame for smoother updates
       requestAnimationFrame(() => {

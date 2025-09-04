@@ -179,10 +179,14 @@ export class DexieService {
   }
 
   // Update a shopping item from PATCH response
-  async updateShoppingItemFromResponse(response: ShoppingItem): Promise<void> {
+  async updateShoppingItemFromResponse(response: ShoppingItem | ShoppingItem[]): Promise<void> {
     try {
-      await db.shoppingItems.put(response);
-      console.log(`✅ [Dexie] Updated shopping item from response: ${response.name}`);
+      if (Array.isArray(response)) {
+        await db.shoppingItems.bulkPut(response);
+      } else {
+        await db.shoppingItems.put(response);
+      }
+      console.log(`✅ [Dexie] Updated shopping item from response: ${Array.isArray(response) ? `${response.length} items` : response.name}`);
     } catch (error) {
       console.error('❌ [Dexie] Error updating shopping item from response:', error);
       throw error;

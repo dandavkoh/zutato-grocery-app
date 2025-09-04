@@ -9,12 +9,82 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: 'prompt',
+      registerType: 'autoUpdate',
       injectRegister: 'auto',
+      // Automatische Updates im Hintergrund
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        skipWaiting: true,
+        clientsClaim: true,
+        // Precache alle statischen Assets für Offline-First
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,ttf,woff}'],
+        // Erhöhe das Limit für große Font-Dateien
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MB
+        // Erweiterte Cache-Strategien
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/_/, /\/[^/?]+\.[^/]+$/],
+        // Offline-first Strategy für statische Assets
         runtimeCaching: [
-          // Fonts
+          // HTML - Cache First (echtes Offline-First)
+          {
+            urlPattern: /\.html$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'html-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 7 // 7 days
+              }
+            }
+          },
+          // JS, CSS - Stale While Revalidate (schnell laden, im Hintergrund updaten)
+          {
+            urlPattern: /\.(?:js|css)$/,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'static-resources-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+              }
+            }
+          },
+          // Images - Cache First (offline first)
+          {
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'images-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+              }
+            }
+          },
+          // Fonts - Cache First (offline first)
+          {
+            urlPattern: /\.(?:woff2|woff|ttf|eot)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'fonts-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+              }
+            }
+          },
+          // FontAwesome Assets - Cache First
+          {
+            urlPattern: /\/fontawesome\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'fontawesome-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+              }
+            }
+          },
+          // Google Fonts - Cache First
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: 'CacheFirst',
@@ -36,32 +106,26 @@ export default defineConfig({
                 maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
               }
             }
-          },
-          // Images
-          {
-            urlPattern: /\.(?:png|jpg|jpeg|svg|gif)$/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'images-cache',
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
-              }
-            }
-          },
-          // FontAwesome
-          {
-            urlPattern: /\/fontawesome\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'fontawesome-cache',
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
-              }
-            }
-          }
+          }//,
+          // // API Calls - Network First mit Fallback
+          // {
+          //   urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
+          //   handler: 'NetworkFirst',
+          //   options: {
+          //     cacheName: 'api-cache',
+          //     expiration: {
+          //       maxEntries: 50,
+          //       maxAgeSeconds: 60 * 5 // 5 minutes
+          //     },
+          //     networkTimeoutSeconds: 3
+          //   }
+          // }
         ]
+      },
+      // Erweiterte PWA Konfiguration
+      devOptions: {
+        enabled: true,
+        type: 'module'
       },
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
@@ -154,3 +218,4 @@ export default defineConfig({
     })
   ],
 })
+

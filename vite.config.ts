@@ -133,11 +133,12 @@ export default defineConfig({
         short_name: 'ZUTATO',
         description: 'Deine intelligente Einkaufsliste für den Haushalt',
         theme_color: '#fbbf24',
-        background_color: '#000000',
+        background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait-primary',
         scope: '/',
         start_url: '/',
+        categories: ['shopping', 'productivity', 'lifestyle'],
         icons: [
           {
             src: '/icons/icon-72x72.png',
@@ -217,5 +218,20 @@ export default defineConfig({
       }
     })
   ],
+  // Ionic-spezifische Konfiguration
+  define: {
+    global: 'globalThis',
+  },
+  server: {
+    port: 3000,
+    strictPort: true,
+    host: true
+  },
+  build: {
+    target: 'esnext',
+    outDir: 'dist',
+    assetsDir: 'assets',
+    sourcemap: true
+  }
 })
 

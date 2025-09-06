@@ -7,6 +7,36 @@ import { AuthProvider } from './contexts/AuthContext'
 import './index.css'
 import App from './App.tsx'
 import { ToastProvider } from './contexts/ToastContext'
+
+// Ionic React Imports
+import { setupIonicReact } from '@ionic/react'
+import { defineCustomElements } from '@ionic/pwa-elements/loader'
+
+// Ionic CSS
+import '@ionic/react/css/core.css'
+import '@ionic/react/css/normalize.css'
+import '@ionic/react/css/structure.css'
+import '@ionic/react/css/typography.css'
+import '@ionic/react/css/padding.css'
+import '@ionic/react/css/float-elements.css'
+import '@ionic/react/css/text-alignment.css'
+import '@ionic/react/css/text-transformation.css'
+import '@ionic/react/css/flex-utils.css'
+import '@ionic/react/css/display.css'
+
+// Initialize Ionic
+setupIonicReact({
+  mode: 'ios', // Use iOS mode for consistent look across platforms
+  rippleEffect: false, // Disable ripple effect for better performance
+  animated: true
+})
+
+// Initialize PWA Elements
+defineCustomElements(window)
+
+// Initialize Capacitor Service
+import { capacitorService } from './services/capacitorService'
+
 // Initialize PWA Service
 import './services/pwaService'
 // Supabase is automatically initialized
@@ -53,6 +83,10 @@ if (sentryConfig.enabled && sentryConfig.dsn) {
 const initializeApp = async () => {
   try {
     logInfo('Initializing ZUTATO PWA...');
+    
+    // Initialize Capacitor
+    await capacitorService.initialize();
+    
     // Supabase is automatically initialized when the client is created
     logInfo('App initialization completed');
   } catch (error) {

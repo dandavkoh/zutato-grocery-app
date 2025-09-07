@@ -37,6 +37,9 @@ defineCustomElements(window)
 // Initialize Capacitor Service
 import { capacitorService } from './services/capacitorService'
 
+// Initialize Global Services (Interceptor & Queue)
+import { globalServiceManager } from './services/globalServiceManager'
+
 // Initialize PWA Service
 import './services/pwaService'
 // Supabase is automatically initialized
@@ -86,6 +89,11 @@ const initializeApp = async () => {
     
     // Initialize Capacitor
     await capacitorService.initialize();
+    
+    // Initialize Global Services (Interceptor & Queue)
+    // These services are automatically initialized as singletons
+    // and will be active throughout the entire app lifecycle
+    logInfo('Global services initialized (Interceptor & Queue)');
     
     // Supabase is automatically initialized when the client is created
     logInfo('App initialization completed');

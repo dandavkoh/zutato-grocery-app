@@ -1,8 +1,7 @@
 // @ts-ignore - virtual:pwa-register is provided by vite-plugin-pwa
 import { registerSW } from 'virtual:pwa-register';
 import { dexieService } from './dexieService';
-import { interceptorService } from './interceptorService';
-import { queueService } from './queueService';
+import { globalQueueService } from './globalQueueService';
 
 export interface PWAUpdateEvent {
   type: 'update' | 'offline' | 'online' | 'queue_processed' | 'error';
@@ -76,15 +75,12 @@ class PWAService {
     // Listen for online/offline events
     window.addEventListener('online', () => {
       console.log('🌐 PWA: Online');
-      queueService.processQueuedRequests();
+      globalQueueService.processQueuedRequests();
     });
 
     window.addEventListener('offline', () => {
       console.log('📴 PWA: Offline');
     });
-
-    // Initialize interceptor service
-    interceptorService.ensureFetchInterceptor();
 
     // Log service worker status after a delay
     setTimeout(async () => {
@@ -103,16 +99,16 @@ class PWAService {
   }
 
   public async processQueuedRequests(): Promise<void> {
-    await queueService.processQueuedRequests();
+    await globalQueueService.processQueuedRequests();
   }
 
   public async clearQueuedRequests(): Promise<void> {
-    await queueService.clearQueuedRequests();
+    await globalQueueService.clearQueuedRequests();
     console.log('🗑️ PWA: Queue cleared');
   }
 
   public async getQueueStatus(): Promise<{ queueLength: number; isProcessing: boolean }> {
-    return await queueService.getQueueStatus();
+    return await globalQueueService.getQueueStatus();
   }
 
   public async updateApp(): Promise<void> {
@@ -192,9 +188,10 @@ class PWAService {
     }
   }
 
-  // Ensure fetch interceptor is active (called when navigating between views)
+  // Note: Fetch interceptor is now handled by globalServiceManager
+  // This method is kept for backward compatibility but does nothing
   public ensureFetchInterceptor(): void {
-    interceptorService.ensureFetchInterceptor();
+    console.log('ℹ️ PWA: Fetch interceptor is now handled by globalServiceManager');
   }
 }
 

@@ -294,9 +294,9 @@ const SearchPage: React.FC = () => {
                       </span>
                       <span className="text-base text-gray-900 flex-1">
                         {item.title}
-                        <span className="text-gray-500 text-sm ml-2">
+                        {/* <span className="text-gray-500 text-sm ml-2">
                           ({item.src === 'exact' ? 'Exakter Vorschlag' : item.src === 'fts' ? 'Exakte Suche' : 'Ähnliche Suche'})
-                        </span>
+                        </span> */}
                       </span>
                       {(isInList || !isMaxActiveReached) && (
                         <span className="rounded-full border-2 border-orange-600 text-orange-600 w-8 h-8 flex items-center justify-center ml-2">

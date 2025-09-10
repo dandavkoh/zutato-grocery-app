@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { setHeader, resetHeader } from '../stores/store';
@@ -9,6 +10,53 @@ import InvitationRedeem from '../components/InvitationRedeem';
 import PWADebugInfo from '../components/PWADebugInfo';
 import { environment } from '../config/environment';
 import { sentryErrorService } from '../services/sentryErrorService';
+import { db } from '../services/dexieService';
+import { ListsController } from '../api/supabaseApi';
+
+// Shows reactive count of non-deleted items for a given list
+const ListItemCount: React.FC<{ listId: string }> = ({ listId }) => {
+  const count = useLiveQuery(
+    async () => {
+      return db.shoppingItems
+        .where('list_id')
+        .equals(listId)
+        .filter(item => !item.is_deleted)
+        .count();
+    },
+    [listId]
+  ) ?? 0;
+
+  return <>{count}</>;
+};
+
+// Shows reactive count of members per list, fetched via Supabase and cached in memory per session
+const ListMemberCount: React.FC<{ listId: string }> = ({ listId }) => {
+  const [count, setCount] = useState<number>(0);
+  const listsControllerRef = useRef<ListsController | null>(null);
+
+  if (!listsControllerRef.current) {
+    listsControllerRef.current = new ListsController();
+  }
+
+  useEffect(() => {
+    let isActive = true;
+    const load = async () => {
+      try {
+        const response = await listsControllerRef.current!.getListMembers(listId);
+        if (!isActive) return;
+        if (!response.error) {
+          setCount((response.data || []).length);
+        }
+      } catch (e) {
+        // fail silent for UI; errors already reported in controller
+      }
+    };
+    load();
+    return () => { isActive = false; };
+  }, [listId]);
+
+  return <>{count}</>;
+};
 
 const ListsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -275,12 +323,12 @@ const ListsPage: React.FC = () => {
                         <span className="flex items-center gap-1">
                           <FontAwesomeIcon icon="fa-clipboard-list-check" size="base" style="regular"/>
                           {/* {new Date(list.created_at).toLocaleDateString('de-DE')} */}
-                          TODO 123
+                          <ListItemCount listId={list.id} />
                         </span>
                         <span className="flex items-center gap-1">
                           <FontAwesomeIcon icon="fa-user" size="base" style="regular"/>
                           {/* {list.created_by} */}
-                          TODO 123
+                          <ListMemberCount listId={list.id} />
                         </span>
                       </div>
                     </div>

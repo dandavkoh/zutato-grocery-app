@@ -83,12 +83,7 @@ class GlobalInterceptorService {
   }
 
   private setupFetchInterceptor() {
-    // Store original fetch if not already stored
-    if (!(window as any)._originalFetch) {
-      (window as any)._originalFetch = window.fetch;
-    }
-    
-    const originalFetch = (window as any)._originalFetch;
+    const originalFetch = window.fetch;
     
     // Only set up interceptor if not already set up
     if ((window as any)._globalFetchInterceptorSet) {
@@ -1037,7 +1032,7 @@ class GlobalInterceptorService {
   public getStatus(): { isActive: boolean; hasOriginalFetch: boolean; hasSupabaseInterceptor: boolean } {
     return {
       isActive: this.isInterceptorActive,
-      hasOriginalFetch: !!(window as any)._originalFetch,
+      hasOriginalFetch: true,
       hasSupabaseInterceptor: !!(window as any).supabase?.rest?.fetch?._globalInterceptorInstalled
     };
   }

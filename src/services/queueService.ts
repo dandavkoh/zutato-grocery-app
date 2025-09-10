@@ -101,8 +101,7 @@ class QueueService {
         console.log(`🔄 [Queue] Replaying request: ${item.method} ${item.url} with body: ${item.body}`);
 
         // Use original fetch to bypass interceptor
-        const originalFetch = (window as any)._originalFetch || window.fetch;
-        const response = await originalFetch(request);
+        const response = await window.fetch(request);
         
         if (response.ok) {
           // Handle successful PATCH requests by syncing to Dexie

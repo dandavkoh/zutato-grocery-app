@@ -9,6 +9,7 @@ export interface EnvironmentConfig {
   
   // API Configuration
   apiTimeout: number;
+  supabaseRequestTimeoutMs?: number;
   
   // PWA Configuration
   pwaName: string;
@@ -51,6 +52,7 @@ const developmentConfig: EnvironmentConfig = {
   
   // API Configuration
   apiTimeout: 5000,
+  supabaseRequestTimeoutMs: parseInt(import.meta.env.VITE_SUPABASE_REQUEST_TIMEOUT_MS || '1500'),
   
   // PWA Configuration
   pwaName: 'ZUTATO - Einkaufsliste (Dev)',
@@ -93,6 +95,7 @@ const productionConfig: EnvironmentConfig = {
   
   // API Configuration
   apiTimeout: 10000,
+  supabaseRequestTimeoutMs: parseInt(import.meta.env.VITE_SUPABASE_REQUEST_TIMEOUT_MS || '1500'),
   
   // PWA Configuration
   pwaName: 'ZUTATO - Einkaufsliste',

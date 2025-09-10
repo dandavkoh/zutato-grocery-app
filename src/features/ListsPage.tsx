@@ -13,14 +13,14 @@ import { sentryErrorService } from '../services/sentryErrorService';
 import { db } from '../services/dexieService';
 import { ListsController } from '../api/supabaseApi';
 
-// Shows reactive count of non-deleted items for a given list
+// Shows reactive count of active (not completed, not deleted) items for a given list
 const ListItemCount: React.FC<{ listId: string }> = ({ listId }) => {
   const count = useLiveQuery(
     async () => {
       return db.shoppingItems
         .where('list_id')
         .equals(listId)
-        .filter(item => !item.is_deleted)
+        .filter(item => !item.is_deleted && !item.is_completed)
         .count();
     },
     [listId]

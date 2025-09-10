@@ -15,11 +15,15 @@ const InvitationManager: React.FC<InvitationManagerProps> = ({ listId }) => {
     expires_at: string;
   } | null>(null);
   const [showNewInvitation, setShowNewInvitation] = useState(false);
+  const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
   
   const invitationController = new InvitationController();
 
   // Load invitations
   const loadInvitations = async () => {
+    if (!isOnline) {
+      return;
+    }
     setLoading(true);
     try {
       const response = await invitationController.getListInvitations(listId);
@@ -143,8 +147,22 @@ const InvitationManager: React.FC<InvitationManagerProps> = ({ listId }) => {
   };
 
   useEffect(() => {
-    loadInvitations();
-  }, [listId]);
+    if (isOnline) {
+      loadInvitations();
+    }
+  }, [listId, isOnline]);
+
+  // Listen for connectivity changes to auto-refresh when going online
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   return (
     <div className="">
@@ -155,8 +173,9 @@ const InvitationManager: React.FC<InvitationManagerProps> = ({ listId }) => {
       {/* Create new invitation button */}
       <button
         onClick={handleCreateInvitation}
-        disabled={creating}
+        disabled={creating || !isOnline}
         className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 rounded-lg transition-colors mb-4 disabled:opacity-50"
+        title={!isOnline ? 'Keine Internetverbindung' : undefined}
       >
         {creating ? (
           <span className="flex items-center justify-center gap-2">
@@ -211,7 +230,14 @@ const InvitationManager: React.FC<InvitationManagerProps> = ({ listId }) => {
 
       {/* Invitations list */}
       <div className="space-y-3">
-        {loading ? (
+        {!isOnline ? (
+          <div className="text-center py-4">
+            <div className="inline-flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg">
+              <FontAwesomeIcon icon="fa-wifi-slash" size="base" className="text-gray-500" />
+              <span>Einladungen können offline nicht geladen werden.</span>
+            </div>
+          </div>
+        ) : loading ? (
           <div className="text-center py-4">
             <div className="text-gray-700">Lade Einladungen...</div>
           </div>

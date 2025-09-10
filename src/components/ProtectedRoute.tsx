@@ -25,7 +25,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   // Redirect to login if not authenticated
   if (!user) {
     // Save the attempted URL to redirect back after login
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    const isOffline = typeof navigator !== 'undefined' && navigator.onLine === false;
+    const message = isOffline
+      ? 'Keine Verbindung. Bitte Internet prüfen und erneut anmelden.'
+      : 'Bitte melden Sie sich an.';
+    return <Navigate to="/login" state={{ from: location, message }} replace />;
   }
 
   // Render the protected content if authenticated

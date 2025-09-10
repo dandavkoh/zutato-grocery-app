@@ -31,8 +31,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        // Get current user from Supabase
-        const currentUser = await authService.getCurrentUser();
+        // Get current user from Supabase with a short timeout and fallback to local cache
+        const REQUEST_TIMEOUT_MS = 1500;
+
+        const currentUser = await Promise.race([
+          authService.getCurrentUser(),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Auth initialization timeout')), REQUEST_TIMEOUT_MS)
+          ),
+        ]).catch((error) => {
+          // On timeout or network error: try using locally cached auth
+          console.warn('[Auth] Initialization failed or timed out, falling back to cached user:', error);
+          sentryErrorService.reportApiError(error, {
+            url: 'auth-initialization-timeout',
+            method: 'GET',
+          });
+          const cachedUser = authStorage.getUser();
+          if (cachedUser) {
+            setUser(cachedUser);
+            setSentryUser(cachedUser);
+            return null; // We already set user from cache
+          }
+          // No cached user available
+          return null;
+        });
         if (currentUser) {
           setUser(currentUser);
           authStorage.setUser(currentUser);

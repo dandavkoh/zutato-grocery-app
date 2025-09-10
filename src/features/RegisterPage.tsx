@@ -90,6 +90,11 @@ const RegisterPage: React.FC = () => {
       return;
     }
 
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      setErrors({ email: 'Keine Internetverbindung. Bitte stelle eine Verbindung her und versuche es erneut.' });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -303,9 +308,9 @@ const RegisterPage: React.FC = () => {
           <div className="text-center mt-4">
             <p className="text-xs text-gray-500">
               Durch die Registrierung stimmen Sie unseren{' '}
-              <a href="#" className="text-orange-600 hover:text-orange-700 underline-offset-2 hover:underline">Nutzungsbedingungen</a>{' '}
+              <Link to="/terms" className="text-orange-600 hover:text-orange-700 underline-offset-2 hover:underline">Nutzungsbedingungen</Link>{' '}
               und{' '}
-              <a href="#" className="text-orange-600 hover:text-orange-700 underline-offset-2 hover:underline">Datenschutzrichtlinien</a>{' '}
+              <Link to="/privacy" className="text-orange-600 hover:text-orange-700 underline-offset-2 hover:underline">Datenschutzrichtlinien</Link>{' '}
               zu.
             </p>
           </div>

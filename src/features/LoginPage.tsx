@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { setHeader } from '../stores/store';
@@ -6,6 +6,7 @@ import FontAwesomeIcon from '../components/FontAwesomeIcon';
 import { validateLoginForm, validateEmail } from '../utils/authUtils';
 import { useAuth } from '../contexts/AuthContext';
 import { sentryErrorService } from '../services/sentryErrorService';
+import { useToast } from '../contexts/ToastContext';
 
 interface LoginFormData {
   email: string;
@@ -23,6 +24,7 @@ const LoginPage: React.FC = () => {
   const location = useLocation();
   const dispatch = useDispatch();
   const { login, resetPassword } = useAuth();
+  const { showToast } = useToast();
   const [formData, setFormData] = useState<LoginFormData>({
     email: '',
     password: '',
@@ -32,8 +34,16 @@ const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
-  // Get message from navigation state (e.g., from registration)
-  const message = location.state?.message;
+  // Show message from navigation state (e.g., from ProtectedRoute offline redirect)
+  useEffect(() => {
+    const navState = location.state as { message?: string } | null;
+    if (navState?.message) {
+      showToast(navState.message, { type: 'info' });
+      // Clear message so it doesn't persist on future navigations
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Set header when component mounts
   React.useEffect(() => {
@@ -90,6 +100,11 @@ const LoginPage: React.FC = () => {
       return;
     }
 
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      setErrors({ general: 'Keine Internetverbindung. Bitte stelle eine Verbindung her und versuche es erneut.' });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -120,6 +135,11 @@ const LoginPage: React.FC = () => {
       return;
     }
 
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      setErrors({ general: 'Keine Internetverbindung. Passwort-Reset erfordert eine Internetverbindung.' });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -145,15 +165,6 @@ const LoginPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md">
-        {message && (
-          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-            <div className="flex items-center">
-              <FontAwesomeIcon icon="fa-check-circle" size="base" className="text-green-600 mr-2" />
-              <p className="text-green-700 text-sm">{message}</p>
-            </div>
-          </div>
-        )}
-
         {errors.general && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center">
@@ -269,9 +280,9 @@ const LoginPage: React.FC = () => {
           <div className="text-center mt-4">
             <p className="text-xs text-gray-500">
               Durch die Anmeldung stimmen Sie unseren{' '}
-              <a href="#" className="text-orange-600 hover:text-orange-700 underline-offset-2 hover:underline">Nutzungsbedingungen</a>{' '}
+              <Link to="/terms" className="text-orange-600 hover:text-orange-700 underline-offset-2 hover:underline">Nutzungsbedingungen</Link>{' '}
               und{' '}
-              <a href="#" className="text-orange-600 hover:text-orange-700 underline-offset-2 hover:underline">Datenschutzrichtlinien</a>{' '}
+              <Link to="/privacy" className="text-orange-600 hover:text-orange-700 underline-offset-2 hover:underline">Datenschutzrichtlinien</Link>{' '}
               zu.
             </p>
           </div>

@@ -11,6 +11,8 @@ import CreateListPage from './features/CreateListPage'
 import EditListPage from './features/EditListPage'
 import AccountPage from './features/AccountPage'
 import ResetPasswordPage from './features/ResetPasswordPage'
+import TermsPage from './features/TermsPage'
+import PrivacyPage from './features/PrivacyPage'
 import CookbookPage from './features/CookbookPage'
 import Header from './components/Header'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -40,6 +42,8 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/terms" element={<TermsPage />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
       
       {/* Protected routes with layout */}
       <Route element={<Layout />}>

@@ -16,13 +16,15 @@ interface AddIngredientsDialogProps {
   onClose: () => void;
   recipe: CookbookRecipe | null;
   onAddToShoppingList: (ingredients: RecipeIngredient[], portions: number) => void;
+  isOnline: boolean;
 }
 
 const AddIngredientsDialog: React.FC<AddIngredientsDialogProps> = ({
   isOpen,
   onClose,
   recipe,
-  onAddToShoppingList
+  onAddToShoppingList,
+  isOnline
 }) => {
   const [portions, setPortions] = useState(1);
   const [ingredients, setIngredients] = useState<RecipeIngredient[]>([]);
@@ -30,11 +32,13 @@ const AddIngredientsDialog: React.FC<AddIngredientsDialogProps> = ({
   const { fetchRecipeIngredients } = useCookbookRecipes();
 
   useEffect(() => {
-    if (recipe && isOpen) {
+    if (recipe && isOpen && isOnline) {
       setPortions(recipe.portions);
       loadRecipeIngredients(recipe.id);
+    } else if (!isOnline) {
+      setIngredients([]);
     }
-  }, [recipe, isOpen]);
+  }, [recipe, isOpen, isOnline]);
 
   const loadRecipeIngredients = async (recipeId: string) => {
     try {
@@ -138,6 +142,13 @@ const AddIngredientsDialog: React.FC<AddIngredientsDialogProps> = ({
           </p>
         </div>
 
+        {/* Offline notice */}
+        {!isOnline && (
+          <div className="px-6 py-3 border-b border-gray-200 bg-yellow-50 text-yellow-800 text-sm">
+            Du bist offline. Zutaten können nicht geladen werden.
+          </div>
+        )}
+
         {/* Portions selector */}
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
@@ -228,7 +239,7 @@ const AddIngredientsDialog: React.FC<AddIngredientsDialogProps> = ({
             </button>
             <button
               onClick={handleAddToShoppingList}
-              disabled={loading || ingredients.filter(ing => ing.selected).length === 0}
+              disabled={!isOnline || loading || ingredients.filter(ing => ing.selected).length === 0}
               className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
@@ -268,6 +279,7 @@ const CookbookPage: React.FC = () => {
   } = useCookbookRecipes(10); // 10 Einträge pro Seite
   const [selectedRecipe, setSelectedRecipe] = useState<CookbookRecipe | null>(null);
   const [showIngredientsDialog, setShowIngredientsDialog] = useState(false);
+  const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
   
   // Intersection Observer für Endless Scroll
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -284,6 +296,18 @@ const CookbookPage: React.FC = () => {
       background: 'bg-orange-500'
     }));
   }, [dispatch]);
+
+  // Connectivity tracking for offline UX
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Handle search input changes with debounce
   useEffect(() => {
@@ -479,6 +503,8 @@ const CookbookPage: React.FC = () => {
   }
 
   if (error) {
+    // If offline, show offline-friendly message instead of raw error
+    const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
     return (
       <div className="min-h-screen bg-gray-50 pt-4 pb-24">
         <div className="text-center py-16">
@@ -490,16 +516,16 @@ const CookbookPage: React.FC = () => {
             />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Fehler beim Laden des Kochbuchs
+            {offline ? 'Keine Internetverbindung' : 'Fehler beim Laden des Kochbuchs'}
           </h2>
           <p className="text-gray-600 mb-8 max-w-md mx-auto">
-            {error}
+            {offline ? 'Du bist offline. Stelle eine Internetverbindung her, um das Kochbuch zu laden.' : (error || 'Unbekannter Fehler ist aufgetreten.')}
           </p>
           <button
             onClick={() => window.location.reload()}
             className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
           >
-            Erneut versuchen
+            {offline ? 'Erneut versuchen (nach Verbindung)' : 'Erneut versuchen'}
           </button>
         </div>
       </div>
@@ -747,6 +773,7 @@ const CookbookPage: React.FC = () => {
         }}
         recipe={selectedRecipe}
         onAddToShoppingList={handleAddIngredientsToShoppingList}
+        isOnline={isOnline}
       />
     </div>
   );

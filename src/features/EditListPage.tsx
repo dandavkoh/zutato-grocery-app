@@ -17,6 +17,7 @@ const EditListPage: React.FC = () => {
   const location = useLocation();
   const dispatch = useDispatch();
   const { user } = useAuth();
+  const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
   
   // Get list data from navigation state
   const list = location.state?.list as List | undefined;
@@ -40,6 +41,18 @@ const EditListPage: React.FC = () => {
     }));
     return () => { dispatch(resetHeader()); };
   }, [dispatch, list?.name]);
+
+  // Listen for online/offline to gate loading of invitations/members
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Handle back button events
   useEffect(() => {
@@ -108,7 +121,7 @@ const EditListPage: React.FC = () => {
 
   // Load members from API
   const loadMembers = async () => {
-    if (!list) return;
+    if (!list || !isOnline) return;
     
     setMembersLoading(true);
     try {
@@ -131,8 +144,10 @@ const EditListPage: React.FC = () => {
 
   // Load members on mount
   useEffect(() => {
-    loadMembers();
-  }, [list?.id]);
+    if (isOnline) {
+      loadMembers();
+    }
+  }, [list?.id, isOnline]);
 
   // Sort members: current user first, then others
   const sortedMembers = members.sort((a, b) => {
@@ -225,7 +240,19 @@ const EditListPage: React.FC = () => {
         {/* Invitation Manager Section - Only for list owners */}
         {isListOwner && (
           <div className="mb-8 bg-white border border-gray-200 rounded-xl shadow-sm p-5 sm:p-6">
-            <InvitationManager listId={list.id} />
+            {isOnline ? (
+              <InvitationManager listId={list.id} />
+            ) : (
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                  <FontAwesomeIcon icon="fa-wifi-slash" size="base" className="text-gray-500" />
+                </div>
+                <div>
+                  <div className="text-gray-900 font-medium">Keine Internetverbindung</div>
+                  <div className="text-gray-600 text-sm">Stelle eine Verbindung her, um Einladungen zu verwalten. Wird automatisch geladen, sobald du online bist.</div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -234,7 +261,14 @@ const EditListPage: React.FC = () => {
           <label className="block text-gray-900 text-sm font-semibold mb-3">
             Mitgliederliste
           </label>
-          {membersLoading ? (
+          {!isOnline ? (
+            <div className="text-center py-4">
+              <div className="inline-flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg">
+                <FontAwesomeIcon icon="fa-wifi-slash" size="base" className="text-gray-500" />
+                <span>Mitglieder können offline nicht geladen werden. Bitte Internetverbindung herstellen.</span>
+              </div>
+            </div>
+          ) : membersLoading ? (
             <div className="text-center py-4">
               <div className="text-gray-700">Lade Mitglieder...</div>
             </div>

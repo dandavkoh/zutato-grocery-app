@@ -314,8 +314,8 @@ const ShoppingListPage: React.FC = () => {
           showToast(`${currentItem.name} ${newCompletionStatus ? 'erledigt' : 'unerledigt'}`, { type: 'success' });
         })
         .catch((error: any) => {
-        console.error('Failed to set item completion:', error);
-          showToast('Fehler beim Aktualisieren des Status', { type: 'error' });
+          console.error('Failed to set item completion:', error);
+          //showToast('Fehler beim Aktualisieren des Status', { type: 'error' });
         });
       // Clean up the timeout reference
       delete toggleDebounceRef.current[itemId];

@@ -7,7 +7,6 @@ import FontAwesomeIcon from '../components/FontAwesomeIcon';
 import { useListsDexie } from '../hooks/useListsDexie';
 import { useAuth } from '../contexts/AuthContext';
 import InvitationRedeem from '../components/InvitationRedeem';
-import PWADebugInfo from '../components/PWADebugInfo';
 import { environment } from '../config/environment';
 import { sentryErrorService } from '../services/sentryErrorService';
 import { db } from '../services/dexieService';
@@ -353,9 +352,6 @@ const ListsPage: React.FC = () => {
             <div className="text-gray-500">Keine Listen gefunden</div>
           </div>
         )}
-        
-        {/* PWA Debug Info - ganz unten */}
-        <PWADebugInfo />
         </div>
       </div>
     </div>

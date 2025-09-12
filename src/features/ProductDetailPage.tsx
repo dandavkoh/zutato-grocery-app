@@ -115,8 +115,8 @@ const ProductDetailPage: React.FC = () => {
       
       if (response.error) {
         console.error('Failed to update notes:', response.error);
-        showToast('Fehler beim Aktualisieren', { type: 'error' });
-        return;
+        //showToast('Fehler beim Aktualisieren', { type: 'error' });
+        //return;
       }
       
       // Update the item in global store
@@ -184,8 +184,8 @@ const ProductDetailPage: React.FC = () => {
       
       if (response.error) {
         console.error('Failed to update quantity:', response.error);
-        showToast('Fehler beim Aktualisieren', { type: 'error' });
-        return;
+        //showToast('Fehler beim Aktualisieren', { type: 'error' });
+        //return;
       }
       
       console.log('Quantity updated successfully:', response.data);
@@ -227,8 +227,8 @@ const ProductDetailPage: React.FC = () => {
       const response = await shoppingItemsApi.updateItem(item.id, { name: trimmed });
       if (response.error) {
         console.error('Failed to rename item:', response.error);
-        showToast('Fehler beim Umbenennen', { type: 'error' });
-        return;
+        //showToast('Fehler beim Umbenennen', { type: 'error' });
+        //return;
       }
       dispatch(updateSelectedItem({ name: trimmed }));
       // Update header title immediately

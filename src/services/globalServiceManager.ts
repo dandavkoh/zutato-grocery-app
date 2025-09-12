@@ -1,13 +1,8 @@
-import { globalInterceptorService } from './globalInterceptorService';
 import { globalQueueService } from './globalQueueService';
 import { dexieService } from './dexieService';
 
 export interface GlobalServiceStatus {
-  interceptor: {
-    isActive: boolean;
-    hasOriginalFetch: boolean;
-    hasSupabaseInterceptor: boolean;
-  };
+  // Interceptor removed
   queue: {
     queueLength: number;
     isProcessing: boolean;
@@ -103,9 +98,6 @@ class GlobalServiceManager {
   private ensureServicesActive() {
     console.log('🔧 [GlobalServiceManager] Ensuring all services are active...');
     
-    // Ensure interceptor service is active
-    globalInterceptorService.ensureInterceptors();
-    
     // Queue service is automatically active, but we can trigger a status check
     globalQueueService.getQueueStatus().then(status => {
       if (status.queueLength > 0 && navigator.onLine && !status.isProcessing) {
@@ -119,12 +111,10 @@ class GlobalServiceManager {
 
   // Public methods
   public async getGlobalStatus(): Promise<GlobalServiceStatus> {
-    const interceptorStatus = globalInterceptorService.getStatus();
     const queueStatus = globalQueueService.getStatus();
     const databaseStats = await dexieService.getFullStats();
     
     return {
-      interceptor: interceptorStatus,
       queue: queueStatus,
       database: databaseStats
     };
@@ -146,11 +136,9 @@ class GlobalServiceManager {
 
   public async getServiceHealth(): Promise<{
     manager: boolean;
-    interceptor: boolean;
     queue: boolean;
     database: boolean;
   }> {
-    const interceptorStatus = globalInterceptorService.getStatus();
     const queueStatus = globalQueueService.getStatus();
     
     let databaseHealthy = false;
@@ -163,7 +151,6 @@ class GlobalServiceManager {
     
     return {
       manager: this.isManagerActive,
-      interceptor: interceptorStatus.isActive,
       queue: !queueStatus.isProcessing, // Queue is healthy if not stuck processing
       database: databaseHealthy
     };
@@ -215,10 +202,6 @@ class GlobalServiceManager {
     
     const status = await this.getDetailedStatus();
     console.log('📊 [GlobalServiceManager] Service Status:', status);
-    
-    // Log interceptor details
-    const interceptorStatus = globalInterceptorService.getStatus();
-    console.log('🔍 [GlobalServiceManager] Interceptor Status:', interceptorStatus);
     
     // Log queue details
     const queueDetails = await globalQueueService.getQueueDetails();

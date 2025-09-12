@@ -1,15 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { globalServiceManager } from '../services/globalServiceManager';
-import { globalInterceptorService } from '../services/globalInterceptorService';
 import { globalQueueService } from '../services/globalQueueService';
 
 interface ServiceStatus {
   services: {
-    interceptor: {
-      isActive: boolean;
-      hasOriginalFetch: boolean;
-      hasSupabaseInterceptor: boolean;
-    };
+    // Interceptor removed
     queue: {
       queueLength: number;
       isProcessing: boolean;
@@ -24,7 +19,6 @@ interface ServiceStatus {
   };
   health: {
     manager: boolean;
-    interceptor: boolean;
     queue: boolean;
     database: boolean;
   };
@@ -127,18 +121,12 @@ const GlobalServicesDebugInfo: React.FC = () => {
       </div>
 
       {/* Health Status */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
         <div className="text-center">
           <div className={`text-2xl ${getHealthColor(status.health.manager)}`}>
             {getHealthIcon(status.health.manager)}
           </div>
           <div className="text-sm font-medium">Manager</div>
-        </div>
-        <div className="text-center">
-          <div className={`text-2xl ${getHealthColor(status.health.interceptor)}`}>
-            {getHealthIcon(status.health.interceptor)}
-          </div>
-          <div className="text-sm font-medium">Interceptor</div>
         </div>
         <div className="text-center">
           <div className={`text-2xl ${getHealthColor(status.health.queue)}`}>
@@ -209,30 +197,7 @@ const GlobalServicesDebugInfo: React.FC = () => {
       {/* Expanded Details */}
       {isExpanded && (
         <div className="space-y-4">
-          {/* Interceptor Details */}
-          <div className="bg-white p-4 rounded">
-            <h4 className="font-semibold mb-2">Interceptor Service</h4>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="font-medium">Active:</span>
-                <span className={`ml-2 ${getHealthColor(status.services.interceptor.isActive)}`}>
-                  {status.services.interceptor.isActive ? 'Yes' : 'No'}
-                </span>
-              </div>
-              <div>
-                <span className="font-medium">Original Fetch:</span>
-                <span className={`ml-2 ${getHealthColor(status.services.interceptor.hasOriginalFetch)}`}>
-                  {status.services.interceptor.hasOriginalFetch ? 'Yes' : 'No'}
-                </span>
-              </div>
-              <div>
-                <span className="font-medium">Supabase Interceptor:</span>
-                <span className={`ml-2 ${getHealthColor(status.services.interceptor.hasSupabaseInterceptor)}`}>
-                  {status.services.interceptor.hasSupabaseInterceptor ? 'Yes' : 'No'}
-                </span>
-              </div>
-            </div>
-          </div>
+          {/* Interceptor removed */}
 
           {/* Queue Details */}
           <div className="bg-white p-4 rounded">

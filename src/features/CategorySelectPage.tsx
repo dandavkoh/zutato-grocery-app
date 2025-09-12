@@ -59,7 +59,7 @@ const CategorySelectPage: React.FC = () => {
       if (response.error) {
         console.error('Failed to update category:', response.error);
         // Optionally show an error message to the user
-        return;
+        //return;
       }
       
       // Update the item in global store

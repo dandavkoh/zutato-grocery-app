@@ -1877,6 +1877,14 @@ export class ProductGroupController {
       } catch (err: any) { error = err; }
       
       if (error) {
+        if (error instanceof Error && error.message === 'Request timeout') {
+          logInfo('Product groups search timed out, returning empty results');
+          return {
+            data: [],
+            error: null,
+            status: 200
+          };
+        }
         logError('Error searching product groups:', error);
         
         // Report to Sentry

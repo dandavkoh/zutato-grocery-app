@@ -6,7 +6,8 @@ import type { RootState } from '../stores/store';
 import { useAuth } from '../contexts/AuthContext';
 import { shoppingItemsApi } from '../api/supabaseApi';
 import { generateGuid } from '../utils/guidUtils';
-import type { ProductOrGroup, ShoppingItem } from '../api/supabaseApi';
+import type { ProductOrGroup } from '../api/supabaseApi';
+import { dexieService } from '../services/dexieService';
 import { useToast } from '../contexts/ToastContext';
 import { sentryErrorService } from '../services/sentryErrorService';
 
@@ -24,17 +25,12 @@ export const useProductActions = () => {
     }
 
     try {
-      // Check if product already exists in the current list
-      const existingItems = await shoppingItemsApi.getItems(currentListId);
-      
-      if (existingItems.error) {
-        console.error('Failed to get existing items:', existingItems.error);
-        return;
-      }
+      // Check if product already exists in the current list via Dexie (no network request)
+      const existingItems = await dexieService.getShoppingItemsByListId(currentListId);
 
       // Find active item (not deleted and not completed) with the same name
       // AND without notes - items with notes are considered "not existing"
-      const existingItem = existingItems.data?.find(item => 
+      const existingItem = existingItems.find(item => 
         item.name.toLowerCase() === product.title.toLowerCase() &&
         !item.is_deleted &&
         !item.is_completed &&
@@ -42,9 +38,27 @@ export const useProductActions = () => {
       );
 
       if (existingItem) {
+        // Map Dexie item shape to API ShoppingItem shape expected by the store
+        const mappedItem = {
+          id: existingItem.id,
+          name: existingItem.name,
+          category_id: existingItem.category_id,
+          icon: existingItem.icon ?? undefined,
+          unit_id: existingItem.unit_id ?? undefined,
+          quantity: existingItem.quantity ?? undefined,
+          is_completed: existingItem.is_completed,
+          is_deleted: existingItem.is_deleted,
+          created_at: existingItem.created_at,
+          updatedAt: existingItem.updated_at,
+          listId: existingItem.list_id,
+          createdBy: existingItem.created_by,
+          notes: existingItem.notes ?? undefined,
+          store: existingItem.store ?? undefined,
+          assignedTo: existingItem.assigned_to ?? undefined,
+        } as const;
         // Product exists - navigate to product detail page
-        dispatch(setSelectedItem(existingItem));
-        navigate(`/shopping-list/${currentListId}/product/${existingItem.id}`);
+        dispatch(setSelectedItem(mappedItem));
+        navigate(`/shopping-list/${currentListId}/product/${mappedItem.id}`);
       } else {
         // Product doesn't exist - create new item (fire & forget)
         const newItemData = {

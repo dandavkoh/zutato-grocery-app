@@ -180,9 +180,6 @@ class GlobalServiceManager {
     // Clear queue
     await globalQueueService.clearQueuedRequests();
     
-    // Re-initialize interceptor
-    globalInterceptorService.ensureInterceptors();
-    
     console.log('✅ [GlobalServiceManager] All services reset');
   }
 

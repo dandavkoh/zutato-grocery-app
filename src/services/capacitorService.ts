@@ -4,6 +4,7 @@ import { Haptics, ImpactStyle } from '@capacitor/haptics'
 import { Keyboard, KeyboardResize } from '@capacitor/keyboard'
 import { StatusBar, Style } from '@capacitor/status-bar'
 import { SplashScreen } from '@capacitor/splash-screen'
+import { logDebug, logError } from '../utils/logger'
 
 class CapacitorService {
   private isNative = Capacitor.isNativePlatform()
@@ -29,7 +30,7 @@ class CapacitorService {
 
       // App State Listener
       App.addListener('appStateChange', ({ isActive }) => {
-        console.log('App state changed. Is active?', isActive)
+        logDebug('App state changed. Is active?', isActive)
       })
 
       // Back Button Listener (Android)
@@ -42,7 +43,7 @@ class CapacitorService {
       })
 
     } catch (error) {
-      console.error('Error initializing native features:', error)
+      logError('Error initializing native features:', error)
     }
   }
 
@@ -51,7 +52,7 @@ class CapacitorService {
       try {
         await Haptics.impact({ style })
       } catch (error) {
-        console.error('Haptic feedback error:', error)
+        logError('Haptic feedback error:', error)
       }
     }
   }
@@ -61,7 +62,7 @@ class CapacitorService {
       try {
         await Keyboard.show()
       } catch (error) {
-        console.error('Show keyboard error:', error)
+        logError('Show keyboard error:', error)
       }
     }
   }
@@ -71,7 +72,7 @@ class CapacitorService {
       try {
         await Keyboard.hide()
       } catch (error) {
-        console.error('Hide keyboard error:', error)
+        logError('Hide keyboard error:', error)
       }
     }
   }

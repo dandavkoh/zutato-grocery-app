@@ -2,6 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { realtimeService } from './realtimeService';
 import { dataSyncService } from './dataSyncService';
+import { globalQueueService } from './globalQueueService';
+import { sentryErrorService } from './sentryErrorService';
 import { logDebug, logInfo, logError } from '../config/environment';
 
 /**
@@ -16,7 +18,9 @@ export const useGlobalRealtimeSync = () => {
   const currentListIdRef = useRef<string | null>(null);
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const onlineUnsubscribeRef = useRef<(() => void) | null>(null);
+  const postSyncUnsubscribeRef = useRef<(() => void) | null>(null);
   const debounceRef = useRef<number | null>(null);
+  const mountedRef = useRef(true);
 
   // Extract listId from current route
   const extractListIdFromPath = (pathname: string): string | null => {
@@ -36,15 +40,25 @@ export const useGlobalRealtimeSync = () => {
       }
       
       debounceRef.current = window.setTimeout(async () => {
+        if (!mountedRef.current) return;
+        
         try {
           await dataSyncService.reloadShoppingItems(listId);
           logDebug('Reloaded shopping items after global realtime event', { listId });
         } catch (error) {
           logError('Failed to reload shopping items after global realtime event', { listId, error });
+          sentryErrorService.reportApiError(error, {
+            context: 'reloadShoppingItemsRealtimeUpdate',
+            listId
+          });
         }
       }, 150);
     } catch (error) {
       logError('Error in global realtime update handler', { listId, error });
+      sentryErrorService.reportApiError(error, {
+        context: 'handleRealtimeUpdate',
+        listId
+      });
     }
   };
 
@@ -63,6 +77,16 @@ export const useGlobalRealtimeSync = () => {
       unsubscribeRef.current = null;
     }
 
+    if (onlineUnsubscribeRef.current) {
+      onlineUnsubscribeRef.current();
+      onlineUnsubscribeRef.current = null;
+    }
+
+    if (postSyncUnsubscribeRef.current) {
+      postSyncUnsubscribeRef.current();
+      postSyncUnsubscribeRef.current = null;
+    }
+
     // Subscribe to new list
     unsubscribeRef.current = realtimeService.subscribeToList(listId, () => {
       handleRealtimeUpdate(listId);
@@ -70,6 +94,8 @@ export const useGlobalRealtimeSync = () => {
 
     // Subscribe to online status changes
     onlineUnsubscribeRef.current = realtimeService.onOnline(async () => {
+      if (!mountedRef.current) return;
+      
       logInfo('Global realtime: Online status restored, reloading data', { listId });
       
       try {
@@ -77,6 +103,28 @@ export const useGlobalRealtimeSync = () => {
         logInfo('Successfully reloaded data after coming back online', { listId });
       } catch (error) {
         logError('Failed to reload data after coming back online', { listId, error });
+        sentryErrorService.reportApiError(error, {
+          context: 'reloadShoppingItemsOnline',
+          listId
+        });
+      }
+    });
+
+    // Subscribe to post-sync callbacks (after queue is processed)
+    postSyncUnsubscribeRef.current = globalQueueService.onPostSync(async () => {
+      if (!mountedRef.current || currentListIdRef.current !== listId) return;
+      
+      logInfo('Global realtime: Post-sync callback triggered, reloading data', { listId });
+      
+      try {
+        await dataSyncService.reloadShoppingItems(listId);
+        logInfo('Successfully reloaded data after queue sync', { listId });
+      } catch (error) {
+        logError('Failed to reload data after queue sync', { listId, error });
+        sentryErrorService.reportApiError(error, {
+          context: 'reloadShoppingItemsPostSync',
+          listId
+        });
       }
     });
 
@@ -94,6 +142,11 @@ export const useGlobalRealtimeSync = () => {
     if (onlineUnsubscribeRef.current) {
       onlineUnsubscribeRef.current();
       onlineUnsubscribeRef.current = null;
+    }
+
+    if (postSyncUnsubscribeRef.current) {
+      postSyncUnsubscribeRef.current();
+      postSyncUnsubscribeRef.current = null;
     }
 
     currentListIdRef.current = null;
@@ -122,20 +175,25 @@ export const useGlobalRealtimeSync = () => {
       }
     }
 
-    // Cleanup on unmount
+    // Cleanup on unmount or route change
     return () => {
       if (debounceRef.current) {
         window.clearTimeout(debounceRef.current);
+        debounceRef.current = null;
       }
     };
   }, [location.pathname]);
 
   // Cleanup on unmount
   useEffect(() => {
+    mountedRef.current = true;
+    
     return () => {
+      mountedRef.current = false;
       unsubscribeFromCurrentList();
       if (debounceRef.current) {
         window.clearTimeout(debounceRef.current);
+        debounceRef.current = null;
       }
     };
   }, []);

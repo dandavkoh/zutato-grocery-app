@@ -5,6 +5,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { setSearch, triggerFilterClick, triggerBackClick, triggerRightButtonClick } from '../stores/store';
 import FontAwesomeIcon from './FontAwesomeIcon';
 import { isIOS, primeKeyboard } from '../utils/iosKeyboard';
+import SyncStatusIndicator from './SyncStatusIndicator';
 
 const Header: React.FC = () => {
   const header = useSelector((state: RootState) => state.header);
@@ -112,6 +113,7 @@ const Header: React.FC = () => {
                 <FontAwesomeIcon icon={rightIcon} size="lg" style="regular" />
               </button>
             )}
+            <SyncStatusIndicator />
           </div>
         </div>
 

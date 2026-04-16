@@ -1,5 +1,6 @@
 import { globalQueueService } from './globalQueueService';
 import { dexieService } from './dexieService';
+import { logDebug, logError } from '../utils/logger';
 
 export interface GlobalServiceStatus {
   // Interceptor removed
@@ -20,6 +21,39 @@ class GlobalServiceManager {
   private static instance: GlobalServiceManager | null = null;
   private static isInitialized = false;
   private isManagerActive = false;
+  private healthCheckInterval: NodeJS.Timeout | null = null;
+  
+  // Event handler references for cleanup
+  private handleVisibilityChange = () => {
+    if (!document.hidden) {
+      logDebug('👁️ [GlobalServiceManager] App became visible, ensuring services are active');
+      this.ensureServicesActive();
+    }
+  };
+
+  private handleFocus = () => {
+    logDebug('🎯 [GlobalServiceManager] Window focused, ensuring services are active');
+    this.ensureServicesActive();
+  };
+
+  private handleLoad = () => {
+    logDebug('📄 [GlobalServiceManager] Page loaded, ensuring services are active');
+    this.ensureServicesActive();
+  };
+
+  private handleBeforeUnload = () => {
+    logDebug('🚪 [GlobalServiceManager] Page unloading, services remain active');
+  };
+
+  private handlePopState = () => {
+    logDebug('🔄 [GlobalServiceManager] Route changed, ensuring services are active');
+    this.ensureServicesActive();
+  };
+
+  private handleHashChange = () => {
+    logDebug('🔄 [GlobalServiceManager] Hash changed, ensuring services are active');
+    this.ensureServicesActive();
+  };
 
   constructor() {
     if (GlobalServiceManager.instance) {
@@ -36,7 +70,7 @@ class GlobalServiceManager {
   }
 
   private initialize() {
-    console.log('🔧 [GlobalServiceManager] Initializing global service manager...');
+    logDebug('🔧 [GlobalServiceManager] Initializing global service manager...');
     
     // Set up event listeners for app lifecycle
     this.setupAppLifecycleListeners();
@@ -45,68 +79,74 @@ class GlobalServiceManager {
     this.ensureServicesActive();
     
     this.isManagerActive = true;
-    console.log('✅ [GlobalServiceManager] Global service manager initialized');
+    logDebug('✅ [GlobalServiceManager] Global service manager initialized');
   }
 
   private setupAppLifecycleListeners() {
     // Listen for visibility changes (tab switching, app backgrounding)
-    document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) {
-        console.log('👁️ [GlobalServiceManager] App became visible, ensuring services are active');
-        this.ensureServicesActive();
-      }
-    });
+    document.addEventListener('visibilitychange', this.handleVisibilityChange);
 
     // Listen for focus events (window focus)
-    window.addEventListener('focus', () => {
-      console.log('🎯 [GlobalServiceManager] Window focused, ensuring services are active');
-      this.ensureServicesActive();
-    });
+    window.addEventListener('focus', this.handleFocus);
 
     // Listen for page load events
-    window.addEventListener('load', () => {
-      console.log('📄 [GlobalServiceManager] Page loaded, ensuring services are active');
-      this.ensureServicesActive();
-    });
+    window.addEventListener('load', this.handleLoad);
 
     // Listen for beforeunload
-    window.addEventListener('beforeunload', () => {
-      console.log('🚪 [GlobalServiceManager] Page unloading, services remain active');
-    });
+    window.addEventListener('beforeunload', this.handleBeforeUnload);
 
     // Listen for route changes (for SPA navigation)
-    window.addEventListener('popstate', () => {
-      console.log('🔄 [GlobalServiceManager] Route changed, ensuring services are active');
-      this.ensureServicesActive();
-    });
+    window.addEventListener('popstate', this.handlePopState);
 
     // Listen for hash changes (for hash-based routing)
-    window.addEventListener('hashchange', () => {
-      console.log('🔄 [GlobalServiceManager] Hash changed, ensuring services are active');
-      this.ensureServicesActive();
-    });
+    window.addEventListener('hashchange', this.handleHashChange);
 
     // Periodic health check (every 60 seconds)
-    setInterval(() => {
+    this.healthCheckInterval = setInterval(() => {
       if (this.isManagerActive) {
-        console.log('💓 [GlobalServiceManager] Periodic health check');
+        logDebug('💓 [GlobalServiceManager] Periodic health check');
         this.ensureServicesActive();
       }
     }, 60000);
   }
 
+  /**
+   * Clean up event listeners and intervals to prevent memory leaks
+   */
+  public destroy(): void {
+    logDebug('🧹 [GlobalServiceManager] Cleaning up event listeners and intervals...');
+    
+    // Remove event listeners
+    document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+    window.removeEventListener('focus', this.handleFocus);
+    window.removeEventListener('load', this.handleLoad);
+    window.removeEventListener('beforeunload', this.handleBeforeUnload);
+    window.removeEventListener('popstate', this.handlePopState);
+    window.removeEventListener('hashchange', this.handleHashChange);
+    
+    // Clear interval
+    if (this.healthCheckInterval) {
+      clearInterval(this.healthCheckInterval);
+      this.healthCheckInterval = null;
+    }
+    
+    this.isManagerActive = false;
+    
+    logDebug('✅ [GlobalServiceManager] Cleanup completed');
+  }
+
   private ensureServicesActive() {
-    console.log('🔧 [GlobalServiceManager] Ensuring all services are active...');
+    logDebug('🔧 [GlobalServiceManager] Ensuring all services are active...');
     
     // Queue service is automatically active, but we can trigger a status check
     globalQueueService.getQueueStatus().then(status => {
       if (status.queueLength > 0 && navigator.onLine && !status.isProcessing) {
-        console.log('🔄 [GlobalServiceManager] Queue has items and we\'re online, processing...');
+        logDebug('🔄 [GlobalServiceManager] Queue has items and we\'re online, processing...');
         globalQueueService.processQueuedRequests();
       }
     });
     
-    console.log('✅ [GlobalServiceManager] All services ensured to be active');
+    logDebug('✅ [GlobalServiceManager] All services ensured to be active');
   }
 
   // Public methods
@@ -125,7 +165,7 @@ class GlobalServiceManager {
   }
 
   public async forceServiceActivation(): Promise<void> {
-    console.log('🔄 [GlobalServiceManager] Force activating all services...');
+    logDebug('🔄 [GlobalServiceManager] Force activating all services...');
     this.ensureServicesActive();
     
     // Force process queue if online
@@ -146,7 +186,7 @@ class GlobalServiceManager {
       await dexieService.getFullStats();
       databaseHealthy = true;
     } catch (error) {
-      console.error('❌ [GlobalServiceManager] Database health check failed:', error);
+      logError('❌ [GlobalServiceManager] Database health check failed:', error);
     }
     
     return {
@@ -175,38 +215,38 @@ class GlobalServiceManager {
   }
 
   public async resetServices(): Promise<void> {
-    console.log('🔄 [GlobalServiceManager] Resetting all services...');
+    logDebug('🔄 [GlobalServiceManager] Resetting all services...');
     
     // Clear queue
     await globalQueueService.clearQueuedRequests();
     
-    console.log('✅ [GlobalServiceManager] All services reset');
+    logDebug('✅ [GlobalServiceManager] All services reset');
   }
 
   public async processQueueNow(): Promise<void> {
-    console.log('🔄 [GlobalServiceManager] Processing queue now...');
+    logDebug('🔄 [GlobalServiceManager] Processing queue now...');
     await globalQueueService.forceProcessQueue();
   }
 
   public async clearQueue(): Promise<void> {
-    console.log('🗑️ [GlobalServiceManager] Clearing queue...');
+    logDebug('🗑️ [GlobalServiceManager] Clearing queue...');
     await globalQueueService.clearQueuedRequests();
   }
 
   // Debug methods
   public async debugServices(): Promise<void> {
-    console.log('🔍 [GlobalServiceManager] Debug information:');
+    logDebug('🔍 [GlobalServiceManager] Debug information:');
     
     const status = await this.getDetailedStatus();
-    console.log('📊 [GlobalServiceManager] Service Status:', status);
+    logDebug('📊 [GlobalServiceManager] Service Status:', status);
     
     // Log queue details
     const queueDetails = await globalQueueService.getQueueDetails();
-    console.log('📝 [GlobalServiceManager] Queue Details:', queueDetails);
+    logDebug('📝 [GlobalServiceManager] Queue Details:', queueDetails);
     
     // Log database stats
     const dbStats = await dexieService.getFullStats();
-    console.log('💾 [GlobalServiceManager] Database Stats:', dbStats);
+    logDebug('💾 [GlobalServiceManager] Database Stats:', dbStats);
   }
 }
 

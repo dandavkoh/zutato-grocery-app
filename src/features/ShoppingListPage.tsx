@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setHeader, resetHeader, resetFilterClick, setSelectedItem, setCurrentList } from '../stores/store';
@@ -180,46 +180,60 @@ const ShoppingListPage: React.FC = () => {
     }
   }, [isPulling, isRefreshing, pullDistance]);
   
-  // Group items by category and separate completed items
-  const { completed, incomplete } = separateCompletedItems(items as any);
-  // Newest first = descending by Edited
-  const sortedCompleted = sortItems<ShoppingItem>(SortModes.Edited, false, completed as ShoppingItem[]);
+  // Group items by category and separate completed items - memoized
+  const { completed, incomplete } = useMemo(() => 
+    separateCompletedItems(items as any), 
+    [items]
+  );
+  
+  // Newest first = descending by Edited - memoized
+  const sortedCompleted = useMemo(() => 
+    sortItems<ShoppingItem>(SortModes.Edited, false, completed as ShoppingItem[]),
+    [completed]
+  );
 
-  // Open items sorting/grouping
-  let groupedIncompleteItems: ReturnType<typeof groupItemsByCategory> | null = null;
-  let flatSortedIncompleteItems: ShoppingItem[] | null = null;
+  // Open items sorting/grouping - memoized
+  const { groupedIncompleteItems, flatSortedIncompleteItems } = useMemo(() => {
+    let grouped: ReturnType<typeof groupItemsByCategory> | null = null;
+    let flatSorted: ShoppingItem[] | null = null;
 
-  if (openSortMode === 'category') {
-    const grouped = groupItemsByCategory(incomplete as any, categories);
-    // Sort items within each category alphabetically ascending
-    const entries = Object.entries(grouped).map(([categoryName, categoryData]) => {
-      const sortedItems = sortItems<ShoppingItem>(SortModes.Alphabetical, true, categoryData.items as any);
-      return [categoryName, { ...categoryData, items: sortedItems }] as const;
-    });
-    // Order groups by category.sort_order ascending; "Keine Kategorie" always at the bottom
-    const sortedEntries = entries.sort((a, b) => {
-      const aCat = a[1].category;
-      const bCat = b[1].category;
-      const aIsNone = aCat.id === 'none' || a[0] === 'Keine Kategorie';
-      const bIsNone = bCat.id === 'none' || b[0] === 'Keine Kategorie';
-      if (aIsNone && !bIsNone) return 1;
-      if (!aIsNone && bIsNone) return -1;
-      const aOrder = (aCat as any).sort_order ?? 0;
-      const bOrder = (bCat as any).sort_order ?? 0;
-      return aOrder - bOrder;
-    });
-    groupedIncompleteItems = Object.fromEntries(sortedEntries);
-  } else {
-    // Flat sorting without grouping
-    if (openSortMode === 'last_top') {
-      flatSortedIncompleteItems = sortItems<ShoppingItem>(SortModes.Edited, false, incomplete as any);
-    } else if (openSortMode === 'last_bottom') {
-      flatSortedIncompleteItems = sortItems<ShoppingItem>(SortModes.Edited, true, incomplete as any);
+    if (openSortMode === 'category') {
+      const groupedData = groupItemsByCategory(incomplete as any, categories);
+      // Sort items within each category alphabetically ascending
+      const entries = Object.entries(groupedData).map(([categoryName, categoryData]) => {
+        const sortedItems = sortItems<ShoppingItem>(SortModes.Alphabetical, true, categoryData.items as any);
+        return [categoryName, { ...categoryData, items: sortedItems }] as const;
+      });
+      // Order groups by category.sort_order ascending; "Keine Kategorie" always at the bottom
+      const sortedEntries = entries.sort((a, b) => {
+        const aCat = a[1].category;
+        const bCat = b[1].category;
+        const aIsNone = aCat.id === 'none' || a[0] === 'Keine Kategorie';
+        const bIsNone = bCat.id === 'none' || b[0] === 'Keine Kategorie';
+        if (aIsNone && !bIsNone) return 1;
+        if (!aIsNone && bIsNone) return -1;
+        const aOrder = (aCat as any).sort_order ?? 0;
+        const bOrder = (bCat as any).sort_order ?? 0;
+        return aOrder - bOrder;
+      });
+      grouped = Object.fromEntries(sortedEntries);
     } else {
-      // 'alpha'
-      flatSortedIncompleteItems = sortItems<ShoppingItem>(SortModes.Alphabetical, true, incomplete as any);
+      // Flat sorting without grouping
+      if (openSortMode === 'last_top') {
+        flatSorted = sortItems<ShoppingItem>(SortModes.Edited, false, incomplete as any);
+      } else if (openSortMode === 'last_bottom') {
+        flatSorted = sortItems<ShoppingItem>(SortModes.Edited, true, incomplete as any);
+      } else {
+        // 'alpha'
+        flatSorted = sortItems<ShoppingItem>(SortModes.Alphabetical, true, incomplete as any);
+      }
     }
-  }
+
+    return { 
+      groupedIncompleteItems: grouped, 
+      flatSortedIncompleteItems: flatSorted 
+    };
+  }, [incomplete, categories, openSortMode]);
   const { showToast } = useToast();
 
   // Watch for filter click events
@@ -315,6 +329,11 @@ const ShoppingListPage: React.FC = () => {
         })
         .catch((error: any) => {
           console.error('Failed to set item completion:', error);
+          sentryErrorService.reportApiError(error, {
+            context: 'setItemCompletion',
+            itemId,
+            listId
+          });
           //showToast('Fehler beim Aktualisieren des Status', { type: 'error' });
         });
       // Clean up the timeout reference

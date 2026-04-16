@@ -2,11 +2,20 @@
 import { registerSW } from 'virtual:pwa-register';
 import { dexieService } from './dexieService';
 import { globalQueueService } from './globalQueueService';
+import { logDebug, logInfo, logError } from '../utils/logger';
+
+export interface NotificationData {
+  title?: string;
+  body?: string;
+  icon?: string;
+  badge?: string;
+  [key: string]: unknown; // For extensibility
+}
 
 export interface PWAUpdateEvent {
   type: 'update' | 'offline' | 'online' | 'queue_processed' | 'error';
   message: string;
-  data?: any;
+  data?: NotificationData;
 }
 
 class PWAService {
@@ -34,29 +43,29 @@ class PWAService {
     // Register service worker
     this.updateSW = registerSW({
       onNeedRefresh: () => {
-        console.log('🔄 PWA: Update available');
+        logDebug('🔄 PWA: Update available');
         this.updateAvailable = true;
       },
       onOfflineReady: () => {
-        console.log('📱 PWA: App is offline ready');
+        logDebug('📱 PWA: App is offline ready');
       },
       onRegistered: (swRegistration: ServiceWorkerRegistration) => {
-        console.log('✅ PWA: Service Worker registered', swRegistration);
+        logDebug('✅ PWA: Service Worker registered', swRegistration);
         this.swRegistration = swRegistration;
         
         // Check if service worker is active
         if (swRegistration.active) {
-          console.log('✅ PWA: Service Worker is active');
+          logDebug('✅ PWA: Service Worker is active');
           this.setupServiceWorkerCommunication();
         } else {
-          console.log('⏳ PWA: Service Worker is installing/activating');
+          logDebug('⏳ PWA: Service Worker is installing/activating');
           // Wait for service worker to become active
           swRegistration.addEventListener('updatefound', () => {
             const newWorker = swRegistration.installing;
             if (newWorker) {
               newWorker.addEventListener('statechange', () => {
                 if (newWorker.state === 'activated') {
-                  console.log('✅ PWA: Service Worker activated');
+                  logDebug('✅ PWA: Service Worker activated');
                   this.setupServiceWorkerCommunication();
                 }
               });
@@ -65,37 +74,37 @@ class PWAService {
         }
       },
       onRegisterError: (error: Error) => {
-        console.error('❌ PWA: Service Worker registration failed', error);
+        logError('❌ PWA: Service Worker registration failed', error);
       },
       onUpdateFound: () => {
-        console.log('🔄 PWA: Service Worker update found');
+        logDebug('🔄 PWA: Service Worker update found');
       }
     });
 
     // Listen for online/offline events
     window.addEventListener('online', () => {
-      console.log('🌐 PWA: Online');
+      logDebug('🌐 PWA: Online');
       globalQueueService.processQueuedRequests();
     });
 
     window.addEventListener('offline', () => {
-      console.log('📴 PWA: Offline');
+      logDebug('📴 PWA: Offline');
     });
 
     // Log service worker status after a delay
     setTimeout(async () => {
       const status = await this.getServiceWorkerStatus();
-      console.log('🔧 [PWA] Service Worker Status:', status);
+      logDebug('🔧 [PWA] Service Worker Status:', status);
     }, 2000);
   }
 
   private setupServiceWorkerCommunication() {
     if (!this.swRegistration?.active) {
-      console.log('⚠️ PWA: Service Worker not active yet');
+      logDebug('⚠️ PWA: Service Worker not active yet');
       return;
     }
 
-    console.log('✅ PWA: Service Worker is active and ready');
+    logDebug('✅ PWA: Service Worker is active and ready');
   }
 
   public async processQueuedRequests(): Promise<void> {
@@ -104,7 +113,7 @@ class PWAService {
 
   public async clearQueuedRequests(): Promise<void> {
     await globalQueueService.clearQueuedRequests();
-    console.log('🗑️ PWA: Queue cleared');
+    logDebug('🗑️ PWA: Queue cleared');
   }
 
   public async getQueueStatus(): Promise<{ queueLength: number; isProcessing: boolean }> {
@@ -115,9 +124,9 @@ class PWAService {
     if (this.updateSW) {
       try {
         await this.updateSW();
-        console.log('✅ PWA: App successfully updated');
+        logDebug('✅ PWA: App successfully updated');
       } catch (error) {
-        console.error('❌ PWA: Update failed', error);
+        logError('❌ PWA: Update failed', error);
       }
     }
   }
@@ -145,7 +154,7 @@ class PWAService {
         databaseStats
       };
     } catch (error) {
-      console.error('❌ [PWA] Failed to get service worker status:', error);
+      logError('❌ [PWA] Failed to get service worker status:', error);
       return {
         registered: false,
         active: false,
@@ -156,7 +165,7 @@ class PWAService {
 
   public async requestNotificationPermission(): Promise<boolean> {
     if (!('Notification' in window)) {
-      console.log('❌ PWA: Notifications not supported');
+      logDebug('❌ PWA: Notifications not supported');
       return false;
     }
 
@@ -165,7 +174,7 @@ class PWAService {
     }
 
     if (Notification.permission === 'denied') {
-      console.log('❌ PWA: Notifications denied');
+      logDebug('❌ PWA: Notifications denied');
       return false;
     }
 
@@ -173,7 +182,7 @@ class PWAService {
       const permission = await Notification.requestPermission();
       return permission === 'granted';
     } catch (error) {
-      console.error('❌ PWA: Notification Permission Request fehlgeschlagen', error);
+      logError('❌ PWA: Notification Permission Request fehlgeschlagen', error);
       return false;
     }
   }
@@ -191,7 +200,7 @@ class PWAService {
   // Note: Fetch interceptor is now handled by globalServiceManager
   // This method is kept for backward compatibility but does nothing
   public ensureFetchInterceptor(): void {
-    console.log('ℹ️ PWA: Fetch interceptor is now handled by globalServiceManager');
+    logDebug('ℹ️ PWA: Fetch interceptor is now handled by globalServiceManager');
   }
 }
 

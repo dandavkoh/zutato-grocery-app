@@ -62,6 +62,34 @@ if (sentryConfig.enabled && sentryConfig.dsn) {
   logInfo('Sentry disabled or not configured');
 }
 
+// Global error handlers for unhandled promise rejections and errors
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('Unhandled promise rejection:', event.reason);
+  if (sentryConfig.enabled && sentryConfig.dsn) {
+    import('./services/sentryErrorService').then(({ sentryErrorService }) => {
+      sentryErrorService.reportApiError(event.reason, {
+        context: 'unhandledPromiseRejection',
+        promiseRejectionReason: event.reason?.toString()
+      });
+    });
+  }
+});
+
+window.addEventListener('error', (event) => {
+  console.error('Global error:', event.error);
+  if (sentryConfig.enabled && sentryConfig.dsn) {
+    import('./services/sentryErrorService').then(({ sentryErrorService }) => {
+      sentryErrorService.reportApiError(event.error, {
+        context: 'globalErrorHandler',
+        message: event.message,
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno
+      });
+    });
+  }
+});
+
 // Initialize services
 const initializeApp = async () => {
   try {

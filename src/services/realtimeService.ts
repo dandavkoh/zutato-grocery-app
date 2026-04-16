@@ -1,5 +1,6 @@
 import { supabase } from '../config/supabase';
 import { logDebug, logError, logInfo } from '../config/environment';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 
 export interface RealtimeMessage {
   type: 'item_created' | 'item_updated' | 'item_deleted' | 'item_completed';
@@ -9,7 +10,7 @@ export interface RealtimeMessage {
 }
 
 type ChannelEntry = {
-  channel: any;
+  channel: RealtimeChannel;
   callbacks: Set<() => void>;
 };
 
@@ -77,30 +78,10 @@ class RealtimeService {
     // Create new channel with both broadcast and DB change listeners
     const channel = supabase
       .channel(`list-${listId}`)
-      .on('broadcast', { event: 'shopping_list_update' }, (payload) => {
+      .on('broadcast', { event: 'shopping_list_update' }, (payload: { type: 'broadcast'; event: string; payload: RealtimeMessage }) => {
         logDebug('Received realtime update', { listId, payload });
         this.handleRealtimeUpdate(listId, payload);
       })
-      // // Listen to database changes for cross-device sync without explicit broadcast
-      // .on('postgres_changes', { event: '*', schema: 'public', table: 'shopping_items', filter: `list_id=eq.${listId}` }, (payload: any) => {
-      //   try {
-      //     logDebug('Received DB change event', { listId, eventType: payload?.eventType, payload });
-      //     const mappedType: RealtimeMessage['type'] = payload?.eventType === 'INSERT'
-      //       ? 'item_created'
-      //       : payload?.eventType === 'DELETE'
-      //         ? 'item_deleted'
-      //         : 'item_updated';
-      //     const synthetic = {
-      //       type: mappedType,
-      //       listId,
-      //       itemId: payload?.new?.id || payload?.old?.id,
-      //       timestamp: new Date().toISOString()
-      //     } satisfies RealtimeMessage;
-      //     this.handleRealtimeUpdate(listId, { payload: synthetic });
-      //   } catch (e) {
-      //     logError('Error handling DB change event', { listId, error: e });
-      //   }
-      // })
       .on('presence', { event: 'sync' }, () => {
         logDebug('Presence sync', { listId });
       })
@@ -119,7 +100,7 @@ class RealtimeService {
       });
 
     // Subscribe to the channel
-    channel.subscribe((status: any) => {
+    channel.subscribe((status) => {
       logDebug('Channel subscription status', { listId, status });
       if (status === 'SUBSCRIBED') {
         logInfo('Successfully subscribed to list channel', { listId });
@@ -182,14 +163,14 @@ class RealtimeService {
         timestamp: new Date().toISOString()
       };
 
-      const { error } = await entry.channel.send({
+      const response = await entry.channel.send({
         type: 'broadcast',
         event: 'shopping_list_update',
         payload: fullMessage
       });
 
-      if (error) {
-        logError('Failed to broadcast update', { listId, error });
+      if (response === 'error' || response === 'timed out') {
+        logError('Failed to broadcast update', { listId, response });
         // Queue the action for retry
         this.queueOfflineAction(listId, message);
       } else {
@@ -315,7 +296,7 @@ class RealtimeService {
   /**
    * Handle realtime updates from the channel
    */
-  private async handleRealtimeUpdate(listId: string, payload: any): Promise<void> {
+  private async handleRealtimeUpdate(listId: string, payload: { payload: RealtimeMessage }): Promise<void> {
     try {
       const message: RealtimeMessage = payload.payload;
       
@@ -340,7 +321,11 @@ class RealtimeService {
     const entry = this.channels.get(listId);
     if (!entry) return;
     entry.callbacks.forEach(cb => {
-      try { cb(); } catch (e) { logError('Listener callback error', e as any); }
+      try { 
+        cb(); 
+      } catch (e) { 
+        logError('Listener callback error', e as Error); 
+      }
     });
   }
 

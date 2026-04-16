@@ -9,6 +9,7 @@ import FontAwesomeIcon from '../components/FontAwesomeIcon';
 import InvitationManager from '../components/InvitationManager';
 import { useAuth } from '../contexts/AuthContext';
 import { sentryErrorService } from '../services/sentryErrorService';
+import { logDebug, logError } from '../utils/logger';
 
 
 
@@ -83,14 +84,14 @@ const EditListPage: React.FC = () => {
     }
 
     try {
-      console.log('Saving list name:', { id: list.id, name: listName.trim() });
+      logDebug('Saving list name:', { id: list.id, name: listName.trim() });
       
       // Fire & forget - don't await the result
       listsController.updateList(list.id, { name: listName.trim() }).catch(error => {
-        console.error('Failed to save list name (fire & forget):', error);
+        logError('Failed to save list name (fire & forget):', error);
       });
       
-      console.log('List name save initiated (fire & forget)');
+      logDebug('List name save initiated (fire & forget)');
       
       // Update the header title immediately
       dispatch(setHeader({
@@ -102,7 +103,7 @@ const EditListPage: React.FC = () => {
       // Update the original list name so the button becomes inactive
       setOriginalListName(listName.trim());
     } catch (error) {
-      console.error('Unexpected error saving list name:', error);
+      logError('Unexpected error saving list name:', error);
       sentryErrorService.reportApiError(error, {
         url: 'edit-list-save',
         method: 'PUT',
@@ -127,12 +128,12 @@ const EditListPage: React.FC = () => {
     try {
       const response = await listsController.getListMembers(list.id);
       if (response.error) {
-        console.error('Failed to load members:', response.error);
+        logError('Failed to load members:', response.error);
       } else {
         setMembers(response.data || []);
       }
     } catch (error) {
-      console.error('Unexpected error loading members:', error);
+      logError('Unexpected error loading members:', error);
       sentryErrorService.reportApiError(error, {
         url: 'edit-list-members',
         method: 'GET',
@@ -166,24 +167,23 @@ const EditListPage: React.FC = () => {
       return;
     }
     
-    // TODO: Implement actual member removal via API
-    console.log('Delete member:', memberId);
+    // Member removal not yet implemented
   };
 
   const handleDeleteList = async () => {
     if (showDeleteConfirm) {
       try {
-        console.log('Deleting list:', list.id);
+        logDebug('Deleting list:', list.id);
         const response = await listsController.deleteList(list.id);
         
         if (response.error) {
-          console.error('Failed to delete list:', response.error);
+          logError('Failed to delete list:', response.error);
           alert('Fehler beim Löschen der Liste: ' + response.error);
         } else {
           navigate('/lists');
         }
       } catch (error) {
-        console.error('Unexpected error deleting list:', error);
+        logError('Unexpected error deleting list:', error);
         sentryErrorService.reportApiError(error, {
           url: 'edit-list-delete',
           method: 'DELETE',

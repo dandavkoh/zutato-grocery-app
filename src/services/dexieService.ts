@@ -1,4 +1,5 @@
 import Dexie, { type Table } from 'dexie';
+import { logDebug, logInfo, logWarn, logError } from '../utils/logger';
 
 export interface ShoppingItem {
   id: string;
@@ -22,6 +23,43 @@ export interface ShoppingItem {
   deleted_by: string | null;
 }
 
+export interface List {
+  id: string;
+  name: string;
+  description: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string | null;
+  is_deleted: number | boolean;
+  deleted_at: string | null;
+  deleted_by: string | null;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  icon: string;
+  created_at: string;
+  updated_at: string;
+  sort_order: number;
+}
+
+export interface Unit {
+  id: string;
+  name: string;
+  short_name: string;
+  created_at: string;
+  updated_at: string;
+  sort_order: number;
+}
+
+export interface RollbackData {
+  operation: 'create' | 'update' | 'delete';
+  tableName: 'shoppingItems' | 'lists' | 'categories' | 'units';
+  recordId: string;
+  previousState?: ShoppingItem | List | Category | Unit; // State before optimistic update
+}
+
 export interface QueuedRequest {
   id: string;
   url: string;
@@ -29,6 +67,21 @@ export interface QueuedRequest {
   headers: Record<string, string>;
   body: string | null;
   timestamp: number;
+  retryCount: number;
+  lastAttempt: number;
+  rollbackData?: RollbackData;
+}
+
+export interface DeadLetterQueueItem {
+  id: string;
+  endpoint: string;
+  method: string;
+  body?: any;
+  headers?: any;
+  timestamp: string;
+  error: string;
+  retryCount: number;
+  originalQueueId: string;
 }
 
 export interface List {
@@ -67,6 +120,7 @@ class ShoppingItemsDatabase extends Dexie {
   lists!: Table<List>;
   categories!: Table<Category>;
   units!: Table<Unit>;
+  deadLetterQueue!: Table<DeadLetterQueueItem>;
 
   constructor() {
     super('ShoppingItemsDB');
@@ -76,6 +130,42 @@ class ShoppingItemsDatabase extends Dexie {
       lists: 'id, name, created_by, is_deleted, created_at, updated_at',
       categories: 'id, name, created_at, updated_at',
       units: 'id, name, short_name, created_at, updated_at'
+    });
+    // Version 2: Add retryCount and lastAttempt to queuedRequests
+    this.version(2).stores({
+      shoppingItems: 'id, list_id, name, is_completed, is_deleted, created_at, updated_at',
+      queuedRequests: 'id, url, method, timestamp, retryCount, lastAttempt',
+      lists: 'id, name, created_by, is_deleted, created_at, updated_at',
+      categories: 'id, name, created_at, updated_at',
+      units: 'id, name, short_name, created_at, updated_at'
+    }).upgrade(tx => {
+      // Migrate existing queuedRequests to add new fields
+      return tx.table('queuedRequests').toCollection().modify(request => {
+        if (request.retryCount === undefined) {
+          request.retryCount = 0;
+        }
+        if (request.lastAttempt === undefined) {
+          request.lastAttempt = request.timestamp;
+        }
+      });
+    });
+    // Version 3: Add dead letter queue
+    this.version(3).stores({
+      shoppingItems: 'id, list_id, name, is_completed, is_deleted, created_at, updated_at',
+      queuedRequests: 'id, url, method, timestamp, retryCount, lastAttempt',
+      lists: 'id, name, created_by, is_deleted, created_at, updated_at',
+      categories: 'id, name, created_at, updated_at',
+      units: 'id, name, short_name, created_at, updated_at',
+      deadLetterQueue: 'id, endpoint, method, timestamp, error, retryCount'
+    });
+    // Version 4: Add rollbackData to queuedRequests (non-indexed field, no migration needed)
+    this.version(4).stores({
+      shoppingItems: 'id, list_id, name, is_completed, is_deleted, created_at, updated_at',
+      queuedRequests: 'id, url, method, timestamp, retryCount, lastAttempt',
+      lists: 'id, name, created_by, is_deleted, created_at, updated_at',
+      categories: 'id, name, created_at, updated_at',
+      units: 'id, name, short_name, created_at, updated_at',
+      deadLetterQueue: 'id, endpoint, method, timestamp, error, retryCount'
     });
   }
 }
@@ -93,10 +183,10 @@ export class DexieService {
         .reverse()
         .sortBy('created_at');
       
-      console.log(`📊 [Dexie] Retrieved ${items.length} items for list ${listId}`);
+      logDebug(`📊 [Dexie] Retrieved ${items.length} items for list ${listId}`);
       return items;
     } catch (error) {
-      console.error('❌ [Dexie] Error getting shopping items:', error);
+      logError('❌ [Dexie] Error getting shopping items:', error);
       return [];
     }
   }
@@ -109,49 +199,134 @@ export class DexieService {
         .equals(0)
         .toArray();
       
-      console.log(`📊 [Dexie] Retrieved ${items.length} total items`);
+      logDebug(`📊 [Dexie] Retrieved ${items.length} total items`);
       return items;
     } catch (error) {
-      console.error('❌ [Dexie] Error getting all shopping items:', error);
+      logError('❌ [Dexie] Error getting all shopping items:', error);
       return [];
     }
   }
 
   // Add or update shopping items (for sync from Supabase)
-  async syncShoppingItems(items: ShoppingItem[]): Promise<void> {
+  async syncShoppingItems(items: ShoppingItem[], queuedItemIds?: Set<string>): Promise<void> {
     try {
-      if (items.length === 0) { // TODO: If we have no items, we should delete the items from the list anyway
-        console.log('📝 [Dexie] No items to sync');
+      // Handle empty items case - determine list_id from first item if available
+      let listId: string | null = null;
+      
+      if (items.length === 0) {
+        logDebug('📝 [Dexie] No items to sync');
         return;
       }
 
       // Get the list_id from the first item (all items should have the same list_id)
-      const listId = items[0].list_id;
+      listId = items[0].list_id;
       
       await db.transaction('rw', db.shoppingItems, async () => {
-        // First, delete all existing items for this list_id
+        // Get all existing items for this list
         const existingItems = await db.shoppingItems
           .where('list_id')
-          .equals(listId)
+          .equals(listId!)
           .toArray();
         
-        if (existingItems.length > 0) {
-          await db.shoppingItems
-            .where('list_id')
-            .equals(listId)
-            .delete();
-          console.log(`🗑️ [Dexie] Deleted ${existingItems.length} existing items for list ${listId}`);
+        // Create a map of server items by ID for efficient lookup
+        const serverItemsMap = new Map<string, ShoppingItem>();
+        items.forEach(item => {
+          serverItemsMap.set(item.id, item);
+        });
+        
+        // Create a map of existing items by ID for efficient lookup
+        const existingItemsMap = new Map<string, ShoppingItem>();
+        existingItems.forEach(item => {
+          existingItemsMap.set(item.id, item);
+        });
+        
+        // Prepare items to update/add
+        const itemsToUpsert: ShoppingItem[] = [];
+        let conflictsDetected = 0;
+        let queuedItemsSkipped = 0;
+        
+        // Process all server items with conflict resolution
+        items.forEach(serverItem => {
+          // Check if item is queued for update - if so, don't overwrite local changes
+          if (queuedItemIds && queuedItemIds.has(serverItem.id)) {
+            logDebug(`⏭️ [Dexie] Skipping queued item during sync: ${serverItem.id} (${serverItem.name})`);
+            queuedItemsSkipped++;
+            return;
+          }
+
+          const existingItem = existingItemsMap.get(serverItem.id);
+          
+          if (existingItem) {
+            // Compare timestamps to resolve conflicts
+            const localTimestamp = existingItem.updated_at || existingItem.created_at;
+            const serverTimestamp = serverItem.updated_at || serverItem.created_at;
+            
+            // Handle missing timestamps
+            if (!localTimestamp || !serverTimestamp) {
+              logWarn(`⚠️ [Dexie] Missing timestamp for item ${serverItem.id}, using server version`);
+              itemsToUpsert.push(serverItem);
+              return;
+            }
+            
+            // Compare timestamps as ISO date strings
+            if (localTimestamp > serverTimestamp) {
+              // Local version is newer - keep it
+              logDebug(`🔄 [Dexie] Conflict detected for item ${serverItem.id} (${serverItem.name}): local newer (${localTimestamp} > ${serverTimestamp}), keeping local version`);
+              conflictsDetected++;
+              // Don't add to upsert list - keep existing local version
+              return;
+            } else {
+              // Server version is newer or equal - use it
+              itemsToUpsert.push(serverItem);
+            }
+          } else {
+            // New item from server - add it
+            itemsToUpsert.push(serverItem);
+          }
+        });
+        
+        // Find local items that don't exist on server (potentially deleted on server)
+        // Only mark as deleted if they're not already marked as deleted locally
+        const itemsToMarkDeleted: ShoppingItem[] = [];
+        existingItems.forEach(existingItem => {
+          if (!serverItemsMap.has(existingItem.id) && !existingItem.is_deleted) {
+            // Check if item is queued - don't mark as deleted if it's queued
+            if (queuedItemIds && queuedItemIds.has(existingItem.id)) {
+              logDebug(`⏭️ [Dexie] Skipping deletion of queued item: ${existingItem.id} (${existingItem.name})`);
+              return;
+            }
+            
+            // This item exists locally but not on server - it was deleted on server
+            itemsToMarkDeleted.push({
+              ...existingItem,
+              is_deleted: true,
+              deleted_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
+          }
+        });
+        
+        // Combine all items to upsert (server items + locally deleted items)
+        const allItemsToUpsert = [...itemsToUpsert, ...itemsToMarkDeleted];
+        
+        // Use bulkPut for atomic upsert operation
+        if (allItemsToUpsert.length > 0) {
+          await db.shoppingItems.bulkPut(allItemsToUpsert);
+          logDebug(`✅ [Dexie] Upserted ${itemsToUpsert.length} items, marked ${itemsToMarkDeleted.length} as deleted for list ${listId}`);
         }
         
-        // Then, add all new items
-        for (const item of items) {
-          await db.shoppingItems.add(item);
+        if (conflictsDetected > 0) {
+          logDebug(`⚠️ [Dexie] Resolved ${conflictsDetected} timestamp conflicts (kept local versions)`);
+        }
+        
+        if (queuedItemsSkipped > 0) {
+          logDebug(`⏭️ [Dexie] Skipped ${queuedItemsSkipped} queued items to prevent data loss`);
         }
       });
       
-      console.log(`✅ [Dexie] Synced ${items.length} shopping items for list ${listId}`);
+      logDebug(`✅ [Dexie] Synced ${items.length} shopping items for list ${listId}`);
     } catch (error) {
-      console.error('❌ [Dexie] Error syncing shopping items:', error);
+      logError('❌ [Dexie] Error syncing shopping items:', error);
       throw error;
     }
   }
@@ -160,9 +335,9 @@ export class DexieService {
   async addShoppingItem(item: ShoppingItem): Promise<void> {
     try {
       await db.shoppingItems.add(item);
-      console.log(`✅ [Dexie] Added shopping item: ${item.name}`);
+      logDebug(`✅ [Dexie] Added shopping item: ${item.name}`);
     } catch (error) {
-      console.error('❌ [Dexie] Error adding shopping item:', error);
+      logError('❌ [Dexie] Error adding shopping item:', error);
       throw error;
     }
   }
@@ -171,24 +346,74 @@ export class DexieService {
   async updateShoppingItem(item: ShoppingItem): Promise<void> {
     try {
       await db.shoppingItems.put(item);
-      console.log(`✅ [Dexie] Updated shopping item: ${item.name}`);
+      logDebug(`✅ [Dexie] Updated shopping item: ${item.name}`);
     } catch (error) {
-      console.error('❌ [Dexie] Error updating shopping item:', error);
+      logError('❌ [Dexie] Error updating shopping item:', error);
       throw error;
     }
   }
 
   // Update a shopping item from PATCH response
-  async updateShoppingItemFromResponse(response: ShoppingItem | ShoppingItem[]): Promise<void> {
+  async updateShoppingItemFromResponse(response: ShoppingItem | ShoppingItem[], queuedItemIds?: Set<string>): Promise<void> {
     try {
-      if (Array.isArray(response)) {
-        await db.shoppingItems.bulkPut(response);
-      } else {
-        await db.shoppingItems.put(response);
+      const items = Array.isArray(response) ? response : [response];
+      const updatedItems: ShoppingItem[] = [];
+      let conflictsDetected = 0;
+      let queuedItemsSkipped = 0;
+      
+      for (const serverItem of items) {
+        // Check if item is queued - if so, don't overwrite with potentially stale server data
+        if (queuedItemIds && queuedItemIds.has(serverItem.id)) {
+          logDebug(`⏭️ [Dexie] Skipping update from response for queued item: ${serverItem.id} (${serverItem.name})`);
+          queuedItemsSkipped++;
+          continue;
+        }
+        
+        // Get existing item to compare timestamps
+        const existingItem = await db.shoppingItems.get(serverItem.id);
+        
+        if (existingItem) {
+          // Compare timestamps
+          const localTimestamp = existingItem.updated_at || existingItem.created_at;
+          const serverTimestamp = serverItem.updated_at || serverItem.created_at;
+          
+          // Handle missing timestamps
+          if (!localTimestamp || !serverTimestamp) {
+            logWarn(`⚠️ [Dexie] Missing timestamp for item ${serverItem.id}, using server version`);
+            updatedItems.push(serverItem);
+            continue;
+          }
+          
+          // Compare timestamps
+          if (localTimestamp > serverTimestamp) {
+            // Local version is newer - don't overwrite
+            logDebug(`🔄 [Dexie] Response conflict for item ${serverItem.id} (${serverItem.name}): local newer (${localTimestamp} > ${serverTimestamp}), keeping local version`);
+            conflictsDetected++;
+            continue;
+          }
+        }
+        
+        // Server data is newer or item doesn't exist locally - use it
+        updatedItems.push(serverItem);
       }
-      console.log(`✅ [Dexie] Updated shopping item from response: ${Array.isArray(response) ? `${response.length} items` : response.name}`);
+      
+      // Update items in bulk
+      if (updatedItems.length > 0) {
+        await db.shoppingItems.bulkPut(updatedItems);
+      }
+      
+      const itemsDesc = Array.isArray(response) ? `${updatedItems.length}/${response.length} items` : response.name;
+      logDebug(`✅ [Dexie] Updated shopping item from response: ${itemsDesc}`);
+      
+      if (conflictsDetected > 0) {
+        logDebug(`⚠️ [Dexie] Skipped ${conflictsDetected} stale server updates (local newer)`);
+      }
+      
+      if (queuedItemsSkipped > 0) {
+        logDebug(`⏭️ [Dexie] Skipped ${queuedItemsSkipped} queued items to prevent data loss`);
+      }
     } catch (error) {
-      console.error('❌ [Dexie] Error updating shopping item from response:', error);
+      logError('❌ [Dexie] Error updating shopping item from response:', error);
       throw error;
     }
   }
@@ -198,7 +423,7 @@ export class DexieService {
     try {
       const existingItem = await db.shoppingItems.get(itemId);
       if (!existingItem) {
-        console.warn(`⚠️ [Dexie] Item not found for optimistic update: ${itemId}`);
+        logWarn(`⚠️ [Dexie] Item not found for optimistic update: ${itemId}`);
         return null;
       }
 
@@ -209,10 +434,10 @@ export class DexieService {
       };
 
       await db.shoppingItems.put(updatedItem);
-      console.log(`✅ [Dexie] Optimistically updated shopping item: ${updatedItem.name}`);
+      logDebug(`✅ [Dexie] Optimistically updated shopping item: ${updatedItem.name}`);
       return updatedItem;
     } catch (error) {
-      console.error('❌ [Dexie] Error optimistically updating shopping item:', error);
+      logError('❌ [Dexie] Error optimistically updating shopping item:', error);
       throw error;
     }
   }
@@ -226,10 +451,43 @@ export class DexieService {
         item.deleted_at = new Date().toISOString();
         item.deleted_by = deletedBy;
         await db.shoppingItems.put(item);
-        console.log(`✅ [Dexie] Soft deleted shopping item: ${item.name}`);
+        logDebug(`✅ [Dexie] Soft deleted shopping item: ${item.name}`);
       }
     } catch (error) {
-      console.error('❌ [Dexie] Error deleting shopping item:', error);
+      logError('❌ [Dexie] Error deleting shopping item:', error);
+      throw error;
+    }
+  }
+
+  // Get shopping item by ID
+  async getShoppingItemById(id: string): Promise<ShoppingItem | undefined> {
+    try {
+      const item = await db.shoppingItems.get(id);
+      return item;
+    } catch (error) {
+      logError('❌ [Dexie] Error getting shopping item by ID:', error);
+      throw error;
+    }
+  }
+
+  // Hard delete a shopping item (for rollback purposes)
+  async deleteShoppingItemLocal(id: string): Promise<void> {
+    try {
+      await db.shoppingItems.delete(id);
+      logDebug(`🗑️ [Dexie] Hard deleted shopping item: ${id}`);
+    } catch (error) {
+      logError('❌ [Dexie] Error hard deleting shopping item:', error);
+      throw error;
+    }
+  }
+
+  // Get list by ID
+  async getListById(id: string): Promise<List | undefined> {
+    try {
+      const list = await db.lists.get(id);
+      return list;
+    } catch (error) {
+      logError('❌ [Dexie] Error getting list by ID:', error);
       throw error;
     }
   }
@@ -238,9 +496,9 @@ export class DexieService {
   async clearAllData(): Promise<void> {
     try {
       await db.shoppingItems.clear();
-      console.log('🗑️ [Dexie] Cleared all shopping items');
+      logDebug('🗑️ [Dexie] Cleared all shopping items');
     } catch (error) {
-      console.error('❌ [Dexie] Error clearing data:', error);
+      logError('❌ [Dexie] Error clearing data:', error);
       throw error;
     }
   }
@@ -254,7 +512,7 @@ export class DexieService {
       
       return { total, active, deleted };
     } catch (error) {
-      console.error('❌ [Dexie] Error getting stats:', error);
+      logError('❌ [Dexie] Error getting stats:', error);
       return { total: 0, active: 0, deleted: 0 };
     }
   }
@@ -263,9 +521,9 @@ export class DexieService {
   async addQueuedRequest(request: QueuedRequest): Promise<void> {
     try {
       await db.queuedRequests.add(request);
-      console.log(`📝 [Dexie] Added queued request: ${request.method} ${request.url}`);
+      logDebug(`📝 [Dexie] Added queued request: ${request.method} ${request.url}`);
     } catch (error) {
-      console.error('❌ [Dexie] Error adding queued request:', error);
+      logError('❌ [Dexie] Error adding queued request:', error);
       throw error;
     }
   }
@@ -276,10 +534,10 @@ export class DexieService {
         .orderBy('timestamp')
         .toArray();
       
-      console.log(`📊 [Dexie] Retrieved ${requests.length} queued requests`);
+      logDebug(`📊 [Dexie] Retrieved ${requests.length} queued requests`);
       return requests;
     } catch (error) {
-      console.error('❌ [Dexie] Error getting queued requests:', error);
+      logError('❌ [Dexie] Error getting queued requests:', error);
       return [];
     }
   }
@@ -287,9 +545,19 @@ export class DexieService {
   async removeQueuedRequest(id: string): Promise<void> {
     try {
       await db.queuedRequests.delete(id);
-      console.log(`🗑️ [Dexie] Removed queued request: ${id}`);
+      logDebug(`🗑️ [Dexie] Removed queued request: ${id}`);
     } catch (error) {
-      console.error('❌ [Dexie] Error removing queued request:', error);
+      logError('❌ [Dexie] Error removing queued request:', error);
+      throw error;
+    }
+  }
+
+  async updateQueuedRequest(id: string, updates: Partial<QueuedRequest>): Promise<void> {
+    try {
+      await db.queuedRequests.update(id, updates);
+      logDebug(`✅ [Dexie] Updated queued request: ${id}`);
+    } catch (error) {
+      logError('❌ [Dexie] Error updating queued request:', error);
       throw error;
     }
   }
@@ -297,9 +565,9 @@ export class DexieService {
   async clearQueuedRequests(): Promise<void> {
     try {
       await db.queuedRequests.clear();
-      console.log('🗑️ [Dexie] Cleared all queued requests');
+      logDebug('🗑️ [Dexie] Cleared all queued requests');
     } catch (error) {
-      console.error('❌ [Dexie] Error clearing queued requests:', error);
+      logError('❌ [Dexie] Error clearing queued requests:', error);
       throw error;
     }
   }
@@ -308,7 +576,7 @@ export class DexieService {
     try {
       return await db.queuedRequests.count();
     } catch (error) {
-      console.error('❌ [Dexie] Error getting queued requests count:', error);
+      logError('❌ [Dexie] Error getting queued requests count:', error);
       return 0;
     }
   }
@@ -335,7 +603,7 @@ export class DexieService {
       
       return { total, active, deleted, queuedRequests, lists };
     } catch (error) {
-      console.error('❌ [Dexie] Error getting full stats:', error);
+      logError('❌ [Dexie] Error getting full stats:', error);
       return { total: 0, active: 0, deleted: 0, queuedRequests: 0, lists: 0 };
     }
   }
@@ -352,10 +620,10 @@ export class DexieService {
       // Sort by created_at descending
       activeLists.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       
-      console.log(`📊 [Dexie] Retrieved ${activeLists.length} lists (from ${allLists.length} total)`);
+      logDebug(`📊 [Dexie] Retrieved ${activeLists.length} lists (from ${allLists.length} total)`);
       return activeLists;
     } catch (error) {
-      console.error('❌ [Dexie] Error getting lists:', error);
+      logError('❌ [Dexie] Error getting lists:', error);
       return [];
     }
   }
@@ -365,7 +633,7 @@ export class DexieService {
       await db.transaction('rw', db.lists, async () => {
         // Delete all existing lists
         await db.lists.clear();
-        console.log(`🗑️ [Dexie] Cleared all existing lists`);
+        logDebug(`🗑️ [Dexie] Cleared all existing lists`);
         
         // Add all new lists
         for (const list of lists) {
@@ -373,9 +641,9 @@ export class DexieService {
         }
       });
       
-      console.log(`✅ [Dexie] Synced ${lists.length} lists`);
+      logDebug(`✅ [Dexie] Synced ${lists.length} lists`);
     } catch (error) {
-      console.error('❌ [Dexie] Error syncing lists:', error);
+      logError('❌ [Dexie] Error syncing lists:', error);
       throw error;
     }
   }
@@ -383,9 +651,9 @@ export class DexieService {
   async addList(list: List): Promise<void> {
     try {
       await db.lists.add(list);
-      console.log(`✅ [Dexie] Added list: ${list.name}`);
+      logDebug(`✅ [Dexie] Added list: ${list.name}`);
     } catch (error) {
-      console.error('❌ [Dexie] Error adding list:', error);
+      logError('❌ [Dexie] Error adding list:', error);
       throw error;
     }
   }
@@ -393,9 +661,9 @@ export class DexieService {
   async updateList(list: List): Promise<void> {
     try {
       await db.lists.update(list.id, list);
-      console.log(`✅ [Dexie] Updated list: ${list.name}`);
+      logDebug(`✅ [Dexie] Updated list: ${list.name}`);
     } catch (error) {
-      console.error('❌ [Dexie] Error updating list:', error);
+      logError('❌ [Dexie] Error updating list:', error);
       throw error;
     }
   }
@@ -404,9 +672,9 @@ export class DexieService {
     try {
       // Update the existing list with server response data
       await db.lists.update(response.id, response);
-      console.log(`✅ [Dexie] Updated list from response: ${response.name}`);
+      logDebug(`✅ [Dexie] Updated list from response: ${response.name}`);
     } catch (error) {
-      console.error('❌ [Dexie] Error updating list from response:', error);
+      logError('❌ [Dexie] Error updating list from response:', error);
       throw error;
     }
   }
@@ -417,9 +685,9 @@ export class DexieService {
         is_deleted: 1, 
         deleted_at: new Date().toISOString() 
       });
-      console.log(`🗑️ [Dexie] Deleted list: ${id}`);
+      logDebug(`🗑️ [Dexie] Deleted list: ${id}`);
     } catch (error) {
-      console.error('❌ [Dexie] Error deleting list:', error);
+      logError('❌ [Dexie] Error deleting list:', error);
       throw error;
     }
   }
@@ -428,15 +696,15 @@ export class DexieService {
   async debugAllLists(): Promise<void> {
     try {
       const allLists = await db.lists.toArray();
-      console.log(`🔍 [Dexie] All lists in database:`, allLists);
+      logDebug(`🔍 [Dexie] All lists in database:`, allLists);
       
       const activeLists = await db.lists.where('is_deleted').equals(0).toArray();
-      console.log(`🔍 [Dexie] Active lists (is_deleted=0):`, activeLists);
+      logDebug(`🔍 [Dexie] Active lists (is_deleted=0):`, activeLists);
       
       const deletedLists = await db.lists.where('is_deleted').equals(1).toArray();
-      console.log(`🔍 [Dexie] Deleted lists (is_deleted=1):`, deletedLists);
+      logDebug(`🔍 [Dexie] Deleted lists (is_deleted=1):`, deletedLists);
     } catch (error) {
-      console.error('❌ [Dexie] Error debugging lists:', error);
+      logError('❌ [Dexie] Error debugging lists:', error);
     }
   }
 
@@ -447,10 +715,10 @@ export class DexieService {
         .orderBy('name')
         .toArray();
       
-      console.log(`📊 [Dexie] Retrieved ${categories.length} categories`);
+      logDebug(`📊 [Dexie] Retrieved ${categories.length} categories`);
       return categories;
     } catch (error) {
-      console.error('❌ [Dexie] Error getting categories:', error);
+      logError('❌ [Dexie] Error getting categories:', error);
       return [];
     }
   }
@@ -460,7 +728,7 @@ export class DexieService {
       await db.transaction('rw', db.categories, async () => {
         // Delete all existing categories
         await db.categories.clear();
-        console.log(`🗑️ [Dexie] Cleared all existing categories`);
+        logDebug(`🗑️ [Dexie] Cleared all existing categories`);
         
         // Add all new categories
         for (const category of categories) {
@@ -468,9 +736,9 @@ export class DexieService {
         }
       });
       
-      console.log(`✅ [Dexie] Synced ${categories.length} categories`);
+      logDebug(`✅ [Dexie] Synced ${categories.length} categories`);
     } catch (error) {
-      console.error('❌ [Dexie] Error syncing categories:', error);
+      logError('❌ [Dexie] Error syncing categories:', error);
       throw error;
     }
   }
@@ -478,9 +746,9 @@ export class DexieService {
   async addCategory(category: Category): Promise<void> {
     try {
       await db.categories.add(category);
-      console.log(`✅ [Dexie] Added category: ${category.name}`);
+      logDebug(`✅ [Dexie] Added category: ${category.name}`);
     } catch (error) {
-      console.error('❌ [Dexie] Error adding category:', error);
+      logError('❌ [Dexie] Error adding category:', error);
       throw error;
     }
   }
@@ -488,9 +756,9 @@ export class DexieService {
   async updateCategory(category: Category): Promise<void> {
     try {
       await db.categories.update(category.id, category);
-      console.log(`✅ [Dexie] Updated category: ${category.name}`);
+      logDebug(`✅ [Dexie] Updated category: ${category.name}`);
     } catch (error) {
-      console.error('❌ [Dexie] Error updating category:', error);
+      logError('❌ [Dexie] Error updating category:', error);
       throw error;
     }
   }
@@ -502,10 +770,10 @@ export class DexieService {
         .orderBy('name')
         .toArray();
       
-      console.log(`📊 [Dexie] Retrieved ${units.length} units`);
+      logDebug(`📊 [Dexie] Retrieved ${units.length} units`);
       return units;
     } catch (error) {
-      console.error('❌ [Dexie] Error getting units:', error);
+      logError('❌ [Dexie] Error getting units:', error);
       return [];
     }
   }
@@ -515,7 +783,7 @@ export class DexieService {
       await db.transaction('rw', db.units, async () => {
         // Delete all existing units
         await db.units.clear();
-        console.log(`🗑️ [Dexie] Cleared all existing units`);
+        logDebug(`🗑️ [Dexie] Cleared all existing units`);
         
         // Add all new units
         for (const unit of units) {
@@ -523,9 +791,9 @@ export class DexieService {
         }
       });
       
-      console.log(`✅ [Dexie] Synced ${units.length} units`);
+      logDebug(`✅ [Dexie] Synced ${units.length} units`);
     } catch (error) {
-      console.error('❌ [Dexie] Error syncing units:', error);
+      logError('❌ [Dexie] Error syncing units:', error);
       throw error;
     }
   }
@@ -533,9 +801,9 @@ export class DexieService {
   async addUnit(unit: Unit): Promise<void> {
     try {
       await db.units.add(unit);
-      console.log(`✅ [Dexie] Added unit: ${unit.name}`);
+      logDebug(`✅ [Dexie] Added unit: ${unit.name}`);
     } catch (error) {
-      console.error('❌ [Dexie] Error adding unit:', error);
+      logError('❌ [Dexie] Error adding unit:', error);
       throw error;
     }
   }
@@ -543,10 +811,97 @@ export class DexieService {
   async updateUnit(unit: Unit): Promise<void> {
     try {
       await db.units.update(unit.id, unit);
-      console.log(`✅ [Dexie] Updated unit: ${unit.name}`);
+      logDebug(`✅ [Dexie] Updated unit: ${unit.name}`);
     } catch (error) {
-      console.error('❌ [Dexie] Error updating unit:', error);
+      logError('❌ [Dexie] Error updating unit:', error);
       throw error;
+    }
+  }
+
+  // Dead Letter Queue methods
+  async addToDeadLetterQueue(queueItem: QueuedRequest, error: string): Promise<void> {
+    try {
+      const dlqItem: DeadLetterQueueItem = {
+        id: Date.now() + Math.random().toString(),
+        endpoint: queueItem.url,
+        method: queueItem.method,
+        body: queueItem.body ? JSON.parse(queueItem.body) : undefined,
+        headers: queueItem.headers,
+        timestamp: new Date().toISOString(),
+        error: error,
+        retryCount: queueItem.retryCount,
+        originalQueueId: queueItem.id
+      };
+      
+      await db.deadLetterQueue.add(dlqItem);
+      logDebug(`💀 [Dexie] Added item to dead letter queue: ${queueItem.method} ${queueItem.url}`);
+    } catch (error) {
+      logError('❌ [Dexie] Error adding to dead letter queue:', error);
+      throw error;
+    }
+  }
+
+  async getDeadLetterQueue(): Promise<DeadLetterQueueItem[]> {
+    try {
+      const items = await db.deadLetterQueue
+        .orderBy('timestamp')
+        .reverse()
+        .toArray();
+      
+      logDebug(`📊 [Dexie] Retrieved ${items.length} dead letter queue items`);
+      return items;
+    } catch (error) {
+      logError('❌ [Dexie] Error getting dead letter queue:', error);
+      return [];
+    }
+  }
+
+  async retryFromDeadLetterQueue(id: string): Promise<void> {
+    try {
+      const dlqItem = await db.deadLetterQueue.get(id);
+      if (!dlqItem) {
+        logWarn(`⚠️ [Dexie] Dead letter queue item not found: ${id}`);
+        return;
+      }
+
+      // Re-add to regular queue with reset retry count
+      const queuedRequest: QueuedRequest = {
+        id: Date.now() + Math.random().toString(),
+        url: dlqItem.endpoint,
+        method: dlqItem.method,
+        headers: dlqItem.headers || {},
+        body: dlqItem.body ? JSON.stringify(dlqItem.body) : null,
+        timestamp: Date.now(),
+        retryCount: 0,
+        lastAttempt: 0
+      };
+
+      await this.addQueuedRequest(queuedRequest);
+      await db.deadLetterQueue.delete(id);
+      
+      logDebug(`♻️ [Dexie] Moved item from dead letter queue back to regular queue: ${dlqItem.method} ${dlqItem.endpoint}`);
+    } catch (error) {
+      logError('❌ [Dexie] Error retrying from dead letter queue:', error);
+      throw error;
+    }
+  }
+
+  async removeFromDeadLetterQueue(id: string): Promise<void> {
+    try {
+      await db.deadLetterQueue.delete(id);
+      logDebug(`🗑️ [Dexie] Removed item from dead letter queue: ${id}`);
+    } catch (error) {
+      logError('❌ [Dexie] Error removing from dead letter queue:', error);
+      throw error;
+    }
+  }
+
+  async getDeadLetterQueueCount(): Promise<number> {
+    try {
+      return await db.deadLetterQueue.count();
+    } catch (error) {
+      logError('❌ [Dexie] Error getting dead letter queue count:', error);
+      return 0;
     }
   }
 }

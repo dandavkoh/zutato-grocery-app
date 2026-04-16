@@ -1,6 +1,7 @@
 import { supabase } from '../config/supabase';
 import { logDebug, logError, logInfo } from '../config/environment';
 import { dexieService } from './dexieService';
+import { globalQueueService } from './globalQueueService';
 
 /**
  * Service for syncing shopping items data
@@ -9,10 +10,26 @@ import { dexieService } from './dexieService';
 class DataSyncService {
   /**
    * Reload shopping items for a specific list
+   * Processes queue first to ensure all pending changes are synced
    */
   async reloadShoppingItems(listId: string): Promise<void> {
     try {
       logDebug('Reloading shopping items from Supabase', { listId });
+      
+      // Process queue first if online and queue has items
+      if (navigator.onLine) {
+        const queueLength = await globalQueueService.getQueueLength();
+        if (queueLength > 0) {
+          logInfo('Processing queue before reloading items', { listId, queueLength });
+          try {
+            await globalQueueService.processQueuedRequests();
+            logInfo('Queue processed successfully before reload', { listId });
+          } catch (queueError) {
+            logError('Queue processing failed before reload', { listId, error: queueError });
+            // Continue with reload even if queue processing fails
+          }
+        }
+      }
       
       const { data, error } = await supabase
         .from('shopping_items')

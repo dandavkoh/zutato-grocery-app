@@ -28,13 +28,15 @@ class SentryErrorService {
   public reportApiError(
     error: Error | any,
     context: {
-      url: string;
-      method: string;
+      url?: string;
+      method?: string;
       status?: number;
       requestBody?: any;
       responseBody?: any;
       userId?: string;
       listId?: string;
+      context?: string;
+      [key: string]: any;
     }
   ): void {
     if (!this.isEnabled) return;
@@ -42,17 +44,35 @@ class SentryErrorService {
     Sentry.withScope((scope) => {
       // Setze Tags für bessere Kategorisierung
       scope.setTag('error_type', 'api_error');
-      scope.setTag('http_method', context.method);
-      scope.setTag('http_status', context.status?.toString() || 'unknown');
+      if (context.method) {
+        scope.setTag('http_method', context.method);
+      }
+      if (context.status) {
+        scope.setTag('http_status', context.status?.toString());
+      }
+      if (context.context) {
+        scope.setTag('context', context.context);
+      }
       
       // Setze Context für detaillierte Informationen
-      scope.setContext('api_request', {
-        url: context.url,
-        method: context.method,
-        status: context.status,
-        requestBody: context.requestBody,
-        responseBody: context.responseBody,
+      const apiContext: any = {};
+      if (context.url) apiContext.url = context.url;
+      if (context.method) apiContext.method = context.method;
+      if (context.status) apiContext.status = context.status;
+      if (context.requestBody) apiContext.requestBody = context.requestBody;
+      if (context.responseBody) apiContext.responseBody = context.responseBody;
+      if (context.context) apiContext.context = context.context;
+      
+      // Add any additional context fields
+      Object.keys(context).forEach(key => {
+        if (!['url', 'method', 'status', 'requestBody', 'responseBody', 'userId', 'listId', 'context'].includes(key)) {
+          apiContext[key] = context[key];
+        }
       });
+      
+      if (Object.keys(apiContext).length > 0) {
+        scope.setContext('api_request', apiContext);
+      }
 
       // Setze User Context falls verfügbar
       if (context.userId) {

@@ -2,9 +2,69 @@ import { supabase } from '../config/supabase';
 import { logDebug, logError, logInfo, environment } from '../config/environment';
 import { globalQueueService } from '../services/globalQueueService';
 import { dexieService } from '../services/dexieService';
-import type { AuthError } from '@supabase/supabase-js';
+import type { AuthError, PostgrestError } from '@supabase/supabase-js';
 import { realtimeService } from '../services/realtimeService';
 import { sentryErrorService } from '../services/sentryErrorService';
+import { withTimeout } from '../utils/timeoutUtils';
+import type { 
+  ShoppingItem as DexieShoppingItem, 
+  List as DexieList,
+  Category as DexieCategory,
+  Unit as DexieUnit
+} from '../services/dexieService';
+
+// Database response types (snake_case from Supabase)
+interface DbShoppingItem {
+  id: string;
+  name: string;
+  category_id: string | null;
+  icon: string | null;
+  unit_id: string | null;
+  quantity: number | null;
+  is_completed: boolean;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+  list_id: string;
+  created_by: string;
+  notes: string | null;
+  store: string | null;
+  assigned_to: string | null;
+  completed_at: string | null;
+  completed_by: string | null;
+  deleted_at: string | null;
+  deleted_by: string | null;
+}
+
+interface DbList {
+  id: string;
+  name: string;
+  description: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string | null;
+  is_deleted: boolean;
+  deleted_at: string | null;
+  deleted_by: string | null;
+}
+
+interface DbCategory {
+  id: string;
+  name: string;
+  icon: string;
+  sort_order: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface DbUnit {
+  id: string;
+  name: string;
+  short_name: string;
+  sort_order: number;
+  created_at?: string;
+  updated_at?: string;
+}
 
 // Initialize PWA service when Supabase API is imported
 if (typeof window !== 'undefined') {
@@ -187,6 +247,63 @@ export interface ApiResponse<T> {
 
 // No more mock data - using real Supabase database
 
+// Helper functions to convert between database (snake_case) and API (camelCase) types
+function mapDbToApiShoppingItem(dbItem: DexieShoppingItem): ShoppingItem {
+  return {
+    id: dbItem.id,
+    name: dbItem.name,
+    category_id: dbItem.category_id,
+    icon: dbItem.icon ?? undefined,
+    unit_id: dbItem.unit_id,
+    quantity: dbItem.quantity ?? undefined,
+    is_completed: dbItem.is_completed,
+    is_deleted: dbItem.is_deleted,
+    created_at: dbItem.created_at,
+    updatedAt: dbItem.updated_at,
+    listId: dbItem.list_id,
+    createdBy: dbItem.created_by,
+    notes: dbItem.notes ?? undefined,
+    store: dbItem.store ?? undefined,
+    assignedTo: dbItem.assigned_to ?? undefined,
+  };
+}
+
+function mapApiToDbShoppingItem(apiItem: ShoppingItem): DexieShoppingItem {
+  return {
+    id: apiItem.id,
+    list_id: apiItem.listId,
+    name: apiItem.name,
+    quantity: apiItem.quantity ?? null,
+    unit_id: apiItem.unit_id ?? null,
+    category_id: apiItem.category_id,
+    icon: apiItem.icon ?? null,
+    notes: apiItem.notes ?? null,
+    store: apiItem.store ?? null,
+    assigned_to: apiItem.assignedTo ?? null,
+    is_completed: apiItem.is_completed,
+    completed_at: null,
+    completed_by: null,
+    created_by: apiItem.createdBy,
+    created_at: apiItem.created_at,
+    updated_at: apiItem.updatedAt,
+    is_deleted: apiItem.is_deleted ?? false,
+    deleted_at: null,
+    deleted_by: null,
+  };
+}
+
+function mapDbToApiList(dbList: DexieList): List {
+  return {
+    id: dbList.id,
+    name: dbList.name,
+    description: dbList.description ?? undefined,
+    created_by: dbList.created_by,
+    created_at: dbList.created_at,
+    updated_at: dbList.updated_at ?? undefined,
+    is_deleted: Boolean(dbList.is_deleted),
+  };
+}
+
 // Supabase API Controller
 export class ShoppingItemsController {
   // Get all items for a list
@@ -194,18 +311,47 @@ export class ShoppingItemsController {
     try {
       logDebug('Fetching items from Supabase', { listId });
 
-      // 1) If online and queue has items, process queue first (wait until not processing)
+      // 1) If online and queue has items, process queue first and wait for completion
       if (navigator.onLine) {
         const queueStatus = await globalQueueService.getQueueStatus();
         if (queueStatus.queueLength > 0) {
           logInfo('Queue has items; processing before GET shopping_items', queueStatus);
-          await globalQueueService.processQueuedRequests();
-          // Wait briefly if still processing
-          let waits = 0;
-          while (await (async () => (await globalQueueService.getQueueStatus()).isProcessing)()) {
-            if (waits++ > 30) break; // max ~3s
-            await new Promise(r => setTimeout(r, 100));
+          
+          // Start queue processing
+          const processPromise = globalQueueService.processQueuedRequests();
+          
+          // Wait for queue to complete processing with timeout
+          const maxWaitTime = 5000; // 5 seconds max wait
+          const startTime = Date.now();
+          let isStillProcessing = true;
+          let iterations = 0;
+          const MAX_ITERATIONS = 50; // 5 seconds max (100ms * 50)
+          
+          while (isStillProcessing && (Date.now() - startTime) < maxWaitTime && iterations < MAX_ITERATIONS) {
+            const currentStatus = await globalQueueService.getQueueStatus();
+            isStillProcessing = currentStatus.isProcessing;
+            
+            if (isStillProcessing) {
+              // Wait 100ms before checking again
+              await new Promise(r => setTimeout(r, 100));
+              iterations++;
+            }
           }
+          
+          if (isStillProcessing) {
+            logInfo('Queue processing timeout reached, continuing with GET request', { 
+              waitedMs: Date.now() - startTime 
+            });
+          } else {
+            logInfo('Queue processing completed', { 
+              duration: Date.now() - startTime 
+            });
+          }
+          
+          // Ensure the promise is completed (don't leave it hanging)
+          await processPromise.catch(err => {
+            logError('Queue processing error during wait', err);
+          });
         }
       }
 
@@ -214,8 +360,8 @@ export class ShoppingItemsController {
       const totalLimit = environment.shoppingListMaxActiveItems + environment.shoppingListMaxCompletedItems;
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort('timeout'), timeoutMs);
-      let data: ShoppingItem[] | null = null;
-      let error: any = null;
+      let data: DbShoppingItem[] | null = null;
+      let error: PostgrestError | Error | null = null;
       try {
         const builder = supabase
           .from('shopping_items')
@@ -227,13 +373,13 @@ export class ShoppingItemsController {
         const result = (builder as any).abortSignal
           ? await (builder as any).abortSignal(controller.signal)
           : await builder;
-        data = result.data as any;
-        error = result.error as any;
-      } catch (err: any) {
-        if (err?.name === 'AbortError' || err === 'timeout') {
+        data = result.data;
+        error = result.error;
+      } catch (err) {
+        if ((err as Error)?.name === 'AbortError' || err === 'timeout') {
           error = new Error('Request timeout');
         } else {
-          error = err;
+          error = err as Error;
         }
       } finally {
         clearTimeout(timeoutId);
@@ -257,15 +403,57 @@ export class ShoppingItemsController {
         };
       }
 
-      // Sync to Dexie
+      // Sync to Dexie with conflict resolution
       try {
-        await dexieService.syncShoppingItems((data || []) as any);
+        // Get queued item IDs to prevent overwriting pending changes
+        const queuedItemIds = await globalQueueService.getQueuedItemIds();
+        // Convert API items to Dexie format
+        const dexieItems: DexieShoppingItem[] = (data || []).map(item => ({
+          id: item.id,
+          list_id: item.list_id,
+          name: item.name,
+          quantity: item.quantity ?? null,
+          unit_id: item.unit_id ?? null,
+          category_id: item.category_id,
+          icon: item.icon ?? null,
+          notes: item.notes ?? null,
+          store: item.store ?? null,
+          assigned_to: item.assigned_to ?? null,
+          is_completed: item.is_completed,
+          completed_at: item.completed_at ?? null,
+          completed_by: item.completed_by ?? null,
+          created_by: item.created_by,
+          created_at: item.created_at,
+          updated_at: item.updated_at,
+          is_deleted: item.is_deleted,
+          deleted_at: item.deleted_at ?? null,
+          deleted_by: item.deleted_by ?? null,
+        }));
+        await dexieService.syncShoppingItems(dexieItems, queuedItemIds);
       } catch (syncErr) {
         logError('Failed to sync fetched items to Dexie', syncErr);
       }
       logInfo('Successfully fetched items from Supabase (single query with limit)', { count: data?.length || 0, limit: totalLimit });
+      // Convert DB items to API format
+      const apiItems: ShoppingItem[] = (data || []).map(item => ({
+        id: item.id,
+        name: item.name,
+        category_id: item.category_id,
+        icon: item.icon ?? undefined,
+        unit_id: item.unit_id ?? undefined,
+        quantity: item.quantity ?? undefined,
+        is_completed: item.is_completed,
+        is_deleted: item.is_deleted,
+        created_at: item.created_at,
+        updatedAt: item.updated_at,
+        listId: item.list_id,
+        createdBy: item.created_by,
+        notes: item.notes ?? undefined,
+        store: item.store ?? undefined,
+        assignedTo: item.assigned_to ?? undefined,
+      }));
       return {
-        data: data || [],
+        data: apiItems,
         error: null,
         status: 200
       };
@@ -292,7 +480,7 @@ export class ShoppingItemsController {
     try {
       logDebug('Creating new item in Supabase', { name: itemData.name, id: itemData.id });
       
-      const insertData: any = {
+      const insertData = {
         id: itemData.id, // GUID is always required
         name: itemData.name,
         category_id: itemData.category_id,
@@ -330,7 +518,7 @@ export class ShoppingItemsController {
           is_deleted: false,
           deleted_at: null,
           deleted_by: null,
-        } as any);
+        });
       } catch (dexieErr) {
         logError('Failed optimistic insert into Dexie', dexieErr);
       }
@@ -340,8 +528,8 @@ export class ShoppingItemsController {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort('timeout'), timeoutMs);
 
-      let data: any = null;
-      let error: any = null;
+      let data: DbShoppingItem | null = null;
+      let error: PostgrestError | Error | null = null;
       try {
         const result = await supabase
           .from('shopping_items')
@@ -350,11 +538,11 @@ export class ShoppingItemsController {
           .single();
         data = result.data;
         error = result.error;
-      } catch (err: any) {
-        if (err?.name === 'AbortError' || err === 'timeout') {
+      } catch (err) {
+        if ((err as Error)?.name === 'AbortError' || err === 'timeout') {
           error = new Error('Request timeout');
         } else {
-          error = err;
+          error = err as Error;
         }
       } finally {
         clearTimeout(timeoutId);
@@ -381,7 +569,13 @@ export class ShoppingItemsController {
           if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
           const url = `${environment.supabaseUrl}/rest/v1/shopping_items`;
           const req = new Request(url, { method: 'POST', headers: new Headers(headers), body: JSON.stringify([insertData]) });
-          await globalQueueService.addRequestToQueue(req);
+          
+          // Add rollback data for create operation
+          await globalQueueService.addRequestToQueue(req, {
+            operation: 'create',
+            tableName: 'shoppingItems',
+            recordId: itemData.id
+          });
           logInfo('Queued POST shopping_items due to error/timeout/offline');
         } catch (queueErr) {
           logError('Failed to queue POST shopping_items', queueErr);
@@ -395,22 +589,30 @@ export class ShoppingItemsController {
       }
       
       // Map database response to our interface
+      if (!data) {
+        return {
+          data: null,
+          error: 'No data returned from create operation',
+          status: 500
+        };
+      }
+      
       const shoppingItem: ShoppingItem = {
         id: data.id,
         name: data.name,
         category_id: data.category_id,
-        icon: data.icon,
-        unit_id: data.unit_id,
-        quantity: data.quantity,
+        icon: data.icon ?? undefined,
+        unit_id: data.unit_id ?? undefined,
+        quantity: data.quantity ?? undefined,
         is_completed: data.is_completed,
         is_deleted: data.is_deleted,
         created_at: data.created_at,
         updatedAt: data.updated_at,
         listId: data.list_id,
         createdBy: data.created_by,
-        notes: data.notes,
-        store: data.store,
-        assignedTo: data.assigned_to,
+        notes: data.notes ?? undefined,
+        store: data.store ?? undefined,
+        assignedTo: data.assigned_to ?? undefined,
       };
       
       logInfo('Successfully created item in Supabase', { itemId: data.id });
@@ -450,8 +652,15 @@ export class ShoppingItemsController {
     try {
       logDebug('Updating item in Supabase', { itemId: id });
       
-      const updateData: any = { ...updates };
-      updateData.updated_at = new Date().toISOString();
+      const updateData = { ...updates, updated_at: new Date().toISOString() };
+
+      // Get current state BEFORE optimistic update for rollback
+      let previousItem: DexieShoppingItem | undefined = undefined;
+      try {
+        previousItem = await dexieService.getShoppingItemById(id);
+      } catch (err) {
+        logError('Failed to get previous item state for rollback', err);
+      }
 
       // Optimistic Dexie update
       try {
@@ -460,26 +669,26 @@ export class ShoppingItemsController {
         logError('Failed optimistic update in Dexie', dexieErr);
       }
 
-      // Timebox the Supabase update using Promise.race
+      // Timebox the Supabase update using withTimeout
       const timeoutMs = environment.supabaseRequestTimeoutMs ?? 1500;
-      const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Request timeout')), timeoutMs));
 
-      let data: any = null;
-      let error: any = null;
+      let data: DbShoppingItem | null = null;
+      let error: PostgrestError | Error | null = null;
       try {
-        const result = await Promise.race([
+        const result = await withTimeout(
           supabase
             .from('shopping_items')
             .update(updateData)
             .eq('id', id)
             .select()
             .single(),
-          timeoutPromise,
-        ]);
-        data = (result as any).data;
-        error = (result as any).error;
-      } catch (err: any) {
-        error = err;
+          timeoutMs,
+          'Request timeout'
+        );
+        data = result.data;
+        error = result.error;
+      } catch (err) {
+        error = err as Error;
       }
       
       if (error) {
@@ -501,7 +710,14 @@ export class ShoppingItemsController {
           if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
           const url = `${environment.supabaseUrl}/rest/v1/shopping_items?id=eq.${id}`;
           const req = new Request(url, { method: 'PATCH', headers: new Headers(headers), body: JSON.stringify(updateData) });
-          await globalQueueService.addRequestToQueue(req);
+          
+          // Add rollback data for update operation
+          await globalQueueService.addRequestToQueue(req, {
+            operation: 'update',
+            tableName: 'shoppingItems',
+            recordId: id,
+            previousState: previousItem
+          });
           logInfo('Queued PATCH shopping_items due to error/timeout/offline');
         } catch (queueErr) {
           logError('Failed to queue PATCH shopping_items', queueErr);
@@ -515,28 +731,60 @@ export class ShoppingItemsController {
       }
       
       // Map database response to our interface
+      if (!data) {
+        return {
+          data: null,
+          error: 'No data returned from update operation',
+          status: 500
+        };
+      }
+      
       const shoppingItem: ShoppingItem = {
         id: data.id,
         name: data.name,
         category_id: data.category_id,
-        icon: data.icon,
-        unit_id: data.unit_id,
-        quantity: data.quantity,
+        icon: data.icon ?? undefined,
+        unit_id: data.unit_id ?? undefined,
+        quantity: data.quantity ?? undefined,
         is_completed: data.is_completed,
         is_deleted: data.is_deleted,
         created_at: data.created_at,
         updatedAt: data.updated_at,
         listId: data.list_id,
         createdBy: data.created_by,
-        notes: data.notes,
-        store: data.store,
-        assignedTo: data.assigned_to,
+        notes: data.notes ?? undefined,
+        store: data.store ?? undefined,
+        assignedTo: data.assigned_to ?? undefined,
       };
       
       logInfo('Successfully updated item in Supabase', { itemId: id });
-      // Sync Dexie with server response
+      // Sync Dexie with server response - check for conflicts and queued items
       try {
-        await dexieService.updateShoppingItemFromResponse(data);
+        // Get queued item IDs to prevent overwriting pending changes
+        const queuedItemIds = await globalQueueService.getQueuedItemIds();
+        // Convert to Dexie format
+        const dexieItem: DexieShoppingItem = {
+          id: data.id,
+          list_id: data.list_id,
+          name: data.name,
+          quantity: data.quantity,
+          unit_id: data.unit_id,
+          category_id: data.category_id,
+          icon: data.icon,
+          notes: data.notes,
+          store: data.store,
+          assigned_to: data.assigned_to,
+          is_completed: data.is_completed,
+          completed_at: data.completed_at,
+          completed_by: data.completed_by,
+          created_by: data.created_by,
+          created_at: data.created_at,
+          updated_at: data.updated_at,
+          is_deleted: data.is_deleted,
+          deleted_at: data.deleted_at,
+          deleted_by: data.deleted_by,
+        };
+        await dexieService.updateShoppingItemFromResponse(dexieItem, queuedItemIds);
       } catch (syncErr) {
         logError('Failed to sync updated item to Dexie', syncErr);
       }
@@ -576,6 +824,14 @@ export class ShoppingItemsController {
       logDebug('Deleting item in Supabase', { itemId: id });
       const deleteData = { is_deleted: true, updated_at: new Date().toISOString() };
 
+      // Get current state BEFORE optimistic delete for rollback
+      let previousItem: DexieShoppingItem | undefined = undefined;
+      try {
+        previousItem = await dexieService.getShoppingItemById(id);
+      } catch (err) {
+        logError('Failed to get previous item state for rollback', err);
+      }
+
       // Optimistic Dexie delete
       try {
         await dexieService.deleteShoppingItem(id, 'client');
@@ -585,18 +841,18 @@ export class ShoppingItemsController {
 
       // Timeboxed Supabase update
       const timeoutMs = environment.supabaseRequestTimeoutMs ?? 1500;
-      const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Request timeout')), timeoutMs));
-      let error: any = null;
+      let error: PostgrestError | Error | null = null;
       try {
-        await Promise.race([
+        await withTimeout(
           supabase
             .from('shopping_items')
             .update(deleteData)
             .eq('id', id),
-          timeoutPromise,
-        ]);
-      } catch (err: any) {
-        error = err;
+          timeoutMs,
+          'Request timeout'
+        );
+      } catch (err) {
+        error = err as Error;
       }
       
       if (error) {
@@ -619,7 +875,14 @@ export class ShoppingItemsController {
           if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
           const url = `${environment.supabaseUrl}/rest/v1/shopping_items?id=eq.${id}`;
           const req = new Request(url, { method: 'PATCH', headers: new Headers(headers), body: JSON.stringify(deleteData) });
-          await globalQueueService.addRequestToQueue(req);
+          
+          // Add rollback data for delete operation
+          await globalQueueService.addRequestToQueue(req, {
+            operation: 'delete',
+            tableName: 'shoppingItems',
+            recordId: id,
+            previousState: previousItem
+          });
           logInfo('Queued DELETE(PATCH) shopping_items due to error/timeout/offline');
         } catch (queueErr) {
           logError('Failed to queue DELETE(PATCH) shopping_items', queueErr);
@@ -668,10 +931,18 @@ export class ShoppingItemsController {
   async setItemCompletion(id: string, isCompleted: boolean): Promise<ApiResponse<ShoppingItem>> {
     try {
       logDebug('Setting item completion status in Supabase', { itemId: id, isCompleted });
-      const updateData: any = {
+      const updateData = {
         is_completed: isCompleted,
         updated_at: new Date().toISOString(),
       };
+
+      // Get current state BEFORE optimistic update for rollback
+      let previousItem: DexieShoppingItem | undefined = undefined;
+      try {
+        previousItem = await dexieService.getShoppingItemById(id);
+      } catch (err) {
+        logError('Failed to get previous item state for rollback', err);
+      }
 
       // Optimistic Dexie update
       try {
@@ -682,22 +953,23 @@ export class ShoppingItemsController {
 
       // Timeboxed Supabase update
       const timeoutMs = environment.supabaseRequestTimeoutMs ?? 1500;
-      const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Request timeout')), timeoutMs));
-      let data: any = null; let error: any = null;
+      let data: DbShoppingItem | null = null;
+      let error: PostgrestError | Error | null = null;
       try {
-        const result = await Promise.race([
+        const result = await withTimeout(
           supabase
             .from('shopping_items')
             .update(updateData)
             .eq('id', id)
             .select()
             .single(),
-          timeoutPromise,
-        ]);
-        data = (result as any).data;
-        error = (result as any).error;
-      } catch (err: any) {
-        error = err;
+          timeoutMs,
+          'Request timeout'
+        );
+        data = result.data;
+        error = result.error;
+      } catch (err) {
+        error = err as Error;
       }
       
       if (error) {
@@ -720,7 +992,14 @@ export class ShoppingItemsController {
           if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
           const url = `${environment.supabaseUrl}/rest/v1/shopping_items?id=eq.${id}`;
           const req = new Request(url, { method: 'PATCH', headers: new Headers(headers), body: JSON.stringify(updateData) });
-          await globalQueueService.addRequestToQueue(req);
+          
+          // Add rollback data for completion update
+          await globalQueueService.addRequestToQueue(req, {
+            operation: 'update',
+            tableName: 'shoppingItems',
+            recordId: id,
+            previousState: previousItem
+          });
           logInfo('Queued PATCH shopping_items (setItemCompletion) due to error/timeout/offline');
         } catch (queueErr) {
           logError('Failed to queue PATCH shopping_items (setItemCompletion)', queueErr);
@@ -734,27 +1013,64 @@ export class ShoppingItemsController {
       }
       
       // Map database response to our interface
+      if (!data) {
+        return {
+          data: null,
+          error: 'No data returned from completion update',
+          status: 500
+        };
+      }
+      
       const shoppingItem: ShoppingItem = {
         id: data.id,
         name: data.name,
         category_id: data.category_id,
-        icon: data.icon,
-        unit_id: data.unit_id,
-        quantity: data.quantity,
+        icon: data.icon ?? undefined,
+        unit_id: data.unit_id ?? undefined,
+        quantity: data.quantity ?? undefined,
         is_completed: data.is_completed,
         is_deleted: data.is_deleted,
         created_at: data.created_at,
         updatedAt: data.updated_at,
         listId: data.list_id,
         createdBy: data.created_by,
-        notes: data.notes,
-        store: data.store,
-        assignedTo: data.assigned_to,
+        notes: data.notes ?? undefined,
+        store: data.store ?? undefined,
+        assignedTo: data.assigned_to ?? undefined,
       };
       
       logInfo('Successfully set item completion status in Supabase', { itemId: id, isCompleted });
       // Sync Dexie with server response
-      try { await dexieService.updateShoppingItemFromResponse(data); } catch {}
+      try {
+        const dexieItem: DexieShoppingItem = {
+          id: data.id,
+          list_id: data.list_id,
+          name: data.name,
+          quantity: data.quantity,
+          unit_id: data.unit_id,
+          category_id: data.category_id,
+          icon: data.icon,
+          notes: data.notes,
+          store: data.store,
+          assigned_to: data.assigned_to,
+          is_completed: data.is_completed,
+          completed_at: data.completed_at,
+          completed_by: data.completed_by,
+          created_by: data.created_by,
+          created_at: data.created_at,
+          updated_at: data.updated_at,
+          is_deleted: data.is_deleted,
+          deleted_at: data.deleted_at,
+          deleted_by: data.deleted_by,
+        };
+        await dexieService.updateShoppingItemFromResponse(dexieItem);
+      } catch (error) {
+        logError('Failed to sync updated item to Dexie:', error);
+        sentryErrorService.reportApiError(error, {
+          context: 'updateShoppingItemFromResponse',
+          itemId: data.id
+        });
+      }
       
       // Broadcast update to all subscribers
       await realtimeService.broadcastUpdate(data.list_id, {
@@ -808,22 +1124,22 @@ export class ListsController {
       }
 
       const timeoutMs = environment.supabaseRequestTimeoutMs ?? 1500;
-      const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Request timeout')), timeoutMs));
-      let data: any = null;
-      let error: any = null;
+      let data: DbList[] | null = null;
+      let error: PostgrestError | Error | null = null;
       try {
-        const result = await Promise.race([
+        const result = await withTimeout(
           supabase
             .from('lists')
             .select(`*`)
             .eq('is_deleted', false)
             .order('created_at', { ascending: false }),
-          timeoutPromise,
-        ]);
-        data = (result as any).data;
-        error = (result as any).error;
-      } catch (err: any) {
-        error = err;
+          timeoutMs,
+          'Request timeout'
+        );
+        data = result.data;
+        error = result.error;
+      } catch (err) {
+        error = err as Error;
       }
       
       if (error) {
@@ -842,12 +1158,38 @@ export class ListsController {
       }
       // Sync to Dexie
       try {
-        await dexieService.syncLists((data || []) as any);
-      } catch {}
+        const dexieLists: DexieList[] = (data || []).map(list => ({
+          id: list.id,
+          name: list.name,
+          description: list.description ?? null,
+          created_by: list.created_by,
+          created_at: list.created_at,
+          updated_at: list.updated_at ?? null,
+          is_deleted: list.is_deleted ? 1 : 0,
+          deleted_at: list.deleted_at ?? null,
+          deleted_by: list.deleted_by ?? null,
+        }));
+        await dexieService.syncLists(dexieLists);
+      } catch (error) {
+        logError('Failed to sync lists to Dexie:', error);
+        sentryErrorService.reportApiError(error, {
+          context: 'syncLists'
+        });
+      }
 
       logInfo('Successfully fetched lists from Supabase', { count: data?.length || 0 });
+      // Convert DB lists to API format
+      const apiLists: List[] = (data || []).map(list => ({
+        id: list.id,
+        name: list.name,
+        description: list.description ?? undefined,
+        created_by: list.created_by,
+        created_at: list.created_at,
+        updated_at: list.updated_at ?? undefined,
+        is_deleted: list.is_deleted,
+      }));
       return {
-        data: data || [],
+        data: apiLists,
         error: null,
         status: 200
       };
@@ -937,22 +1279,29 @@ export class ListsController {
           is_deleted: 0,
           deleted_at: null,
           deleted_by: null,
-        } as any);
-      } catch {}
+        });
+      } catch (error) {
+        logError('Failed optimistic insert list into Dexie:', error);
+        sentryErrorService.reportApiError(error, {
+          context: 'addList',
+          listId: listData.id
+        });
+      }
 
       const timeoutMs = environment.supabaseRequestTimeoutMs ?? 1500;
-      const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Request timeout')), timeoutMs));
-      let list: any = null;
-      let listError: any = null;
+      let listError: PostgrestError | Error | null = null;
       try {
-        const result = await Promise.race([
+        const result = await withTimeout(
           supabase
             .from('lists')
             .insert({ id: listData.id, name: listData.name, description: listData.description, created_by: listData.created_by }),
-          timeoutPromise,
-        ]);
-        listError = (result as any).error;
-      } catch (err: any) { listError = err; }
+          timeoutMs,
+          'Request timeout'
+        );
+        listError = result.error;
+      } catch (err) { 
+        listError = err as Error;
+      }
       
       if (listError) {
         logError('Failed to create list in Supabase', listError);
@@ -963,8 +1312,20 @@ export class ListsController {
           if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
           const url = `${environment.supabaseUrl}/rest/v1/lists`;
           const req = new Request(url, { method: 'POST', headers: new Headers(headers), body: JSON.stringify({ id: listData.id, name: listData.name, description: listData.description, created_by: listData.created_by }) });
-          await globalQueueService.addRequestToQueue(req);
-        } catch {}
+          
+          // Add rollback data for create list operation
+          await globalQueueService.addRequestToQueue(req, {
+            operation: 'create',
+            tableName: 'lists',
+            recordId: listData.id
+          });
+        } catch (error) {
+          logError('Failed to queue POST lists:', error);
+          sentryErrorService.reportApiError(error, {
+            context: 'queuePostList',
+            listId: listData.id
+          });
+        }
         return {
           data: null,
           error: listError.message,
@@ -975,7 +1336,15 @@ export class ListsController {
       // We optimistically added to Dexie already; return a minimal object
       logInfo('Successfully created list in Supabase', { listId: listData.id });
       return {
-        data: { id: listData.id, name: listData.name, description: listData.description, created_by: listData.created_by, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), is_deleted: false } as any,
+        data: { 
+          id: listData.id, 
+          name: listData.name, 
+          description: listData.description, 
+          created_by: listData.created_by, 
+          created_at: new Date().toISOString(), 
+          updated_at: new Date().toISOString(), 
+          is_deleted: false 
+        },
         error: null,
         status: 201
       };
@@ -1001,30 +1370,52 @@ export class ListsController {
     try {
       logDebug('Updating list in Supabase', { listId: id });
       
-      const updateData: any = { ...updates };
-      updateData.updated_at = new Date().toISOString();
+      const updateData = { ...updates, updated_at: new Date().toISOString() };
+
+      // Get current state BEFORE optimistic update for rollback
+      let previousList: DexieList | undefined = undefined;
+      try {
+        previousList = await dexieService.getListById(id);
+      } catch (err) {
+        logError('Failed to get previous list state for rollback', err);
+      }
 
       // Optimistic Dexie update
       try {
-        await dexieService.updateList({ id, ...updateData } as any);
-      } catch {}
+        const dexieUpdate: Partial<DexieList> = {
+          id,
+          name: updates.name,
+          description: updates.description ?? undefined,
+          updated_at: new Date().toISOString(),
+        };
+        await dexieService.updateList(dexieUpdate as DexieList);
+      } catch (error) {
+        logError('Failed optimistic update list in Dexie:', error);
+        sentryErrorService.reportApiError(error, {
+          context: 'updateList',
+          listId: id
+        });
+      }
 
       const timeoutMs = environment.supabaseRequestTimeoutMs ?? 1500;
-      const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Request timeout')), timeoutMs));
-      let data: any = null; let error: any = null;
+      let data: DbList | null = null;
+      let error: PostgrestError | Error | null = null;
       try {
-        const result = await Promise.race([
+        const result = await withTimeout(
           supabase
             .from('lists')
             .update(updateData)
             .eq('id', id)
             .select()
             .single(),
-          timeoutPromise,
-        ]);
-        data = (result as any).data;
-        error = (result as any).error;
-      } catch (err: any) { error = err; }
+          timeoutMs,
+          'Request timeout'
+        );
+        data = result.data;
+        error = result.error;
+      } catch (err) { 
+        error = err as Error;
+      }
       
       if (error) {
         logError('Failed to update list in Supabase', error);
@@ -1042,8 +1433,21 @@ export class ListsController {
           if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
           const url = `${environment.supabaseUrl}/rest/v1/lists?id=eq.${id}`;
           const req = new Request(url, { method: 'PATCH', headers: new Headers(headers), body: JSON.stringify(updateData) });
-          await globalQueueService.addRequestToQueue(req);
-        } catch {}
+          
+          // Add rollback data for update list operation
+          await globalQueueService.addRequestToQueue(req, {
+            operation: 'update',
+            tableName: 'lists',
+            recordId: id,
+            previousState: previousList
+          });
+        } catch (error) {
+          logError('Failed to queue PATCH lists:', error);
+          sentryErrorService.reportApiError(error, {
+            context: 'queuePatchList',
+            listId: id
+          });
+        }
         
         return {
           data: null,
@@ -1054,9 +1458,38 @@ export class ListsController {
       
       logInfo('Successfully updated list in Supabase', { listId: id });
       // Sync Dexie
-      try { await dexieService.updateList(data as any); } catch {}
+      try {
+        if (data) {
+          const dexieList: DexieList = {
+            id: data.id,
+            name: data.name,
+            description: data.description ?? null,
+            created_by: data.created_by,
+            created_at: data.created_at,
+            updated_at: data.updated_at ?? null,
+            is_deleted: data.is_deleted ? 1 : 0,
+            deleted_at: data.deleted_at ?? null,
+            deleted_by: data.deleted_by ?? null,
+          };
+          await dexieService.updateList(dexieList);
+        }
+      } catch (error) {
+        logError('Failed to sync updated list to Dexie:', error);
+        sentryErrorService.reportApiError(error, {
+          context: 'updateListFromResponse',
+          listId: id
+        });
+      }
       return {
-        data,
+        data: data ? {
+          id: data.id,
+          name: data.name,
+          description: data.description ?? undefined,
+          created_by: data.created_by,
+          created_at: data.created_at,
+          updated_at: data.updated_at ?? undefined,
+          is_deleted: data.is_deleted,
+        } : null,
         error: null,
         status: 200
       };
@@ -1085,6 +1518,14 @@ export class ListsController {
 
       const deleteData = { is_deleted: true, updated_at: new Date().toISOString() };
 
+      // Get current state BEFORE optimistic delete for rollback
+      let previousList: DexieList | undefined = undefined;
+      try {
+        previousList = await dexieService.getListById(id);
+      } catch (err) {
+        logError('Failed to get previous list state for rollback', err);
+      }
+
       // Optimistic Dexie delete
       try {
         await dexieService.deleteList(id);
@@ -1094,18 +1535,18 @@ export class ListsController {
 
       // Timeboxed Supabase update
       const timeoutMs = environment.supabaseRequestTimeoutMs ?? 1500;
-      const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Request timeout')), timeoutMs));
-      let error: any = null;
+      let error: PostgrestError | Error | null = null;
       try {
-        await Promise.race([
+        await withTimeout(
           supabase
             .from('lists')
             .update(deleteData)
             .eq('id', id),
-          timeoutPromise,
-        ]);
-      } catch (err: any) {
-        error = err;
+          timeoutMs,
+          'Request timeout'
+        );
+      } catch (err) {
+        error = err as Error;
       }
       
       if (error) {
@@ -1128,7 +1569,14 @@ export class ListsController {
           if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
           const url = `${environment.supabaseUrl}/rest/v1/lists?id=eq.${id}`;
           const req = new Request(url, { method: 'PATCH', headers: new Headers(headers), body: JSON.stringify(deleteData) });
-          await globalQueueService.addRequestToQueue(req);
+          
+          // Add rollback data for delete list operation
+          await globalQueueService.addRequestToQueue(req, {
+            operation: 'delete',
+            tableName: 'lists',
+            recordId: id,
+            previousState: previousList
+          });
           logInfo('Queued DELETE(PATCH) lists due to error/timeout/offline');
         } catch (queueErr) {
           logError('Failed to queue DELETE(PATCH) lists', queueErr);
@@ -1594,19 +2042,22 @@ export class CategoryController {
 
       // Timebox
       const timeoutMs = environment.supabaseRequestTimeoutMs ?? 1500;
-      const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Request timeout')), timeoutMs));
-      let data: any = null; let error: any = null;
+      let data: DbCategory[] | null = null;
+      let error: PostgrestError | Error | null = null;
       try {
-        const result = await Promise.race([
+        const result = await withTimeout(
           supabase
             .from('grocery_categories')
             .select('*')
             .order('name', { ascending: true }),
-          timeoutPromise,
-        ]);
-        data = (result as any).data;
-        error = (result as any).error;
-      } catch (err: any) { error = err; }
+          timeoutMs,
+          'Request timeout'
+        );
+        data = result.data;
+        error = result.error;
+      } catch (err) { 
+        error = err as Error;
+      }
       
       if (error) {
         logError('Failed to fetch grocery_categories from Supabase', error);
@@ -1623,7 +2074,22 @@ export class CategoryController {
         };
       }
       // Sync to Dexie
-      try { await dexieService.syncCategories((data || []) as any); } catch {}
+      try {
+        const dexieCategories: DexieCategory[] = (data || []).map(cat => ({
+          id: cat.id,
+          name: cat.name,
+          icon: cat.icon,
+          created_at: cat.created_at ?? new Date().toISOString(),
+          updated_at: cat.updated_at ?? new Date().toISOString(),
+          sort_order: cat.sort_order,
+        }));
+        await dexieService.syncCategories(dexieCategories);
+      } catch (error) {
+        logError('Failed to sync categories to Dexie:', error);
+        sentryErrorService.reportApiError(error, {
+          context: 'syncCategories'
+        });
+      }
 
       logInfo('Successfully fetched grocery_categories from Supabase', { count: data?.length || 0 });
       return {
@@ -1654,20 +2120,23 @@ export class CategoryController {
 
       // Timebox
       const timeoutMs = environment.supabaseRequestTimeoutMs ?? 1500;
-      const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Request timeout')), timeoutMs));
-      let data: any = null; let error: any = null;
+      let data: DbCategory | null = null;
+      let error: PostgrestError | Error | null = null;
       try {
-        const result = await Promise.race([
+        const result = await withTimeout(
           supabase
             .from('grocery_categories')
             .select('*')
             .eq('id', id)
             .single(),
-          timeoutPromise,
-        ]);
-        data = (result as any).data;
-        error = (result as any).error;
-      } catch (err: any) { error = err; }
+          timeoutMs,
+          'Request timeout'
+        );
+        data = result.data;
+        error = result.error;
+      } catch (err) { 
+        error = err as Error;
+      }
       
       if (error) {
         logError('Failed to fetch grocery_category by ID from Supabase', error);
@@ -1685,7 +2154,25 @@ export class CategoryController {
         };
       }
       // Upsert to Dexie
-      try { await dexieService.updateCategory(data as any); } catch {}
+      try {
+        if (data) {
+          const dexieCategory: DexieCategory = {
+            id: data.id,
+            name: data.name,
+            icon: data.icon,
+            created_at: data.created_at ?? new Date().toISOString(),
+            updated_at: data.updated_at ?? new Date().toISOString(),
+            sort_order: data.sort_order,
+          };
+          await dexieService.updateCategory(dexieCategory);
+        }
+      } catch (error) {
+        logError('Failed to sync category to Dexie:', error);
+        sentryErrorService.reportApiError(error, {
+          context: 'updateCategory',
+          categoryId: id
+        });
+      }
 
       logInfo('Successfully fetched grocery_category by ID from Supabase', { categoryId: id });
       return {
@@ -1731,20 +2218,21 @@ export class UnitController {
 
       // Timebox
       const timeoutMs = environment.supabaseRequestTimeoutMs ?? 1500;
-      const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Request timeout')), timeoutMs));
-      let data: any = null; let error: any = null;
+      let data: DbUnit[] | null = null;
+      let error: PostgrestError | Error | null = null;
       try {
-        const result = await Promise.race([
+        const result = await withTimeout(
           supabase
             .from('grocery_units')
             .select('*')
             .order('name'),
-          timeoutPromise,
-        ]);
-        data = (result as any).data;
-        error = (result as any).error;
-      } catch (err: any) {
-        error = err;
+          timeoutMs,
+          'Request timeout'
+        );
+        data = result.data;
+        error = result.error;
+      } catch (err) {
+        error = err as Error;
       }
       
       if (error) {
@@ -1762,7 +2250,22 @@ export class UnitController {
         };
       }
       // Sync to Dexie
-      try { await dexieService.syncUnits((data || []) as any); } catch {}
+      try {
+        const dexieUnits: DexieUnit[] = (data || []).map(unit => ({
+          id: unit.id,
+          name: unit.name,
+          short_name: unit.short_name,
+          created_at: unit.created_at ?? new Date().toISOString(),
+          updated_at: unit.updated_at ?? new Date().toISOString(),
+          sort_order: unit.sort_order,
+        }));
+        await dexieService.syncUnits(dexieUnits);
+      } catch (error) {
+        logError('Failed to sync units to Dexie:', error);
+        sentryErrorService.reportApiError(error, {
+          context: 'syncUnits'
+        });
+      }
 
       logDebug('grocery_units fetched successfully:', data);
       return {
@@ -1792,20 +2295,23 @@ export class UnitController {
 
       // Timebox
       const timeoutMs = environment.supabaseRequestTimeoutMs ?? 1500;
-      const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Request timeout')), timeoutMs));
-      let data: any = null; let error: any = null;
+      let data: DbUnit | null = null;
+      let error: PostgrestError | Error | null = null;
       try {
-        const result = await Promise.race([
+        const result = await withTimeout(
           supabase
             .from('grocery_units')
             .select('*')
             .eq('id', id)
             .single(),
-          timeoutPromise,
-        ]);
-        data = (result as any).data;
-        error = (result as any).error;
-      } catch (err: any) { error = err; }
+          timeoutMs,
+          'Request timeout'
+        );
+        data = result.data;
+        error = result.error;
+      } catch (err) { 
+        error = err as Error;
+      }
       
       if (error) {
         logError('Error fetching grocery_units by ID:', error);
@@ -1823,7 +2329,25 @@ export class UnitController {
         };
       }
       // Upsert to Dexie
-      try { await dexieService.updateUnit(data as any); } catch {}
+      try {
+        if (data) {
+          const dexieUnit: DexieUnit = {
+            id: data.id,
+            name: data.name,
+            short_name: data.short_name,
+            created_at: data.created_at ?? new Date().toISOString(),
+            updated_at: data.updated_at ?? new Date().toISOString(),
+            sort_order: data.sort_order,
+          };
+          await dexieService.updateUnit(dexieUnit);
+        }
+      } catch (error) {
+        logError('Failed to sync unit to Dexie:', error);
+        sentryErrorService.reportApiError(error, {
+          context: 'updateUnit',
+          unitId: id
+        });
+      }
 
       logDebug('Unit fetched successfully:', data);
       return {
@@ -1860,21 +2384,24 @@ export class ProductGroupController {
       
       // Timebox search
       const timeoutMs = environment.supabaseRequestTimeoutMs ?? 1500;
-      const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Request timeout')), timeoutMs));
-      let data: any = null; let error: any = null;
+      let data: ProductOrGroup[] | null = null;
+      let error: PostgrestError | Error | null = null;
       try {
-        const result = await Promise.race([
+        const result = await withTimeout(
           supabase
             .rpc('search_products_and_groups', {
               term: term,
               limit_fts: limitFts,
               limit_fuzzy: limitFuzzy
             }),
-          timeoutPromise,
-        ]);
-        data = (result as any).data;
-        error = (result as any).error;
-      } catch (err: any) { error = err; }
+          timeoutMs,
+          'Request timeout'
+        );
+        data = result.data;
+        error = result.error;
+      } catch (err) { 
+        error = err as Error;
+      }
       
       if (error) {
         if (error instanceof Error && error.message === 'Request timeout') {

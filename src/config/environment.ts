@@ -73,7 +73,7 @@ const developmentConfig: EnvironmentConfig = {
   enableBackgroundSync: false, // Deaktiviert in Development
   
   // Debug Configuration
-  enableDebugLogs: import.meta.env.VITE_ENABLE_DEBUG_LOGS === 'true' || true,
+  enableDebugLogs: import.meta.env.VITE_ENABLE_DEBUG_LOGS === 'true' || import.meta.env.DEV,
   enablePerformanceMonitoring: true,
 
   // Shopping List Limits

@@ -714,6 +714,13 @@ class GlobalQueueService {
       return new Set();
     }
   }
+
+  /**
+   * Get all queued requests (for checking conflicts with realtime updates)
+   */
+  async getQueuedRequests(): Promise<QueuedRequest[]> {
+    return await dexieService.getAllQueuedRequests();
+  }
 }
 
 // Export singleton instance

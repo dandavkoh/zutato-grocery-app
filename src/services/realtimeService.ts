@@ -78,6 +78,59 @@ class RealtimeService {
     // Create new channel with both broadcast and DB change listeners
     const channel = supabase
       .channel(`list-${listId}`)
+      // Listen to actual database changes for shopping_items
+      .on(
+        'postgres_changes',
+        { 
+          event: '*',  // Listen to INSERT, UPDATE, DELETE
+          schema: 'public', 
+          table: 'shopping_items',
+          filter: `list_id=eq.${listId}`
+        },
+        (payload) => {
+          logInfo('📡 [Realtime] Database change detected:', { 
+            event: payload.eventType, 
+            listId,
+            itemId: (payload.new as any)?.id || (payload.old as any)?.id
+          });
+          
+          // Trigger reload for this list
+          this.handleRealtimeUpdate(listId, { 
+            payload: { 
+              type: `item_${payload.eventType.toLowerCase()}` as RealtimeMessage['type'],
+              listId: listId,
+              itemId: (payload.new as any)?.id || (payload.old as any)?.id,
+              timestamp: new Date().toISOString()
+            }
+          });
+        }
+      )
+      // Listen to database changes for lists table
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'lists',
+          filter: `id=eq.${listId}`
+        },
+        (payload) => {
+          logInfo('📡 [Realtime] List metadata changed:', { 
+            event: payload.eventType, 
+            listId
+          });
+          
+          // Trigger list reload
+          this.handleRealtimeUpdate(listId, { 
+            payload: { 
+              type: `item_updated` as RealtimeMessage['type'],
+              listId: listId,
+              timestamp: new Date().toISOString()
+            }
+          });
+        }
+      )
+      // Keep existing broadcast listener for immediate optimistic updates
       .on('broadcast', { event: 'shopping_list_update' }, (payload: { type: 'broadcast'; event: string; payload: RealtimeMessage }) => {
         logDebug('Received realtime update', { listId, payload });
         this.handleRealtimeUpdate(listId, payload);

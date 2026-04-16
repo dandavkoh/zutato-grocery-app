@@ -2,6 +2,7 @@ import { supabase } from '../config/supabase';
 import { logDebug, logError, logInfo } from '../config/environment';
 import { dexieService } from './dexieService';
 import { globalQueueService } from './globalQueueService';
+import { sentryErrorService } from './sentryErrorService';
 
 /**
  * Service for syncing shopping items data
@@ -39,11 +40,38 @@ class DataSyncService {
         .order('created_at', { ascending: false });
       
       if (error) {
-        logError('Failed to reload shopping items', error);
+        logError('❌ Failed to reload shopping items:', error);
         throw error;
       }
       
-      logInfo('Successfully reloaded shopping items', { listId, count: data?.length || 0 });
+      // Sync fetched data to Dexie
+      if (data && data.length > 0) {
+        try {
+          // Get queued item IDs to avoid overwriting optimistic updates
+          const queuedItemIds = await globalQueueService.getQueuedItemIds();
+          
+          // Sync items to Dexie, but skip items with pending changes
+          for (const item of data) {
+            if (!queuedItemIds.has(item.id)) {
+              await dexieService.updateShoppingItemFromResponse(item);
+            }
+          }
+          
+          logInfo('✅ Successfully synced shopping items to Dexie', { 
+            listId, 
+            count: data.length,
+            skipped: queuedItemIds.size 
+          });
+        } catch (syncError) {
+          logError('❌ Failed to sync items to Dexie:', syncError);
+          sentryErrorService.reportApiError(syncError, {
+            context: 'reloadShoppingItems_dexieSync',
+            listId
+          });
+        }
+      } else {
+        logInfo('✅ No items to sync for list', { listId });
+      }
     } catch (error) {
       logError('Error reloading shopping items', { listId, error });
       throw error;

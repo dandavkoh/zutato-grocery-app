@@ -421,14 +421,56 @@ class GlobalQueueService {
           if (item.method === 'PATCH' && item.url.includes('shopping_items')) {
             try {
               const updatedItem = await response.clone().json();
-              // Get current queued IDs (excluding the one we just processed)
               const queuedItemIds = await this.getQueuedItemIds();
               await dexieService.updateShoppingItemFromResponse(updatedItem, queuedItemIds);
               logDebug(`✅ [GlobalQueue] Synced PATCH response to Dexie: ${item.url}`);
             } catch (syncError) {
               logError('❌ [GlobalQueue] Failed to sync PATCH response to Dexie:', syncError);
+              sentryErrorService.reportApiError(syncError, {
+                context: 'processQueue_patchSync',
+                url: item.url
+              });
             }
           }
+          
+          // ✅ CRITICAL FIX: Handle successful POST requests by updating temp ID with server response
+          if (item.method === 'POST' && item.url.includes('shopping_items')) {
+            try {
+              const responseData = await response.clone().json();
+              logDebug(`📥 [GlobalQueue] POST response received:`, { responseData, rollbackData: item.rollbackData });
+              
+              // Supabase returns array for insert with select
+              const createdItem = Array.isArray(responseData) ? responseData[0] : responseData;
+              
+              if (createdItem && item.rollbackData?.recordId) {
+                // Update the temp ID record with the server ID and response data
+                await dexieService.updateShoppingItemId(item.rollbackData.recordId, createdItem);
+                logInfo(`✅ [GlobalQueue] Updated temp ID ${item.rollbackData.recordId} with server ID ${createdItem.id}`);
+              } else {
+                logWarn(`⚠️ [GlobalQueue] POST response missing data or rollbackData`, {
+                  hasCreatedItem: !!createdItem,
+                  hasRollbackData: !!item.rollbackData,
+                  rollbackRecordId: item.rollbackData?.recordId
+                });
+              }
+            } catch (syncError) {
+              logError('❌ [GlobalQueue] Failed to update POST response in Dexie:', syncError);
+              sentryErrorService.reportApiError(syncError, {
+                context: 'processQueue_postSync',
+                url: item.url,
+                rollbackRecordId: item.rollbackData?.recordId
+              });
+            }
+          }
+          
+          // Remove from processing queue AFTER syncing
+          setTimeout(async () => {
+            const itemId = this.extractItemIdFromRequest(item);
+            if (itemId) {
+              this.processingQueueIds.delete(itemId);
+              logDebug(`🔓 [GlobalQueue] Removed from processing queue: ${itemId}`);
+            }
+          }, 2000);
           
           await dexieService.removeQueuedRequest(item.id);
           successCount++;
@@ -756,6 +798,33 @@ class GlobalQueueService {
    */
   async getQueuedRequests(): Promise<QueuedRequest[]> {
     return await dexieService.getAllQueuedRequests();
+  }
+
+  /**
+   * Extract item ID from request for tracking purposes
+   */
+  private extractItemIdFromRequest(item: QueuedRequest): string | null {
+    if (item.url.includes('shopping_items')) {
+      // For PATCH/DELETE: extract from URL
+      const match = item.url.match(/shopping_items\/([^\/\?]+)/);
+      if (match) return match[1];
+      
+      // For POST: use rollback data
+      if (item.rollbackData?.recordId) return item.rollbackData.recordId;
+      
+      // For POST: try body
+      if (item.body) {
+        try {
+          const bodyData = JSON.parse(item.body);
+          if (bodyData.id || (Array.isArray(bodyData) && bodyData[0]?.id)) {
+            return bodyData.id || bodyData[0].id;
+          }
+        } catch (e) {
+          // Ignore parse errors
+        }
+      }
+    }
+    return null;
   }
 }
 

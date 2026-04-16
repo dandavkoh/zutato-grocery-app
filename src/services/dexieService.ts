@@ -1,5 +1,6 @@
 import Dexie, { type Table } from 'dexie';
 import { logDebug, logInfo, logWarn, logError } from '../utils/logger';
+import { sentryErrorService } from './sentryErrorService';
 
 export interface ShoppingItem {
   id: string;
@@ -503,6 +504,85 @@ export class DexieService {
       logDebug(`🗑️ [Dexie] Hard deleted shopping item: ${id}`);
     } catch (error) {
       logError('❌ [Dexie] Error hard deleting shopping item:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update an item's ID from temporary/client ID to server ID
+   * Used after successful POST to sync temp optimistic items with server response
+   */
+  async updateShoppingItemId(tempId: string, serverItem: any): Promise<void> {
+    try {
+      logInfo(`🔄 [Dexie] Updating item ID from temp to server`, { tempId, serverId: serverItem.id });
+      
+      await db.transaction('rw', db.shoppingItems, async () => {
+        // Get the temp item first to preserve any local changes
+        const tempItem = await db.shoppingItems.get(tempId);
+        
+        if (!tempItem) {
+          logWarn(`⚠️ [Dexie] Temp item not found: ${tempId}, adding server item directly`);
+          // Just add the server item
+          await db.shoppingItems.put({
+            id: serverItem.id,
+            list_id: serverItem.list_id,
+            name: serverItem.name,
+            quantity: serverItem.quantity ?? null,
+            unit_id: serverItem.unit_id ?? null,
+            category_id: serverItem.category_id,
+            icon: serverItem.icon ?? null,
+            notes: serverItem.notes ?? null,
+            store: serverItem.store ?? null,
+            assigned_to: serverItem.assigned_to ?? null,
+            is_completed: serverItem.is_completed,
+            completed_at: serverItem.completed_at ?? null,
+            completed_by: serverItem.completed_by ?? null,
+            created_by: serverItem.created_by,
+            created_at: serverItem.created_at,
+            updated_at: serverItem.updated_at,
+            is_deleted: serverItem.is_deleted,
+            deleted_at: serverItem.deleted_at ?? null,
+            deleted_by: serverItem.deleted_by ?? null,
+          });
+          return;
+        }
+        
+        // Delete the temp ID record
+        await db.shoppingItems.delete(tempId);
+        logDebug(`🗑️ [Dexie] Deleted temp item: ${tempId}`);
+        
+        // Add/update with server ID and data (preserving any completion changes made while offline)
+        await db.shoppingItems.put({
+          id: serverItem.id,
+          list_id: serverItem.list_id,
+          name: serverItem.name,
+          quantity: serverItem.quantity ?? null,
+          unit_id: serverItem.unit_id ?? null,
+          category_id: serverItem.category_id,
+          icon: serverItem.icon ?? null,
+          notes: serverItem.notes ?? null,
+          store: serverItem.store ?? null,
+          assigned_to: serverItem.assigned_to ?? null,
+          is_completed: tempItem.is_completed, // Preserve local completion state
+          completed_at: tempItem.completed_at ?? serverItem.completed_at ?? null,
+          completed_by: tempItem.completed_by ?? serverItem.completed_by ?? null,
+          created_by: serverItem.created_by,
+          created_at: serverItem.created_at,
+          updated_at: serverItem.updated_at,
+          is_deleted: serverItem.is_deleted,
+          deleted_at: serverItem.deleted_at ?? null,
+          deleted_by: serverItem.deleted_by ?? null,
+        });
+        
+        logInfo(`✅ [Dexie] Successfully updated item ID`, { from: tempId, to: serverItem.id });
+      });
+    } catch (error) {
+      logError('❌ [Dexie] Error updating item ID:', error);
+      sentryErrorService.reportApiError(error, {
+        context: 'updateShoppingItemId',
+        tempId,
+        serverId: serverItem?.id
+      });
       throw error;
     }
   }

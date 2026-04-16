@@ -22,6 +22,7 @@ class GlobalQueueService {
   private static isInitialized = false;
   private postSyncCallbacks: Set<PostSyncCallback> = new Set();
   private processingInterval: NodeJS.Timeout | null = null;
+  private processingQueueIds: Set<string> = new Set();
   
   // Event handler references for cleanup
   private handleVisibilityChange = async () => {
@@ -338,6 +339,27 @@ class GlobalQueueService {
     let skippedCount = 0;
     
     for (const item of itemsToProcess) {
+      // Extract item ID from request
+      let itemId: string | null = null;
+      if (item.url.includes('shopping_items')) {
+        const match = item.url.match(/shopping_items\/([^\/\?]+)/);
+        if (match) {
+          itemId = match[1];
+        } else if (item.body) {
+          try {
+            const bodyData = JSON.parse(item.body);
+            itemId = bodyData.id || null;
+          } catch (e) {
+            // Ignore parse errors
+          }
+        }
+      }
+
+      // Mark as processing
+      if (itemId) {
+        this.processingQueueIds.add(itemId);
+      }
+
       try {
         // Check if item has exceeded max retries
         if (item.retryCount >= this.MAX_RETRY_COUNT) {
@@ -461,6 +483,14 @@ class GlobalQueueService {
           requestMethod: item.method,
           retryCount: item.retryCount + 1,
         });
+      } finally {
+        // ✅ CRITICAL FIX: Remove from processing AFTER queue removal
+        if (itemId) {
+          // Small delay to ensure realtime events have time to process
+          setTimeout(() => {
+            this.processingQueueIds.delete(itemId!);
+          }, 2000); // 2 second buffer for realtime events
+        }
       }
     }
 
@@ -680,39 +710,45 @@ class GlobalQueueService {
   }
 
   /**
-   * Get all item IDs that are currently queued for updates
-   * Returns a Set for efficient lookup
+   * Get IDs of all items that are queued OR currently being processed
+   * This prevents race conditions where items are removed from queue but realtime sync hasn't completed
    */
   public async getQueuedItemIds(): Promise<Set<string>> {
+    const queuedIds = new Set<string>();
+    
     try {
-      const allRequests = await dexieService.getAllQueuedRequests();
-      const queuedIds = new Set<string>();
+      const allRequests = await dexieService.getQueuedRequests();
       
       allRequests.forEach(request => {
         if (request.url.includes('shopping_items')) {
-          // Extract ID from URL patterns like:
-          // - /shopping_items?id=eq.abc-123
-          // - /shopping_items/abc-123
-          const eqMatch = request.url.match(/id=eq\.([^&]+)/);
-          const pathMatch = request.url.match(/shopping_items\/([^?&]+)/);
-          
-          if (eqMatch) {
-            queuedIds.add(eqMatch[1]);
-          } else if (pathMatch) {
-            queuedIds.add(pathMatch[1]);
+          const match = request.url.match(/shopping_items\/([^\/\?]+)/);
+          if (match) {
+            queuedIds.add(match[1]);
+          } else if (request.method === 'POST' && request.body) {
+            try {
+              const bodyData = JSON.parse(request.body);
+              if (bodyData.id) {
+                queuedIds.add(bodyData.id);
+              }
+            } catch (e) {
+              // Ignore parse errors
+            }
           }
         }
       });
       
+      // ✅ CRITICAL FIX: Include items currently being processed
+      this.processingQueueIds.forEach(id => queuedIds.add(id));
+      
       if (queuedIds.size > 0) {
-        logDebug(`🔍 [GlobalQueue] Found ${queuedIds.size} queued item IDs`);
+        logDebug(`🔍 [GlobalQueue] Found ${queuedIds.size} queued/processing item IDs (${this.processingQueueIds.size} processing)`);
       }
       
-      return queuedIds;
     } catch (error) {
-      logError('❌ [GlobalQueue] Failed to get queued item IDs:', error);
-      return new Set();
+      logError('❌ [GlobalQueue] Error getting queued item IDs:', error);
     }
+    
+    return queuedIds;
   }
 
   /**

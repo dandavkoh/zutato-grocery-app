@@ -208,18 +208,27 @@ export class DexieService {
   }
 
   // Add or update shopping items (for sync from Supabase)
-  async syncShoppingItems(items: ShoppingItem[], queuedItemIds?: Set<string>): Promise<void> {
+  async syncShoppingItems(
+    serverItems: any[],
+    queuedItemIds?: Set<string>
+  ): Promise<void> {
+    logInfo('🔄 [Dexie] Starting syncShoppingItems', {
+      serverItemsCount: serverItems.length,
+      queuedItemsCount: queuedItemIds?.size || 0,
+      queuedItemIds: Array.from(queuedItemIds || [])
+    });
+    
     try {
       // Handle empty items case - determine list_id from first item if available
       let listId: string | null = null;
       
-      if (items.length === 0) {
+      if (serverItems.length === 0) {
         logDebug('📝 [Dexie] No items to sync');
         return;
       }
 
       // Get the list_id from the first item (all items should have the same list_id)
-      listId = items[0].list_id;
+      listId = serverItems[0].list_id;
       
       await db.transaction('rw', db.shoppingItems, async () => {
         // Get all existing items for this list
@@ -230,7 +239,7 @@ export class DexieService {
         
         // Create a map of server items by ID for efficient lookup
         const serverItemsMap = new Map<string, ShoppingItem>();
-        items.forEach(item => {
+        serverItems.forEach(item => {
           serverItemsMap.set(item.id, item);
         });
         
@@ -246,7 +255,7 @@ export class DexieService {
         let queuedItemsSkipped = 0;
         
         // Process all server items with conflict resolution
-        items.forEach(serverItem => {
+        serverItems.forEach(serverItem => {
           // Check if item is queued for update - if so, don't overwrite local changes
           if (queuedItemIds && queuedItemIds.has(serverItem.id)) {
             logDebug(`⏭️ [Dexie] Skipping queued item during sync: ${serverItem.id} (${serverItem.name})`);
@@ -285,6 +294,13 @@ export class DexieService {
           }
         });
         
+        logInfo('🔍 [Dexie] Checking for orphaned items', {
+          existingItemsCount: existingItems.length,
+          serverItemsCount: serverItems.length,
+          existingItemIds: existingItems.map(i => i.id),
+          serverItemIds: serverItems.map(i => i.id)
+        });
+        
         // Find local items that don't exist on server (potentially deleted on server)
         // Only mark as deleted if they're not already marked as deleted locally
         const itemsToMarkDeleted: ShoppingItem[] = [];
@@ -292,9 +308,19 @@ export class DexieService {
           if (!serverItemsMap.has(existingItem.id) && !existingItem.is_deleted) {
             // Check if item is queued - don't mark as deleted if it's queued
             if (queuedItemIds && queuedItemIds.has(existingItem.id)) {
-              logDebug(`⏭️ [Dexie] Skipping deletion of queued item: ${existingItem.id} (${existingItem.name})`);
+              logDebug(`⏭️ [Dexie] Skipping deletion of queued item: ${existingItem.id}`);
               return;
             }
+            
+            // ✅ CRITICAL FIX: Don't delete items created in the last 10 seconds
+            // This protects against race conditions during online/offline transitions
+            const itemAge = Date.now() - new Date(existingItem.created_at).getTime();
+            if (itemAge < 10000) {
+              logDebug(`⏭️ [Dexie] Skipping deletion of recently created item: ${existingItem.id} (age: ${itemAge}ms)`);
+              return;
+            }
+            
+            logDebug(`🗑️ [Dexie] Marking item as deleted (exists locally but not on server): ${existingItem.id}`);
             
             // This item exists locally but not on server - it was deleted on server
             itemsToMarkDeleted.push({
@@ -324,7 +350,7 @@ export class DexieService {
         }
       });
       
-      logDebug(`✅ [Dexie] Synced ${items.length} shopping items for list ${listId}`);
+      logDebug(`✅ [Dexie] Synced ${serverItems.length} shopping items for list ${listId}`);
     } catch (error) {
       logError('❌ [Dexie] Error syncing shopping items:', error);
       throw error;
@@ -578,6 +604,15 @@ export class DexieService {
     } catch (error) {
       logError('❌ [Dexie] Error getting queued requests count:', error);
       return 0;
+    }
+  }
+
+  async getQueuedRequests(): Promise<QueuedRequest[]> {
+    try {
+      return await db.queuedRequests.toArray();
+    } catch (error) {
+      logError('❌ [Dexie] Error getting queued requests:', error);
+      return [];
     }
   }
 

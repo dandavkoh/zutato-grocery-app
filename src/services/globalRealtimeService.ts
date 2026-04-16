@@ -43,7 +43,7 @@ export const useGlobalRealtimeSync = () => {
         if (!mountedRef.current) return;
         
         try {
-          await dataSyncService.reloadShoppingItems(listId);
+          await dataSyncService.reloadShoppingItemsDebounced(listId, 300);
           logDebug('Reloaded shopping items after global realtime event', { listId });
         } catch (error) {
           logError('Failed to reload shopping items after global realtime event', { listId, error });
@@ -99,7 +99,7 @@ export const useGlobalRealtimeSync = () => {
       logInfo('Global realtime: Online status restored, reloading data', { listId });
       
       try {
-        await dataSyncService.reloadShoppingItems(listId);
+        await dataSyncService.reloadShoppingItemsDebounced(listId, 300);
         logInfo('Successfully reloaded data after coming back online', { listId });
       } catch (error) {
         logError('Failed to reload data after coming back online', { listId, error });
@@ -117,7 +117,7 @@ export const useGlobalRealtimeSync = () => {
       logInfo('Global realtime: Post-sync callback triggered, reloading data', { listId });
       
       try {
-        await dataSyncService.reloadShoppingItems(listId);
+        await dataSyncService.reloadShoppingItemsDebounced(listId, 500);
         logInfo('Successfully reloaded data after queue sync', { listId });
       } catch (error) {
         logError('Failed to reload data after queue sync', { listId, error });

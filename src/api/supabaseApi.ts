@@ -615,7 +615,20 @@ export class ShoppingItemsController {
         assignedTo: data.assigned_to ?? undefined,
       };
       
-      logInfo('Successfully created item in Supabase', { itemId: data.id });
+      logInfo('✅ Item created successfully', { itemId: data.id });
+      
+      // ✅ FIX: Update the optimistic Dexie record with server response
+      // This ensures any server-side transformations are reflected locally
+      try {
+        await dexieService.updateShoppingItemFromResponse(data);
+        logDebug('Updated optimistic item with server response', { itemId: data.id });
+      } catch (syncErr) {
+        logError('Failed to update optimistic item with server response:', syncErr);
+        sentryErrorService.reportApiError(syncErr, {
+          context: 'addShoppingItem_updateOptimistic',
+          itemId: data.id
+        });
+      }
       
       // Broadcast update to all subscribers
       await realtimeService.broadcastUpdate(itemData.listId, {
